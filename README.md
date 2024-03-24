@@ -1,6 +1,6 @@
-# [SCLOG](https://www.scwon.me/){: target="_blank"}
+# <a href="https://www.scwon.me/" target="_blank">sclog</a>
 
-[블로그 바로가기](https://www.scwon.me/){: target="_blank"}
+<a href="https://www.scwon.me/" target="_blank">블로그 바로가기</a>
 
 ## 원성철 블로그
 
