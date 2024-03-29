@@ -19,7 +19,7 @@ export default function RootLayout({
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <body className={inter.className}>
-        <header>헤더 들어갈거임</header>
+        <header className="fixed">헤더 들어갈거임</header>
         {children}
         <footer>푸터도 들어갈거임 아마도?</footer>
       </body>
