@@ -7,7 +7,7 @@ export default function Home() {
         <h3 className="text-lg text-blue-500 font-bold">
           tailwind css 처음 써봄
         </h3>
-        <h3 className="text-lg text-orange-500 font-bold">
+        <h3 className="text-lg text-orange-500">
           기깔나는 favicon 나오길 대기중
         </h3>
       </div>
