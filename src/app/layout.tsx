@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "sclog",
@@ -16,11 +13,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <body className={inter.className}>
-        <header className="fixed">헤더 들어갈거임</header>
-        {children}
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>
+        <header className="bg-white bg-opacity-50 fixed w-full flex h-12 border-b-2 backdrop-blur-md">
+          <a href="/" className=" h-full px-4 flex items-center border-r-2">
+            <strong className="text-primary text-2xl tracking-tighter">
+              SCLOG
+            </strong>
+          </a>
+          <nav className="mx-auto text-center flex items-center">
+            이 공간에 뭘 할까
+          </nav>
+        </header>
+        <main className="pt-12">{children}</main>
         <footer>푸터도 들어갈거임 아마도?</footer>
       </body>
     </html>

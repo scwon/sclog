@@ -1,6 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap");
+
+@layer base {
+  :root {
+    --color-primary: @layer base {
+      :root {
+        --color-primary: 213 142 139;
+      }
+    }
+  }
+}
 
 html,
 body {
