@@ -7,10 +7,13 @@ settings:
 dependencies:
   next:
     specifier: 14.1.4
-    version: 14.1.4(react-dom@18.2.0)(react@@types+@heroicons+react)
+    version: 14.1.4(react-dom@18.2.0)(react@18.2.0)
+  react:
+    specifier: ^18.2.0
+    version: 18.2.0
   react-dom:
     specifier: ^18.2.0
-    version: 18.2.0(react@@types+@heroicons+react)
+    version: 18.2.0(react@18.2.0)
 
 devDependencies:
   '@types/node':
@@ -34,9 +37,6 @@ devDependencies:
   postcss:
     specifier: ^8.4.38
     version: 8.4.38
-  react:
-    specifier: link:@types/@heroicons/react
-    version: link:@types/@heroicons/react
   tailwindcss:
     specifier: ^3.4.3
     version: 3.4.3
@@ -1957,7 +1957,7 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
 
-  /next@14.1.4(react-dom@18.2.0)(react@@types+@heroicons+react):
+  /next@14.1.4(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-1WTaXeSrUwlz/XcnhGTY7+8eiaFvdet5z9u3V2jb+Ek1vFo0VhHKSAIJvDWfQpttWjnyw14kBeq28TPq7bTeEQ==}
     engines: {node: '>=18.17.0'}
     hasBin: true
@@ -1978,9 +1978,9 @@ packages:
       caniuse-lite: 1.0.30001609
       graceful-fs: 4.2.11
       postcss: 8.4.31
-      react: link:@types/@heroicons/react
-      react-dom: 18.2.0(react@@types+@heroicons+react)
-      styled-jsx: 5.1.1(react@@types+@heroicons+react)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      styled-jsx: 5.1.1(react@18.2.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 14.1.4
       '@next/swc-darwin-x64': 14.1.4
@@ -2280,19 +2280,26 @@ packages:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
     dev: true
 
-  /react-dom@18.2.0(react@@types+@heroicons+react):
+  /react-dom@18.2.0(react@18.2.0):
     resolution: {integrity: sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g==}
     peerDependencies:
       react: ^18.2.0
     dependencies:
       loose-envify: 1.4.0
-      react: link:@types/@heroicons/react
+      react: 18.2.0
       scheduler: 0.23.0
     dev: false
 
   /react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
     dev: true
+
+  /react@18.2.0:
+    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: false
 
   /read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -2567,7 +2574,7 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /styled-jsx@5.1.1(react@@types+@heroicons+react):
+  /styled-jsx@5.1.1(react@18.2.0):
     resolution: {integrity: sha512-pW7uC1l4mBZ8ugbiZrcIsiIvVx1UmTfw7UkC3Um2tmfUq9Bhk8IiyEIPl6F8agHgjzku6j0xQEZbfA5uSgSaCw==}
     engines: {node: '>= 12.0.0'}
     peerDependencies:
@@ -2581,7 +2588,7 @@ packages:
         optional: true
     dependencies:
       client-only: 0.0.1
-      react: link:@types/@heroicons/react
+      react: 18.2.0
     dev: false
 
   /sucrase@3.35.0:
