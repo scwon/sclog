@@ -29,7 +29,32 @@ export default function RootLayout({
           </nav>
         </header>
         <main className="pt-12">{children}</main>
-        <footer>푸터도 들어갈거임 아마도?</footer>
+        <footer className="bg-white w-full border-t-2 p-4 gap-4 flex flex-col">
+          <div className="flex gap-2 items-center">
+            <a href="/" className="">
+              <span className="text-gray-400 text-md tracking-tighter">
+                GITHUB
+              </span>
+            </a>
+            <div className="border-r-2 h-4 border-gray-200" />
+            <a href="/" className="">
+              <span className="text-gray-400 px-2 text-md tracking-tighter">
+                LINKEDIN
+              </span>
+            </a>
+            <div className="border-r-2 h-4 border-gray-200" />
+            <a href="/" className="">
+              <span className="text-gray-400 px-2 text-md tracking-tighter">
+                INSTAGRAM
+              </span>
+            </a>
+          </div>
+          <a href="/" className="">
+            <strong className="text-primary text-4xl tracking-tighter">
+              SCLOG
+            </strong>
+          </a>
+        </footer>
       </body>
     </html>
   );
