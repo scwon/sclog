@@ -1,0 +1,21 @@
+{
+  "short_name": "Your App",
+  "name": "Your Application Name",
+  "icons": [
+    {
+      "src": "/me.jpeg",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/me.jpeg",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#FFFFFF"
+}
