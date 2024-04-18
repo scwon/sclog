@@ -1,15 +1,17 @@
 {
+  "name": "개발자 원성철의 블로그",
   "short_name": "SCLOG",
-  "name": "Scwon Blog",
+  "manifest_version": 3,
+  "version": "0.1",
   "icons": [
     {
       "src": "/me.jpeg",
-      "type": "image/png",
+      "type": "image/jpeg",
       "sizes": "192x192"
     },
     {
       "src": "/me.jpeg",
-      "type": "image/png",
+      "type": "image/jpeg",
       "sizes": "512x512"
     }
   ],
@@ -17,5 +19,7 @@
   "background_color": "#FFFFFF",
   "display": "standalone",
   "scope": "/",
-  "theme_color": "#FFFFFF"
+  "theme_color": "#FFFFFF",
+  "description": "프론트엔드 개발자 원성철의 블로그입니다.",
+  "orientation": "portrait"
 }
