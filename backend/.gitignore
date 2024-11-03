@@ -1,0 +1,22 @@
+# Rust build artifacts
+/target/
+
+# Cargo.lock file, if you want to ignore it (optional)
+/Cargo.lock
+
+# Compiled binaries
+*.rs.bk
+*.dSYM/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment variables file
+.env
+
+# VSCode settings
+.vscode/
