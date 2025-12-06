@@ -87,7 +87,7 @@
 ### 필수 태그
 
 ```html
-<title>{pageTitle} | SCLog</title>
+<title>{pageTitle} | SCLOG</title>
 <meta name="description" content="{description}" />
 <link rel="canonical" href="{fullUrl}" />
 ```

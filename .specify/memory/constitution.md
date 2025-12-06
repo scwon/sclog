@@ -11,7 +11,7 @@ Templates requiring updates:
   - src/styles/global.css ⚠ 생성 필요
 -->
 
-# SCLog Constitution
+# SCLOG Constitution
 
 ## Core Principles
 
