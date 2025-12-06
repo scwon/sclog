@@ -1,0 +1,86 @@
+---
+/**
+ * Header component with SCLOG logo and navigation
+ * Constitution VI. Design System: "SCLOG"는 반드시 대문자로 표기
+ */
+import ThemeToggle from './ThemeToggle.astro';
+---
+
+<header class="header">
+  <div class="header-container">
+    <a href="/" class="logo">SCLOG</a>
+    <div class="header-right">
+      <nav class="nav">
+        <a href="/blog">Blog</a>
+        <a href="/blog/tags">Tags</a>
+      </nav>
+      <ThemeToggle />
+    </div>
+  </div>
+</header>
+
+<style>
+  .header {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .header-container {
+    max-width: var(--max-width-wide);
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    font-family: var(--font-logo);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+
+  .logo:hover {
+    text-decoration: none;
+    opacity: 0.9;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .nav a {
+    color: var(--color-text);
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+
+  .nav a:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  @media (max-width: 640px) {
+    .header-container {
+      padding: 0.75rem 1rem;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+    }
+
+    .nav {
+      gap: 1rem;
+    }
+  }
+</style>

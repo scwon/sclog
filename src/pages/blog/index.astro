@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
 import BlogCard from '../../components/BlogCard.astro';
 import { getPublishedPosts } from '../../utils/blog';
 
@@ -10,6 +11,7 @@ const posts = await getPublishedPosts();
   title="블로그"
   description="SCLog - 개발 블로그의 모든 글 목록입니다."
 >
+  <Header />
   <main class="container">
     <header class="page-header">
       <h1>블로그</h1>
