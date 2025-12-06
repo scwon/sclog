@@ -1,0 +1,54 @@
+---
+interface Props {
+  tags: Map<string, number>;
+}
+
+const { tags } = Astro.props;
+const sortedTags = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+---
+
+<div class="tag-list">
+  {sortedTags.map(([tag, count]) => (
+    <a href={`/blog/tags/${tag}`} class="tag-item">
+      <span class="tag-name">#{tag}</span>
+      <span class="tag-count">{count}</span>
+    </a>
+  ))}
+</div>
+
+<style>
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-accent-light);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.9rem;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .tag-item:hover {
+    background: rgba(99, 102, 241, 0.2);
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .tag-name {
+    font-weight: 500;
+  }
+
+  .tag-count {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.1rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+  }
+</style>

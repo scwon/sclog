@@ -1,0 +1,64 @@
+---
+title: "Astro 5로 블로그 만들기"
+pubDate: 2025-12-05
+description: "Astro 5의 새로운 기능을 활용하여 정적 블로그를 구축하는 방법을 알아봅니다."
+tags: ["astro", "tutorial", "typescript"]
+---
+
+# Astro 5로 블로그 만들기
+
+이 글에서는 Astro 5를 사용하여 정적 블로그를 만드는 방법을 단계별로 알아봅니다.
+
+## Content Collections 소개
+
+Astro의 Content Collections는 타입 안전한 콘텐츠 관리를 제공합니다.
+
+```typescript
+// src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blogCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    pubDate: z.date(),
+    description: z.string(),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = {
+  blog: blogCollection,
+};
+```
+
+## 동적 라우팅
+
+블로그 글마다 고유한 URL을 생성하려면 동적 라우팅을 사용합니다.
+
+```astro
+---
+// src/pages/blog/[slug].astro
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+---
+```
+
+## MDX의 장점
+
+MDX를 사용하면 Markdown에서 컴포넌트를 사용할 수 있습니다:
+
+- **재사용 가능한 컴포넌트**: 반복되는 UI를 컴포넌트화
+- **동적 콘텐츠**: JavaScript 표현식 사용 가능
+- **타입 안전성**: TypeScript와 완벽 호환
+
+## 마무리
+
+Astro 5는 콘텐츠 중심 웹사이트를 만들기에 최적의 선택입니다. 빌드 타임에 모든 페이지를 생성하여 빠른 로딩 속도를 제공합니다.

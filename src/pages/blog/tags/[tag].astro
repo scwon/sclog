@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import BlogCard from '../../../components/BlogCard.astro';
+import { getAllTags, getPostsByTag } from '../../../utils/blog';
+
+export async function getStaticPaths() {
+  const tags = await getAllTags();
+  return [...tags.keys()].map((tag) => ({
+    params: { tag },
+  }));
+}
+
+const { tag } = Astro.params;
+const posts = await getPostsByTag(tag);
+---
+
+<BaseLayout
+  title={`#${tag} 태그 글`}
+  description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}
+>
+  <main class="container">
+    <header class="page-header">
+      <a href="/blog/tags" class="back-link">← 모든 태그</a>
+      <h1>#{tag}</h1>
+      <p class="subtitle">{posts.length}개의 글</p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p class="no-posts">이 태그에 해당하는 글이 없습니다.</p>
+    ) : (
+      <div class="posts-grid">
+        {posts.map((post) => (
+          <BlogCard post={post} />
+        ))}
+      </div>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .back-link:hover {
+    color: var(--color-accent-light);
+  }
+
+  .page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: var(--color-accent-light);
+  }
+
+  .subtitle {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .no-posts {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem;
+  }
+
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .page-header h1 {
+      font-size: 2rem;
+    }
+
+    .posts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

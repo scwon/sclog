@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="페이지를 찾을 수 없습니다"
+  description="요청하신 페이지가 존재하지 않습니다."
+>
+  <main class="container">
+    <div class="error-page">
+      <h1 class="error-code">404</h1>
+      <h2 class="error-title">페이지를 찾을 수 없습니다</h2>
+      <p class="error-message">
+        요청하신 페이지가 존재하지 않거나 이동되었습니다.
+      </p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">홈으로 돌아가기</a>
+        <a href="/blog" class="btn btn-secondary">블로그 보기</a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 4rem 1rem;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .error-page {
+    text-align: center;
+  }
+
+  .error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .error-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 1rem 0;
+  }
+
+  .error-message {
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-accent-light);
+    text-decoration: none;
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    text-decoration: none;
+  }
+
+  @media (max-width: 480px) {
+    .error-code {
+      font-size: 5rem;
+    }
+
+    .error-actions {
+      flex-direction: column;
+    }
+  }
+</style>

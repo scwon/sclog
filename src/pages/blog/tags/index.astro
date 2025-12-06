@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import TagList from '../../../components/TagList.astro';
+import { getAllTags } from '../../../utils/blog';
+
+const tags = await getAllTags();
+---
+
+<BaseLayout
+  title="태그"
+  description="SCLog 블로그의 모든 태그 목록입니다."
+>
+  <main class="container">
+    <header class="page-header">
+      <h1>태그</h1>
+      <p class="subtitle">관심 있는 주제를 선택하세요.</p>
+    </header>
+
+    {tags.size === 0 ? (
+      <p class="no-tags">아직 태그가 없습니다.</p>
+    ) : (
+      <TagList tags={tags} />
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .no-tags {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem;
+  }
+</style>

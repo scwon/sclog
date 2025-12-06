@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogCard from '../../components/BlogCard.astro';
+import { getPublishedPosts } from '../../utils/blog';
+
+const posts = await getPublishedPosts();
+---
+
+<BaseLayout
+  title="블로그"
+  description="SCLog - 개발 블로그의 모든 글 목록입니다."
+>
+  <main class="container">
+    <header class="page-header">
+      <h1>블로그</h1>
+      <p class="subtitle">개발 이야기와 경험을 공유합니다.</p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p class="no-posts">아직 작성된 글이 없습니다.</p>
+    ) : (
+      <div class="posts-grid">
+        {posts.map((post) => (
+          <BlogCard post={post} />
+        ))}
+      </div>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .no-posts {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem;
+  }
+
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .page-header h1 {
+      font-size: 2rem;
+    }
+
+    .posts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
