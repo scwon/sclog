@@ -27,16 +27,20 @@ const sortedTags = [...tags.entries()].sort((a, b) => b[1] - a[1]);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--color-accent-light);
+    background: var(--color-primary);
+    color: #fff;
     padding: 0.5rem 1rem;
-    border-radius: 9999px;
+    border-radius: var(--radius-tag);
     font-size: 0.9rem;
-    transition: background 0.2s, transform 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  :global(.dark) .tag-item {
+    color: #1a1a1a;
   }
 
   .tag-item:hover {
-    background: rgba(99, 102, 241, 0.2);
+    opacity: 0.9;
     text-decoration: none;
     transform: translateY(-1px);
   }
@@ -46,9 +50,13 @@ const sortedTags = [...tags.entries()].sort((a, b) => b[1] - a[1]);
   }
 
   .tag-count {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.3);
     padding: 0.1rem 0.5rem;
-    border-radius: 9999px;
+    border-radius: var(--radius-tag);
     font-size: 0.75rem;
+  }
+
+  :global(.dark) .tag-count {
+    background: rgba(0, 0, 0, 0.2);
   }
 </style>

@@ -1,0 +1,118 @@
+---
+/**
+ * ThemeToggle component - 다크/라이트 테마 전환 버튼
+ *
+ * - 현재 테마에 따라 Sun/Moon 아이콘 표시
+ * - 클릭 시 테마 전환 + localStorage 저장
+ * - 시스템 테마 변경 감지 (수동 선택 없을 때만)
+ */
+---
+
+<button
+  type="button"
+  class="theme-toggle"
+  aria-label="테마 전환"
+  title="테마 전환"
+>
+  <svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+  <svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+    border-radius: var(--radius-button);
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  .theme-toggle:hover {
+    background: var(--color-border);
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* Light mode: show sun, hide moon */
+  .sun {
+    display: block;
+  }
+  .moon {
+    display: none;
+  }
+
+  /* Dark mode: show moon, hide sun */
+  :global(.dark) .sun {
+    display: none;
+  }
+  :global(.dark) .moon {
+    display: block;
+  }
+</style>
+
+<script>
+  /**
+   * 스토리지 헬퍼 - localStorage 미지원 시 sessionStorage 폴백
+   */
+  function getStorage(): Storage {
+    try {
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      return localStorage;
+    } catch {
+      return sessionStorage;
+    }
+  }
+
+  /**
+   * 테마 토글 함수
+   */
+  function toggleTheme(): void {
+    const html = document.documentElement;
+    const isDark = html.classList.toggle('dark');
+    const storage = getStorage();
+    storage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  /**
+   * 시스템 테마 변경 감지 리스너
+   * 사용자가 수동으로 테마를 선택하지 않은 경우에만 시스템 테마 따름
+   */
+  function setupSystemThemeListener(): void {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const storage = getStorage();
+
+    mediaQuery.addEventListener('change', (e) => {
+      // 사용자 수동 선택이 없을 때만 시스템 테마 따름
+      if (!storage.getItem('theme')) {
+        document.documentElement.classList.toggle('dark', e.matches);
+      }
+    });
+  }
+
+  // 버튼 클릭 이벤트 바인딩
+  document.querySelector('.theme-toggle')?.addEventListener('click', toggleTheme);
+
+  // 시스템 테마 변경 리스너 설정
+  setupSystemThemeListener();
+</script>

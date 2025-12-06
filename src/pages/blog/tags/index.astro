@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
 import TagList from '../../../components/TagList.astro';
 import { getAllTags } from '../../../utils/blog';
 
@@ -10,6 +11,7 @@ const tags = await getAllTags();
   title="태그"
   description="SCLog 블로그의 모든 태그 목록입니다."
 >
+  <Header />
   <main class="container">
     <header class="page-header">
       <h1>태그</h1>

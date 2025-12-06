@@ -1,11 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
 ---
 
 <BaseLayout
   title="페이지를 찾을 수 없습니다"
   description="요청하신 페이지가 존재하지 않습니다."
 >
+  <Header />
   <main class="container">
     <div class="error-page">
       <h1 class="error-code">404</h1>
@@ -41,16 +43,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     font-weight: 700;
     margin: 0;
     line-height: 1;
-    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-primary);
   }
 
   .error-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin: 1rem 0;
+    color: var(--color-text);
   }
 
   .error-message {
@@ -68,28 +68,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: var(--radius-card);
     font-weight: 500;
     transition: all 0.2s;
   }
 
   .btn-primary {
-    background: var(--color-accent);
-    color: white;
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  :global(.dark) .btn-primary {
+    color: #1a1a1a;
   }
 
   .btn-primary:hover {
-    background: var(--color-accent-light);
+    opacity: 0.9;
     text-decoration: none;
   }
 
   .btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-border);
     color: var(--color-text);
   }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
+    opacity: 0.8;
     text-decoration: none;
   }
 

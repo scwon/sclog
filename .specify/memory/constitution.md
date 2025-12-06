@@ -1,12 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.1 → 1.1.0
+Version change: 1.1.0 → 1.2.0
 Modified:
-  - Technology Stack: Backend deferred (Rust/Axum/PostgreSQL → 추후 필요시 추가)
-  - 구조 원칙: Frontend-only 아키텍처로 변경
-Rationale: 백엔드 없이 Astro SSG로 시작, 필요시 백엔드 추가
-Templates requiring updates: None
+  - Added: VI. Design System (새로운 디자인 원칙 추가)
+  - Added: Design Tokens 섹션 (컬러, 타이포그래피, 테마 정의)
+Rationale: 라이트 테마 기본, 다크 모드 지원, 브랜드 컬러 및 폰트 시스템 정립
+Templates requiring updates:
+  - src/layouts/BaseLayout.astro ⚠ 스타일 업데이트 필요
+  - src/styles/global.css ⚠ 생성 필요
 -->
 
 # SCLog Constitution
@@ -57,6 +59,47 @@ Templates requiring updates: None
 - 애니메이션, 인터랙션, 실험적 UI를 자유롭게 구현 가능
 - 시연 코드는 교육적 가치를 위해 주석과 설명 포함 권장
 
+### VI. Design System
+
+일관된 시각적 경험을 위한 디자인 시스템을 준수한다.
+
+- **브랜드 표기**: "SCLOG"는 반드시 대문자로 표기한다
+- **테마**: 라이트 모드 기본, 다크 모드 스위칭 지원
+- **컬러**: 브랜드 컬러 `rgb(233, 172, 159)` (코랄/피치 톤)를 주요 강조색으로 사용
+- **타이포그래피**: Roboto (영문), Noto Sans KR (한글) 사용
+- **레이아웃**: 미니멀하고 콘텐츠 중심, 중앙 정렬 (max-width 제한)
+- **여백**: 충분한 화이트스페이스로 가독성 확보
+
+## Design Tokens
+
+디자인 시스템의 구체적인 값을 정의한다.
+
+### 컬러 팔레트
+
+| 토큰 | 라이트 모드 | 다크 모드 | 용도 |
+|------|-------------|-----------|------|
+| `--color-primary` | `rgb(233, 172, 159)` | `rgb(233, 172, 159)` | 브랜드, 강조, 링크 |
+| `--color-bg` | `#ffffff` | `#13151a` | 배경 |
+| `--color-text` | `#1a1a1a` | `#e0e0e0` | 본문 텍스트 |
+| `--color-text-muted` | `#6b7280` | `#9ca3af` | 보조 텍스트 |
+| `--color-border` | `#e5e7eb` | `#2d2d2d` | 테두리 |
+
+### 타이포그래피
+
+| 요소 | 폰트 | 크기 | 굵기 |
+|------|------|------|------|
+| 로고 (SCLOG) | Roboto | 1.5rem+ | 700 |
+| 제목 (h1) | Noto Sans KR | 2.5rem | 700 |
+| 제목 (h2) | Noto Sans KR | 1.75rem | 600 |
+| 본문 | Noto Sans KR | 1rem | 400 |
+| 코드 | Menlo, monospace | 0.9rem | 400 |
+
+### 레이아웃
+
+- **최대 너비**: 콘텐츠 영역 800px, 넓은 레이아웃 1000px
+- **기본 패딩**: 1rem (모바일), 2rem (데스크톱)
+- **컴포넌트 라운딩**: 8px (카드), 4px (버튼), 9999px (태그)
+
 ## Technology Stack
 
 프로젝트의 기술 스택과 제약사항을 정의한다.
@@ -104,4 +147,4 @@ Templates requiring updates: None
 - 복잡성 추가 시 반드시 정당화 필요 (YAGNI 원칙)
 - 의심스러운 경우, 단순한 해결책을 선택한다
 
-**Version**: 1.1.0 | **Ratified**: 2025-12-06 | **Last Amended**: 2025-12-06
+**Version**: 1.2.0 | **Ratified**: 2025-12-06 | **Last Amended**: 2025-12-06
