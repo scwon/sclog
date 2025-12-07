@@ -1,0 +1,86 @@
+---
+/**
+ * 소셜 링크 아이콘 컴포넌트
+ * GitHub, LinkedIn, Instagram, 이메일 링크를 아이콘으로 표시
+ * @component
+ */
+import type { SocialLink } from '../data/types';
+import GithubIcon from './icons/GithubIcon.astro';
+import LinkedinIcon from './icons/LinkedinIcon.astro';
+import InstagramIcon from './icons/InstagramIcon.astro';
+import EmailIcon from './icons/EmailIcon.astro';
+
+interface Props {
+  /** 소셜 링크 배열 */
+  links: SocialLink[];
+  /** 이메일 주소 (mailto 링크용) */
+  email: string;
+}
+
+const { links, email } = Astro.props;
+
+/**
+ * 플랫폼별 아이콘 컴포넌트 매핑
+ */
+const iconComponents = {
+  github: GithubIcon,
+  linkedin: LinkedinIcon,
+  instagram: InstagramIcon,
+} as const;
+---
+
+<nav class="social-links" aria-label="소셜 미디어 링크">
+  {links.map((link) => {
+    const IconComponent = iconComponents[link.platform];
+    return (
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={link.label}
+        class="social-link"
+      >
+        <IconComponent size={24} />
+      </a>
+    );
+  })}
+  <a
+    href={`mailto:${email}`}
+    aria-label="이메일 보내기"
+    class="social-link"
+  >
+    <EmailIcon size={24} />
+  </a>
+</nav>
+
+<style>
+  .social-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .social-link:hover,
+  .social-link:focus {
+    color: var(--color-primary);
+    background-color: var(--color-border);
+    outline: none;
+  }
+
+  .social-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+</style>

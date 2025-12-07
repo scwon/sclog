@@ -1,8 +1,15 @@
 ---
+/**
+ * 홈페이지 (포트폴리오)
+ * 프로필, 소셜 링크, 경력, 최근 글 섹션을 표시
+ */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
-import BlogCard from '../components/BlogCard.astro';
+import ProfileSection from '../components/ProfileSection.astro';
+import CareerSection from '../components/CareerSection.astro';
+import RecentPosts from '../components/RecentPosts.astro';
 import { getPublishedPosts } from '../utils/blog';
+import { profile, socialLinks, careers } from '../data/profile';
 
 const posts = await getPublishedPosts();
 const recentPosts = posts.slice(0, 5);
@@ -14,30 +21,9 @@ const recentPosts = posts.slice(0, 5);
 >
   <Header />
   <main class="container">
-    <section class="hero">
-      <h1>안녕하세요, <span class="highlight">SCLOG</span>입니다</h1>
-      <p class="hero-description">
-        프론트엔드 개발자로서의 경험과 인사이트를 공유하는 블로그입니다.
-      </p>
-    </section>
-
-    <section class="recent-posts">
-      <h2>최근 글</h2>
-      {recentPosts.length === 0 ? (
-        <p class="no-posts">아직 작성된 글이 없습니다.</p>
-      ) : (
-        <div class="posts-grid">
-          {recentPosts.map((post) => (
-            <BlogCard post={post} />
-          ))}
-        </div>
-      )}
-      {posts.length > 5 && (
-        <div class="view-all">
-          <a href="/blog">모든 글 보기 →</a>
-        </div>
-      )}
-    </section>
+    <ProfileSection profile={profile} socialLinks={socialLinks} />
+    <CareerSection careers={careers} />
+    <RecentPosts posts={recentPosts} totalCount={posts.length} />
   </main>
 </BaseLayout>
 
@@ -46,65 +32,5 @@ const recentPosts = posts.slice(0, 5);
     max-width: var(--max-width-wide);
     margin: 0 auto;
     padding: 2rem 1rem;
-  }
-
-  .hero {
-    text-align: center;
-    padding: 3rem 0;
-    border-bottom: 1px solid var(--color-border);
-    margin-bottom: 3rem;
-  }
-
-  .hero h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 1rem;
-  }
-
-  .highlight {
-    color: var(--color-primary);
-  }
-
-  .hero-description {
-    color: var(--color-text-muted);
-    font-size: 1.1rem;
-    margin: 0;
-  }
-
-  .recent-posts h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 1.5rem;
-  }
-
-  .no-posts {
-    text-align: center;
-    color: var(--color-text-muted);
-    padding: 3rem;
-  }
-
-  .posts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .view-all {
-    text-align: center;
-    margin-top: 2rem;
-  }
-
-  .view-all a {
-    font-weight: 500;
-  }
-
-  @media (max-width: 640px) {
-    .hero h1 {
-      font-size: 1.75rem;
-    }
-
-    .posts-grid {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

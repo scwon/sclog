@@ -1,0 +1,143 @@
+---
+/**
+ * 경력/이력 섹션 컴포넌트
+ * 타임라인 스타일로 경력 정보를 시간순으로 표시
+ * @component
+ */
+import type { Career } from '../data/types';
+
+interface Props {
+  /** 경력 배열 (최신순) */
+  careers: Career[];
+}
+
+const { careers } = Astro.props;
+
+/**
+ * 날짜 포맷팅 (YYYY-MM → YYYY.MM)
+ */
+function formatDate(dateStr: string): string {
+  return dateStr.replace('-', '.');
+}
+
+/**
+ * 기간 문자열 생성
+ */
+function getPeriod(startDate: string, endDate: string | null): string {
+  const start = formatDate(startDate);
+  const end = endDate ? formatDate(endDate) : '현재';
+  return `${start} - ${end}`;
+}
+---
+
+{careers.length > 0 && (
+  <section class="career-section" aria-labelledby="career-title">
+    <h2 id="career-title">경력</h2>
+    <ul class="career-timeline">
+      {careers.map((career) => (
+        <li class="career-item">
+          <span class="career-period">{getPeriod(career.startDate, career.endDate)}</span>
+          <h3 class="career-company">{career.company}</h3>
+          <p class="career-role">{career.role}</p>
+          {career.description && (
+            <p class="career-description">{career.description}</p>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .career-section {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 3rem;
+  }
+
+  .career-section h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    color: var(--color-text);
+  }
+
+  .career-timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+
+  .career-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--color-border);
+  }
+
+  .career-item {
+    position: relative;
+    padding-left: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .career-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .career-item::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+  }
+
+  .career-period {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .career-company {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: var(--color-text);
+  }
+
+  .career-role {
+    font-size: 0.95rem;
+    color: var(--color-primary);
+    margin: 0 0 0.25rem;
+  }
+
+  .career-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0.5rem 0 0;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .career-section {
+      padding: 1.5rem 0;
+    }
+
+    .career-section h2 {
+      font-size: 1.25rem;
+    }
+
+    .career-company {
+      font-size: 1rem;
+    }
+  }
+</style>

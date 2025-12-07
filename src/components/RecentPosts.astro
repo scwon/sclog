@@ -1,0 +1,86 @@
+---
+/**
+ * 최근 글 섹션 컴포넌트
+ * 최근 블로그 글 목록을 표시하고 블로그 페이지로 이동 링크 제공
+ * @component
+ */
+import type { BlogPost } from '../utils/blog';
+import BlogCard from './BlogCard.astro';
+
+interface Props {
+  /** 최근 글 배열 (최대 5개) */
+  posts: BlogPost[];
+  /** 전체 글 수 (모든 글 보기 링크 표시 여부) */
+  totalCount: number;
+}
+
+const { posts, totalCount } = Astro.props;
+---
+
+<section class="recent-posts" aria-labelledby="recent-posts-title">
+  <h2 id="recent-posts-title">최근 글</h2>
+  {posts.length === 0 ? (
+    <p class="no-posts">아직 작성된 글이 없습니다.</p>
+  ) : (
+    <div class="posts-grid">
+      {posts.map((post) => (
+        <BlogCard post={post} />
+      ))}
+    </div>
+  )}
+  {totalCount > 5 && (
+    <div class="view-all">
+      <a href="/blog">모든 글 보기 →</a>
+    </div>
+  )}
+</section>
+
+<style>
+  .recent-posts {
+    padding: 2rem 0;
+  }
+
+  .recent-posts h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    color: var(--color-text);
+  }
+
+  .no-posts {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: 3rem;
+  }
+
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .view-all {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .view-all a {
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .view-all a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .recent-posts h2 {
+      font-size: 1.25rem;
+    }
+
+    .posts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

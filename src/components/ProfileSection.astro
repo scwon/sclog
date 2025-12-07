@@ -1,0 +1,98 @@
+---
+/**
+ * 프로필 섹션 컴포넌트
+ * 프로필 사진, 이름, 한 줄 소개, 자기소개를 표시
+ * @component
+ */
+import type { Profile, SocialLink } from '../data/types';
+import SocialLinks from './SocialLinks.astro';
+
+interface Props {
+  /** 프로필 데이터 */
+  profile: Profile;
+  /** 소셜 링크 배열 */
+  socialLinks?: SocialLink[];
+}
+
+const { profile, socialLinks = [] } = Astro.props;
+---
+
+<section class="profile-section" aria-labelledby="profile-name">
+  <div class="profile-avatar">
+    <img src={profile.avatar} alt={`${profile.name} 프로필 사진`} />
+  </div>
+  <h1 id="profile-name" class="profile-name">{profile.name}</h1>
+  <p class="profile-tagline">{profile.tagline}</p>
+  <p class="profile-bio">{profile.bio}</p>
+  {socialLinks.length > 0 && (
+    <SocialLinks links={socialLinks} email={profile.email} />
+  )}
+</section>
+
+<style>
+  .profile-section {
+    text-align: center;
+    padding: 3rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 3rem;
+  }
+
+  .profile-avatar {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-name {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+  }
+
+  .profile-tagline {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin: 0 0 1rem;
+    font-weight: 500;
+  }
+
+  .profile-bio {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .profile-section {
+      padding: 2rem 0;
+    }
+
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+    }
+
+    .profile-name {
+      font-size: 1.5rem;
+    }
+
+    .profile-tagline {
+      font-size: 1rem;
+    }
+
+    .profile-bio {
+      font-size: 0.9rem;
+    }
+  }
+</style>
