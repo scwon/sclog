@@ -2,6 +2,10 @@
 /**
  * 프로필 섹션 컴포넌트
  * 프로필 사진, 이름, 한 줄 소개, 자기소개를 표시
+ *
+ * 프로필 사진 hover/tap 시 3D 동전 뒤집기 애니메이션으로
+ * 대체 이미지(scwon_dot.png)로 전환됨
+ *
  * @component
  */
 import type { Profile, SocialLink } from '../data/types';
@@ -19,7 +23,8 @@ const { profile, socialLinks = [] } = Astro.props;
 
 <section class="profile-section" aria-labelledby="profile-name">
   <div class="profile-avatar">
-    <img src={profile.avatar} alt={`${profile.name} 프로필 사진`} />
+    <img class="avatar-default" src={profile.avatar} alt={`${profile.name} 프로필 사진`} />
+    <img class="avatar-alternate" src="/images/scwon_dot.png" alt="" aria-hidden="true" />
   </div>
   <h1 id="profile-name" class="profile-name">{profile.name}</h1>
   <p class="profile-tagline">{profile.tagline}</p>
@@ -38,17 +43,40 @@ const { profile, socialLinks = [] } = Astro.props;
   }
 
   .profile-avatar {
+    position: relative;
     width: 150px;
     height: 150px;
     margin: 0 auto 1.5rem;
-    border-radius: 50%;
-    overflow: hidden;
+    cursor: pointer;
+    perspective: 1000px;
   }
 
-  .profile-avatar img {
+  .avatar-default,
+  .avatar-alternate {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
+    backface-visibility: hidden;
+    transition: transform 0.6s ease;
+  }
+
+  .avatar-alternate {
+    transform: rotateY(180deg);
+  }
+
+  /* Hover 효과: 3D 동전 뒤집기 */
+  .profile-avatar:hover .avatar-default,
+  .profile-avatar.active .avatar-default {
+    transform: rotateY(180deg);
+  }
+
+  .profile-avatar:hover .avatar-alternate,
+  .profile-avatar.active .avatar-alternate {
+    transform: rotateY(360deg);
   }
 
   .profile-name {
@@ -95,4 +123,57 @@ const { profile, socialLinks = [] } = Astro.props;
       font-size: 0.9rem;
     }
   }
+
+  /* 접근성: 동작 감소 설정 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    .avatar-default,
+    .avatar-alternate {
+      transition: opacity 0.1s ease;
+      backface-visibility: visible;
+    }
+
+    .avatar-alternate {
+      transform: none;
+      opacity: 0;
+    }
+
+    .profile-avatar:hover .avatar-default,
+    .profile-avatar.active .avatar-default {
+      transform: none;
+      opacity: 0;
+    }
+
+    .profile-avatar:hover .avatar-alternate,
+    .profile-avatar.active .avatar-alternate {
+      transform: none;
+      opacity: 1;
+    }
+  }
 </style>
+
+<script>
+  /**
+   * 프로필 사진 터치 이벤트 핸들러
+   * 터치 기기에서 탭으로 hover 효과를 대체
+   */
+  function initProfileHover() {
+    const avatar = document.querySelector('.profile-avatar');
+    if (!avatar) return;
+
+    // 터치 기기 대응: 탭으로 .active 클래스 토글
+    avatar.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      avatar.classList.toggle('active');
+    });
+
+    // 다른 곳 탭 시 상태 해제
+    document.addEventListener('touchstart', (e) => {
+      if (!avatar.contains(e.target as Node)) {
+        avatar.classList.remove('active');
+      }
+    });
+  }
+
+  // Astro View Transitions 대응
+  document.addEventListener('astro:page-load', initProfileHover);
+</script>
