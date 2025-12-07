@@ -1,0 +1,100 @@
+---
+/**
+ * 읽기 진행률 바 컴포넌트
+ * 페이지 상단에 고정되어 스크롤 진행률을 시각적으로 표시
+ */
+---
+
+<div class="progress-bar-container" aria-hidden="true">
+  <div class="progress-bar" id="reading-progress"></div>
+</div>
+
+<script>
+  /**
+   * 스크롤 진행률 계산 및 업데이트 스크립트
+   * requestAnimationFrame을 사용하여 60fps 유지
+   */
+  function initProgressBar() {
+    const progressBar = document.getElementById('reading-progress');
+    const container = document.querySelector('.progress-bar-container') as HTMLElement;
+
+    if (!progressBar || !container) return;
+
+    let ticking = false;
+
+    function updateProgress() {
+      if (!progressBar || !container) return;
+
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      const scrollPercent = scrollTop / (docHeight - winHeight);
+
+      // 0-1 범위로 클램핑
+      const progress = Math.min(Math.max(scrollPercent, 0), 1);
+
+      // scaleX 사용 (리플로우 방지)
+      progressBar.style.transform = `scaleX(${progress})`;
+
+      // 스크롤이 거의 없으면 숨김
+      if (docHeight - winHeight < 100) {
+        container.style.opacity = '0';
+      } else {
+        container.style.opacity = '1';
+      }
+
+      ticking = false;
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
+    }
+
+    // 초기 상태 업데이트
+    updateProgress();
+
+    // 스크롤 이벤트 리스너
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // 리사이즈 시에도 업데이트
+    window.addEventListener('resize', updateProgress, { passive: true });
+  }
+
+  // 페이지 로드 시 초기화
+  document.addEventListener('DOMContentLoaded', initProgressBar);
+  // Astro View Transitions 지원
+  document.addEventListener('astro:page-load', initProgressBar);
+</script>
+
+<style>
+  .progress-bar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    z-index: 1000;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 100%;
+    background: var(--color-primary);
+    transform-origin: left;
+    transform: scaleX(0);
+    will-change: transform;
+  }
+
+  /* 인쇄 시 숨김 */
+  @media print {
+    .progress-bar-container {
+      display: none;
+    }
+  }
+</style>

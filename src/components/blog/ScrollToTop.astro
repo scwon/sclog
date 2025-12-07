@@ -1,0 +1,159 @@
+---
+/**
+ * 맨 위로 이동 버튼 컴포넌트
+ * 스크롤 시 나타나며 클릭 시 페이지 상단으로 부드럽게 이동
+ */
+---
+
+<button
+  class="scroll-to-top"
+  id="scroll-to-top"
+  aria-label="맨 위로 이동"
+  type="button"
+>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="18 15 12 9 6 15"></polyline>
+  </svg>
+</button>
+
+<script>
+  /**
+   * 맨 위로 버튼 표시/숨김 및 클릭 처리 스크립트
+   */
+  function initScrollToTop() {
+    const button = document.getElementById('scroll-to-top');
+
+    if (!button) return;
+
+    const SCROLL_THRESHOLD = 300;
+    let ticking = false;
+
+    function updateVisibility() {
+      if (!button) return;
+
+      if (window.scrollY > SCROLL_THRESHOLD) {
+        button.classList.add('visible');
+      } else {
+        button.classList.remove('visible');
+      }
+      ticking = false;
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(updateVisibility);
+        ticking = true;
+      }
+    }
+
+    // 클릭 시 상단으로 스크롤
+    button.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+
+    // 키보드 접근성 (Enter, Space)
+    button.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+    });
+
+    // 초기 상태
+    updateVisibility();
+
+    // 스크롤 이벤트
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  // 페이지 로드 시 초기화
+  document.addEventListener('DOMContentLoaded', initScrollToTop);
+  // Astro View Transitions 지원
+  document.addEventListener('astro:page-load', initScrollToTop);
+</script>
+
+<style>
+  .scroll-to-top {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+
+  .scroll-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .scroll-to-top:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .scroll-to-top:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .scroll-to-top:active {
+    transform: translateY(0) scale(0.95);
+  }
+
+  /* 다크 모드 그림자 조정 */
+  :global(.dark) .scroll-to-top {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.dark) .scroll-to-top:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  /* 모바일에서 약간 작게 */
+  @media (max-width: 640px) {
+    .scroll-to-top {
+      right: 1rem;
+      bottom: 1rem;
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  /* 인쇄 시 숨김 */
+  @media print {
+    .scroll-to-top {
+      display: none;
+    }
+  }
+</style>

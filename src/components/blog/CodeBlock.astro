@@ -1,0 +1,155 @@
+---
+/**
+ * 코드 블록 개선 컴포넌트
+ * 언어 라벨 표시 및 복사 버튼 기능 추가
+ * BlogPost 레이아웃에서 스크립트로 로드되어 모든 pre 태그에 적용
+ */
+---
+
+<script>
+  /**
+   * 코드 블록에 복사 버튼과 언어 라벨을 추가하는 스크립트
+   */
+  function initCodeBlocks() {
+    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.post-content pre');
+
+    codeBlocks.forEach((pre) => {
+      // 이미 처리된 코드 블록은 건너뜀
+      if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
+
+      // 언어 정보 추출 (Shiki/Astro가 생성하는 data-language 또는 class에서)
+      const language = pre.dataset.language ||
+        pre.className.match(/language-(\w+)/)?.[1] ||
+        pre.querySelector('code')?.className.match(/language-(\w+)/)?.[1] ||
+        '';
+
+      // 래퍼 생성
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-block-wrapper';
+
+      // 헤더 생성 (언어 라벨 + 복사 버튼)
+      const header = document.createElement('div');
+      header.className = 'code-block-header';
+
+      // 언어 라벨
+      if (language) {
+        const langLabel = document.createElement('span');
+        langLabel.className = 'code-language';
+        langLabel.textContent = language;
+        header.appendChild(langLabel);
+      }
+
+      // 복사 버튼
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'code-copy-btn';
+      copyBtn.setAttribute('aria-label', '코드 복사');
+      copyBtn.innerHTML = `
+        <svg class="icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `;
+
+      // 복사 기능
+      copyBtn.addEventListener('click', async () => {
+        const code = pre.querySelector('code')?.textContent || pre.textContent || '';
+
+        try {
+          await navigator.clipboard.writeText(code);
+
+          // 성공 피드백
+          const iconCopy = copyBtn.querySelector('.icon-copy') as HTMLElement;
+          const iconCheck = copyBtn.querySelector('.icon-check') as HTMLElement;
+
+          iconCopy.style.display = 'none';
+          iconCheck.style.display = 'block';
+          copyBtn.setAttribute('aria-label', '복사됨');
+          copyBtn.classList.add('copied');
+
+          // 2초 후 원래 상태로
+          setTimeout(() => {
+            iconCopy.style.display = 'block';
+            iconCheck.style.display = 'none';
+            copyBtn.setAttribute('aria-label', '코드 복사');
+            copyBtn.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy code:', err);
+        }
+      });
+
+      header.appendChild(copyBtn);
+
+      // DOM 구조 변경
+      pre.parentNode?.insertBefore(wrapper, pre);
+      wrapper.appendChild(header);
+      wrapper.appendChild(pre);
+    });
+  }
+
+  // 페이지 로드 시 초기화
+  document.addEventListener('DOMContentLoaded', initCodeBlocks);
+  // Astro View Transitions 지원
+  document.addEventListener('astro:page-load', initCodeBlocks);
+</script>
+
+<style is:global>
+  .code-block-wrapper {
+    position: relative;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2d2d2d;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .code-language {
+    color: #9ca3af;
+    text-transform: lowercase;
+    font-family: var(--font-mono, 'Menlo', monospace);
+  }
+
+  .code-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-button, 4px);
+    transition: color 0.2s, background 0.2s;
+  }
+
+  .code-copy-btn:hover {
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .code-copy-btn.copied {
+    color: #10b981;
+  }
+
+  .code-block-wrapper pre {
+    margin: 0 !important;
+    border-radius: 0 0 var(--radius-card) var(--radius-card) !important;
+  }
+
+  /* 인쇄 시 복사 버튼 숨김 */
+  @media print {
+    .code-block-header {
+      display: none;
+    }
+  }
+</style>
