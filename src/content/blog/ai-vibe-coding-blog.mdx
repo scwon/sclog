@@ -1,73 +1,200 @@
 ---
-title: "AI가 코딩하는 동안 나는 빙수를 먹었다: Claude Code 후기 (이 글도 AI가 씀)"
+title: "AI가 코딩하는 동안 나는 빙수를 먹었다: Claude Code + Speckit 실전 가이드"
 pubDate: 2025-12-07
-description: "Claude Code한테 '블로그 만들어'라고 했더니 진짜 만들어버림. 나는 그동안 빙수 먹고, 유튜브 보고, 가끔 '오 좋은데?' 했을 뿐. 프롬프트 엔지니어링? 그냥 반말로 시킴."
+description: "Claude Code한테 '블로그 만들어'라고 했더니 진짜 만들어버림. 이 글에서는 Speckit 워크플로우, 실제 작성한 스펙 문서, 생성된 코드까지 전부 공개한다. (이 글도 AI가 씀)"
 tags: ["AI", "Claude", "Vibe Coding", "프론트엔드", "Astro"]
 ---
 
-# 들어가며: 이 글도 AI가 쓴 거임
+# 들어가며
 
 먼저 고백하자면, **이 블로그 글도 AI가 썼다.**
 
-Claude한테 "지금까지 블로그 만든 과정 갖고 글 써줘, AI 어그로 팍 끌거야"라고 했더니 진짜 써줌.
+"블로그 만든 과정 글로 써줘"라고 했더니 진짜 써줌. 심지어 "제목 좀 짜치게"라고 했더니 빙수 얘기까지 넣어줌.
 
-심지어 "조금 더 짜치게, 빙수 먹었다는 내용도 넣어줘"라고 했더니 그것도 반영함.
-
-그러니까 지금 이 문장도... 맞음. AI임.
+근데 내용은 진짜다. 실제 git 커밋 내역을 기반으로 2025년 12월 6일부터 7일까지 이틀간 Claude Code와 Speckit으로 이 블로그를 만든 과정을 기록한다.
 
 ---
 
-# 타임라인: 내가 뭘 했고 AI가 뭘 했나
+# 타임라인: 실제 커밋 내역 기반
 
-## 오후 5시 - 시작
+## Day 1 (2025-12-06)
 
-```
-나: "블로그 만들어줘"
-Claude: "넵. Astro로 할까요?"
-나: "ㅇㅇ"
-```
-
-→ 프로젝트 생성됨
-
-## 오후 5시 30분 - 빙수 타임
-
-AI가 디자인 시스템 만드는 동안 나는 **팥빙수**를 먹음.
-
-돌아와보니 라이트/다크 모드, 컬러 토큰, 타이포그래피 전부 세팅되어 있었음.
-
-## 오후 6시 - 유튜브 타임
+### 14:xx - Speckit 초기 설정
 
 ```
-나: "읽기 경험 개선해줘. 목차, 코드 복사 버튼, 진행률 바 같은 거"
-Claude: "스펙 작성할게요"
-나: "ㅇㅋ"
+4376539 스팩킷 초기 설정
 ```
 
-→ AI가 스펙 쓰고 리서치하고 태스크 분해하는 동안 나는 유튜브 봄
+Next.js로 시작했다가 Astro로 갈아탔다가 Rust 백엔드까지 시도하다가, 결국 Speckit을 도입하기로 결정. 이전 커밋들을 보면 "테일윈드 너무 어려움", "블로그 환경이 마음에 안들어 다시 설정" 같은 방황의 흔적이 있다.
 
-→ 돌아와서 "고" 한 마디 함
-
-→ 구현 완료됨
-
-## 오후 7시 - 갑자기 욕심남
+### 15:xx - 헌법(Constitution) 정의
 
 ```
-나: "프로필 사진에 마우스 올리면 멋있는 애니메이션 있으면 좋겠어"
-Claude: (회전 애니메이션 구현)
-나: "3D로 동전처럼 회전했으면 좋겠어!"
-Claude: (perspective, rotateY로 수정)
-나: "메인 머지행"
+cdba956 스팩킷 헌법 정의 + 우선 프론트엔드만 있는 구조로 변경
 ```
 
-이게 진짜 대화 전문임. "3D로 해줘" 한 마디에 CSS 3D 트랜스폼 코드가 뚝딱.
+Speckit의 핵심인 헌법을 작성했다. AI에게 "이 규칙 따라"라고 가르치는 문서다.
+
+실제 작성한 헌법 일부:
+
+```markdown
+# SCLOG Constitution
+
+## VI. Design System
+
+- **브랜드 표기**: "SCLOG"는 반드시 대문자로 표기한다
+- **테마**: 라이트 모드 기본, 다크 모드 스위칭 지원
+- **컬러**: 브랜드 컬러 `rgb(233, 172, 159)` (코랄/피치 톤)
+- **타이포그래피**: Roboto (영문), Noto Sans KR (한글)
+```
+
+이후 AI가 생성하는 모든 코드에 이 규칙이 자동 적용됐다.
+
+### 16:xx - MDX 블로그 시스템 구현 (Feature 001)
+
+```
+be0244e MDX 기반 블로그 포스트 시스템 구현
+```
+
+`/speckit.specify`로 스펙 작성 → `/speckit.plan`으로 계획 → `/speckit.tasks`로 태스크 분해 → `/speckit.implement`로 구현.
+
+실제 작성한 스펙 (specs/001-mdx-blog-post/spec.md):
+
+```markdown
+### User Story 1 - 블로그 글 작성 및 발행 (Priority: P1)
+
+**Acceptance Scenarios**:
+
+1. **Given** 작성자가 MDX 파일을 콘텐츠 디렉토리에 생성했을 때,
+   **When** 사이트를 빌드하면,
+   **Then** 해당 글이 고유 URL로 접근 가능한 페이지가 된다
+```
+
+### 17:xx - 디자인 시스템 적용 (Feature 002)
+
+```
+d993b87 Update design system and improve blog layout
+179abc9 디자인 시스템 적용: CSS 토큰 기반 라이트/다크 테마 구현
+```
+
+실제 작성한 스펙 (specs/002-design-system/spec.md):
+
+```markdown
+### User Story 2 - 다크 모드 스위칭 (Priority: P1)
+
+**Acceptance Scenarios**:
+
+1. **Given** 라이트 모드 상태,
+   **When** 테마 토글 버튼을 클릭하면,
+   **Then** 다크 모드로 전환된다
+```
+
+CSS 변수 기반 테마 시스템, FOUC 방지 스크립트, localStorage 테마 저장까지 AI가 알아서 구현했다.
+
+```
+9df0734 SCLog => SCLOG
+```
+
+로고가 소문자로 생성돼서 "SCLOG로 해"라고 했더니 수정해줌.
 
 ---
 
-# 증거: 실제로 AI가 짠 코드
+## Day 2 (2025-12-07)
 
-## 3D 동전 뒤집기
+### 09:xx - 포트폴리오 홈페이지 (Feature 003)
 
-내가 "3D로 동전처럼"이라고 했더니 나온 코드:
+```
+9db0108 포트폴리오 홈페이지 기능 추가 및 데이터 모델 정의
+```
+
+실제 작성한 스펙 (specs/003-portfolio-home/spec.md):
+
+```markdown
+### User Story 1 - 첫인상 확인 (Priority: P1)
+
+**Why this priority**: 첫인상이 가장 중요하며,
+방문자가 3초 내에 "이 사람이 누구인지"를 이해해야 이탈하지 않음
+
+**Acceptance Scenarios**:
+
+1. **Given** 방문자가 SCLOG 홈페이지에 접속했을 때,
+   **When** 페이지가 로드되면,
+   **Then** 프로필 사진/아바타, 이름, 한 줄 소개가 화면 상단에 표시된다
+```
+
+### 14:xx - 읽기 경험 개선 (Feature 004)
+
+```
+661c1d5 feat: 블로그 읽기 경험 개선 기능 추가
+38d05b6 헤더 sticky 기능 추가
+```
+
+목차(TOC), 코드 복사 버튼, 읽기 진행률 바, 맨 위로 버튼을 한 번에 추가했다.
+
+실제 작성한 스펙 (specs/004-reading-experience/spec.md):
+
+```markdown
+### User Story 2 - 목차로 빠른 탐색 (Priority: P2)
+
+**Acceptance Scenarios**:
+
+1. **Given** h2, h3 헤딩이 포함된 블로그 글,
+   **When** 독자가 페이지를 열면,
+   **Then** 화면 우측에 헤딩 목록이 표시된다
+
+2. **Given** 독자가 글을 스크롤하며 읽는 중,
+   **When** 새로운 섹션에 진입하면,
+   **Then** 목차에서 해당 섹션이 시각적으로 강조된다
+```
+
+AI가 Intersection Observer API를 사용해서 현재 섹션 감지 기능을 구현했다:
+
+```typescript
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.toc-link').forEach((link) => {
+          link.classList.remove('active');
+        });
+        const activeLink = document.querySelector(
+          `.toc-link[href="#${entry.target.id}"]`
+        );
+        activeLink?.classList.add('active');
+      }
+    });
+  },
+  { rootMargin: '-80px 0px -80% 0px' }
+);
+```
+
+### 17:xx - 프로필 호버 애니메이션 (Feature 005)
+
+```
+5a1ca3a feat: 프로필 사진 3D 동전 뒤집기 hover 애니메이션 추가
+```
+
+"프로필 사진 scwon_pt에 마우스 올리면 좀 멋있는 애니메이션 막 돌아가면서 scwon_dot로 바뀌면 좋겠어"라고 했더니 스펙부터 작성해줌.
+
+실제 작성한 스펙 (specs/005-profile-hover/spec.md):
+
+```markdown
+### User Story 1 - 프로필 사진 Hover 시 이미지 전환 (Priority: P1)
+
+**Acceptance Scenarios**:
+
+1. **Given** 홈페이지가 로드된 상태,
+   **When** 프로필 사진 위에 마우스를 올리면,
+   **Then** 회전 애니메이션이 실행되며 scwon_dot.png 이미지로 전환된다
+
+### Edge Cases
+
+- 애니메이션 진행 중 마우스를 빠르게 올렸다 뗄 경우: 애니메이션이 부드럽게 전환되어야 함
+- JavaScript 비활성화 시: 정적 프로필 사진만 표시 (graceful degradation)
+- 접근성 고려: 애니메이션으로 인해 콘텐츠 인식에 방해가 되지 않아야 함
+```
+
+처음에는 단순 회전(rotate)으로 구현됐는데 "3D로 동전처럼 회전했으면 좋겠어!"라고 했더니:
 
 ```css
 .profile-avatar {
@@ -93,97 +220,90 @@ Claude: (perspective, rotateY로 수정)
 }
 ```
 
-`perspective`? `backface-visibility`? 나는 이런 거 시킨 적 없음. AI가 알아서 넣음.
+`perspective`, `backface-visibility` 같은 3D CSS 속성을 내가 시킨 적 없다. AI가 3D 효과에 필요한 속성을 알아서 적용했다.
 
-## 접근성도 알아서
+접근성도 자동 적용됐다:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
   .avatar-default,
   .avatar-alternate {
     transition: opacity 0.1s ease;
+    backface-visibility: visible;
   }
-  /* 회전 빼고 페이드만 */
+  /* 회전 대신 페이드 처리 */
 }
 ```
 
-접근성 얘기 한 적 없는데?
-
-프로젝트 헌법(Constitution)에 "접근성 중요"라고 써놨더니 자동 적용됨.
+이거 내가 요청 안 했다. 헌법에 "접근성 중요"라고 써놨더니 자동 적용됨.
 
 ---
 
-# Speckit: AI한테 일 시키는 꿀팁
+# Speckit 워크플로우
 
-그냥 "만들어줘"라고 하면 AI도 뭘 만들지 모름.
+5개 기능을 모두 같은 패턴으로 개발했다:
 
-**Speckit**이라는 워크플로우 씀:
+| 단계 | 명령어 | 결과물 |
+|------|--------|--------|
+| 1 | `/speckit.specify` | spec.md (요구사항 정의) |
+| 2 | `/speckit.plan` | plan.md, research.md (기술 설계) |
+| 3 | `/speckit.tasks` | tasks.md (태스크 체크리스트) |
+| 4 | `/speckit.implement` | 실제 코드 |
 
+### 스펙의 핵심: Given-When-Then
+
+```markdown
+**Given** 사용자가 처음 블로그에 접속,
+**When** 페이지가 로드되면,
+**Then** 흰색 배경에 어두운 텍스트의 라이트 모드로 표시된다
 ```
-/speckit.specify 프로필 hover 애니메이션 추가해줘
-```
 
-이러면:
-1. 스펙 문서 자동 생성
-2. 기술 리서치 (어떤 방식이 좋을지)
-3. 태스크 분해 (뭐부터 할지)
-4. 구현
-
-나는 중간에 "ㅇㅋ", "고", "메인 머지행"만 입력함.
+이 형식이 중요한 이유:
+- 테스트 가능한 요구사항
+- AI가 "무엇을 구현해야 하는지" 명확히 이해
+- Edge case까지 사전 정의
 
 ---
 
-# 솔직 후기
+# 실제로 느낀 점
 
 ## 좋았던 점
 
-- **빙수 먹을 시간 생김**: AI가 일하는 동안 나는 쉼
-- **일관성**: 내가 짜면 파일마다 스타일 다른데, AI는 일관적
-- **공부됨**: AI 코드 보면서 "아 이렇게도 하는구나" 배움
+**속도**: 5개 기능을 이틀만에 구현. 스펙 작성 → 구현까지 기능당 평균 1-2시간.
 
-## 심심했던 점
+**일관성**: 헌법에 정의한 디자인 토큰, 컬러, 폰트가 모든 컴포넌트에 일관되게 적용됨.
 
-솔직히 **기다리는 시간이 좀 심심함**.
+**학습**: AI가 짠 코드 보면서 Intersection Observer, CSS 3D transforms 같은 기술 배움.
 
-AI가 스펙 쓰고 리서치하고 구현하는 동안 할 게 없음.
+## 한계
 
-그래서 빙수 먹고 유튜브 봄.
+**컨텍스트 유실**: 대화가 길어지면 앞에서 한 얘기를 까먹음. 그래서 스펙 문서가 중요함.
 
-## 아쉬웠던 점
-
-- 가끔 context 날아가서 "아까 그거"가 안 통함
-- "이거 해줘"는 잘 되는데 "이거 하지 마"는 어려움
-- 복잡한 비즈니스 로직은 아직 사람이 봐야 함
+**반복 수정**: "SCLOG로 해", "3D로 해" 같이 추가 요청이 필요할 때가 있음.
 
 ---
 
-# 결론: 개발자의 역할 변화
+# 결론
 
-**코딩 안 해도 되는 시대**... 까진 아니고.
+커밋 내역이 증명하듯이, 이틀 만에:
 
-**타이핑 안 해도 되는 시대**가 맞는 듯.
+- MDX 블로그 시스템
+- 라이트/다크 테마
+- 포트폴리오 홈페이지
+- 읽기 경험 개선 (목차, 코드 복사, 진행률 바)
+- 3D 호버 애니메이션
 
-이제 개발자가 하는 일:
-- 뭘 만들지 **결정**
-- 방향이 맞는지 **판단**
-- 결과물 **검토**
-
-타이핑은 AI가 함. 나는 빙수 먹음.
-
----
-
-# 마치며
-
-이 글을 쓴 것도 AI임.
-
-근데 "이 글을 쓴 것도 AI임"이라는 문장도 AI가 쓴 거임.
-
-그럼 이 문장은? 이것도 AI임.
-
-무한루프인데 어쨌든 다 AI가 씀.
+전부 구현했다. 타이핑은 AI가 했고, 나는 뭘 만들지 결정하고 스펙 검토하는 역할을 했다.
 
 ---
 
-**P.S.** 궁금하면 GitHub 봐. `/specs` 폴더에 AI가 작성한 설계 문서 다 있음.
+# 참고 자료
 
-**P.P.S.** 빙수는 팥빙수였음. 맛있었음. 이것도 AI가 쓴 문장임.
+이 블로그의 실제 스펙 문서들 (GitHub에서 확인 가능):
+
+- `specs/001-mdx-blog-post/` - MDX 블로그 시스템
+- `specs/002-design-system/` - 디자인 시스템
+- `specs/003-portfolio-home/` - 포트폴리오 홈페이지
+- `specs/004-reading-experience/` - 읽기 경험 개선
+- `specs/005-profile-hover/` - 프로필 호버 애니메이션
+- `.specify/memory/constitution.md` - 프로젝트 헌법
