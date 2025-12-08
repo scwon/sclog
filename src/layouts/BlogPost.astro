@@ -12,11 +12,12 @@ import { getReadingTime } from '../utils/blog';
 interface Props {
   post: CollectionEntry<'blog'>;
   headings?: MarkdownHeading[];
+  rawBody?: string;
 }
 
-const { post, headings = [] } = Astro.props;
+const { post, headings = [], rawBody } = Astro.props;
 const { title, description, pubDate, updatedDate, heroImage, tags } = post.data;
-const readingTime = getReadingTime(post.body || '');
+const readingTime = getReadingTime(rawBody || post.body || '');
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('ko-KR', {

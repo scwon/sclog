@@ -1,6 +1,8 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -16,8 +18,15 @@ interface Props {
 
 const { post } = Astro.props;
 const { Content, headings } = await post.render();
+
+// Astro 5.x에서 post.body가 비어있을 수 있어 직접 파일에서 읽음
+const contentDir = path.join(process.cwd(), 'src/content/blog');
+const filePath = path.join(contentDir, post.id);
+const rawContent = fs.readFileSync(filePath, 'utf-8');
+// frontmatter 제거 (--- ... --- 사이)
+const bodyContent = rawContent.replace(/^---[\s\S]*?---\s*/, '');
 ---
 
-<BlogPost post={post} headings={headings}>
+<BlogPost post={post} headings={headings} rawBody={bodyContent}>
   <Content />
 </BlogPost>

@@ -47,11 +47,14 @@ export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
  * 한국어: 약 500자/분, 영어: 약 200단어/분
  */
 export function getReadingTime(content: string): number {
+  // 한국어 글자 수
   const koreanChars = (content.match(/[\uAC00-\uD7A3]/g) || []).length;
-  const words = content.split(/\s+/).filter((word) => word.length > 0).length;
+
+  // 영어 단어 수 (한국어 제외한 알파벳 단어만)
+  const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
 
   const koreanMinutes = koreanChars / 500;
-  const englishMinutes = (words - koreanChars) / 200;
+  const englishMinutes = englishWords / 200;
 
   return Math.max(1, Math.ceil(koreanMinutes + englishMinutes));
 }
