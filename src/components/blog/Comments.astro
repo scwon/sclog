@@ -1,0 +1,95 @@
+---
+/**
+ * Giscus 댓글 컴포넌트
+ * GitHub Discussions 기반 댓글 시스템을 블로그에 통합
+ *
+ * @description
+ * - GitHub Discussions를 백엔드로 사용하는 Giscus 위젯 임베드
+ * - 다크 모드 테마 자동 동기화 지원
+ * - 지연 로딩으로 초기 페이지 로딩 성능 최적화
+ *
+ * @see https://giscus.app
+ */
+---
+
+<section class="comments-section" aria-labelledby="comments-title">
+  <h2 id="comments-title" class="comments-title">댓글</h2>
+  <div class="giscus-container">
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo="scwon/sclog"
+      data-repo-id="R_kgDOK-kG8Q"
+      data-category="Announcements"
+      data-category-id="DIC_kwDOK-kG8c4Czlmx"
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="bottom"
+      data-theme="light"
+      data-lang="ko"
+      data-loading="lazy"
+      crossorigin="anonymous"
+      async
+    ></script>
+  </div>
+</section>
+
+<script>
+  /**
+   * Giscus 테마를 현재 사이트 테마와 동기화
+   * document.documentElement의 'dark' 클래스 유무로 테마 결정
+   */
+  function updateGiscusTheme(): void {
+    const theme = document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light';
+    const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+    if (!iframe?.contentWindow) return;
+
+    iframe.contentWindow.postMessage(
+      { giscus: { setConfig: { theme } } },
+      'https://giscus.app'
+    );
+  }
+
+  // 테마 변경 감지 (MutationObserver)
+  const observer = new MutationObserver(updateGiscusTheme);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+
+  // 초기 테마 설정 (iframe 로드 후)
+  window.addEventListener('load', updateGiscusTheme);
+</script>
+
+<style>
+  .comments-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .comments-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--color-text);
+  }
+
+  .giscus-container {
+    min-height: 200px;
+  }
+
+  /* Giscus iframe 반응형 처리 */
+  .giscus-container :global(.giscus) {
+    width: 100%;
+  }
+
+  .giscus-container :global(.giscus-frame) {
+    width: 100%;
+    border: none;
+  }
+</style>

@@ -8,6 +8,7 @@ import CodeBlock from '../components/blog/CodeBlock.astro';
 import ProgressBar from '../components/blog/ProgressBar.astro';
 import ScrollToTop from '../components/blog/ScrollToTop.astro';
 import { getReadingTime } from '../utils/blog';
+import Comments from '../components/blog/Comments.astro';
 
 interface Props {
   post: CollectionEntry<'blog'>;
@@ -78,6 +79,8 @@ function formatDate(date: Date): string {
       <div class="post-content">
         <slot />
       </div>
+
+      <Comments />
     </article>
     <aside class="toc-sidebar">
       <TableOfContents headings={headings} />

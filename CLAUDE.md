@@ -8,6 +8,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-06
 - N/A (정적 사이트, localStorage로 상태 유지 불필요) (004-reading-experience)
 - TypeScript 5.6, Astro 5.x + Astro (이미 설치됨) (005-profile-hover)
 - N/A (정적 이미지 파일 사용) (005-profile-hover)
+- TypeScript 5.6, Astro 5.x + Giscus (외부 스크립트, 설치 불필요) (007-comments)
+- GitHub Discussions (외부 서비스) (007-comments)
 
 - TypeScript 5.6, Astro 5.x + Astro, @astrojs/mdx, Google Fonts (Roboto, Noto Sans KR) (002-design-system)
 
@@ -27,9 +29,9 @@ npm test && npm run lint
 TypeScript 5.6, Astro 5.x: Follow standard conventions
 
 ## Recent Changes
+- 007-comments: Added TypeScript 5.6, Astro 5.x + Giscus (외부 스크립트, 설치 불필요)
 - 005-profile-hover: Added TypeScript 5.6, Astro 5.x + Astro (이미 설치됨)
 - 004-reading-experience: Added TypeScript 5.6, Astro 5.x + Astro, @astrojs/mdx (이미 설치됨)
-- 003-portfolio-home: Added TypeScript 5.6, Astro 5.x + Astro, @astrojs/mdx
 
 
 <!-- MANUAL ADDITIONS START -->
