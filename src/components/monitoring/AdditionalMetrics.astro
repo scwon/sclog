@@ -1,0 +1,71 @@
+---
+/**
+ * Additional Metrics 섹션 컴포넌트
+ * TTFB, FCP 추가 성능 지표를 카드 형태로 표시
+ *
+ * @description
+ * - Core Web Vitals 외 추가 성능 지표 표시
+ * - 2열 그리드 레이아웃 (데스크톱), 1열 (모바일)
+ * - MetricCard 컴포넌트 사용
+ */
+import MetricCard from './MetricCard.astro';
+import { METRIC_INFO } from '../../utils/performance';
+---
+
+<section class="additional-metrics">
+  <h2 class="section-title">Additional Metrics</h2>
+  <p class="section-description">
+    페이지 로딩 성능을 더 자세히 분석할 수 있는 추가 지표입니다.
+  </p>
+  <div class="metrics-grid">
+    <MetricCard
+      id="ttfb"
+      name={METRIC_INFO.ttfb.name}
+      fullName={METRIC_INFO.ttfb.fullName}
+      description={METRIC_INFO.ttfb.description}
+      unit={METRIC_INFO.ttfb.unit}
+    />
+    <MetricCard
+      id="fcp"
+      name={METRIC_INFO.fcp.name}
+      fullName={METRIC_INFO.fcp.fullName}
+      description={METRIC_INFO.fcp.description}
+      unit={METRIC_INFO.fcp.unit}
+    />
+  </div>
+</section>
+
+<style>
+  .additional-metrics {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 0.5rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 640px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+    }
+  }
+</style>

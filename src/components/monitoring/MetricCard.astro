@@ -1,0 +1,177 @@
+---
+/**
+ * MetricCard 컴포넌트
+ * 개별 성능 지표를 카드 형태로 표시
+ *
+ * @description
+ * - Core Web Vitals 및 추가 지표를 시각적으로 표현
+ * - 상태별 색상 (좋음/개선필요/나쁨/측정중/미지원)
+ * - 다크 모드 지원
+ * - 반응형 레이아웃
+ *
+ * @example
+ * ```astro
+ * <MetricCard
+ *   id="lcp"
+ *   name="LCP"
+ *   fullName="Largest Contentful Paint"
+ *   description="가장 큰 콘텐츠 요소가 화면에 렌더링되는 시간"
+ *   unit="ms"
+ * />
+ * ```
+ */
+
+interface Props {
+  /** 지표 식별자 (data attribute로 사용) */
+  id: string;
+  /** 지표 약어 (LCP, INP 등) */
+  name: string;
+  /** 지표 전체 이름 */
+  fullName: string;
+  /** 지표 설명 */
+  description: string;
+  /** 측정 단위 (ms, s, 또는 빈 문자열) */
+  unit: string;
+}
+
+const { id, name, fullName, description, unit } = Astro.props;
+---
+
+<div class="metric-card" data-metric-id={id}>
+  <div class="metric-header">
+    <h3 class="metric-name">{name}</h3>
+    <span class="metric-status" data-status="pending">측정 중...</span>
+  </div>
+  <div class="metric-value-container">
+    <span class="metric-value" data-value>--</span>
+    {unit && <span class="metric-unit">{unit}</span>}
+  </div>
+  <div class="metric-info">
+    <span class="metric-full-name">{fullName}</span>
+    <p class="metric-description">{description}</p>
+  </div>
+</div>
+
+<style>
+  .metric-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 1.25rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .metric-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  :global(.dark) .metric-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .metric-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-tag);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  /* 상태별 색상 */
+  .metric-status[data-status="good"] {
+    background: rgba(12, 206, 107, 0.15);
+    color: #0cce6b;
+  }
+
+  .metric-status[data-status="needs-improvement"] {
+    background: rgba(255, 164, 0, 0.15);
+    color: #ffa400;
+  }
+
+  .metric-status[data-status="poor"] {
+    background: rgba(255, 78, 66, 0.15);
+    color: #ff4e42;
+  }
+
+  .metric-status[data-status="pending"] {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+  }
+
+  .metric-status[data-status="unsupported"] {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+  }
+
+  .metric-value-container {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+    line-height: 1;
+  }
+
+  .metric-unit {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .metric-info {
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.75rem;
+  }
+
+  .metric-full-name {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .metric-description {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* 반응형 */
+  @media (max-width: 640px) {
+    .metric-card {
+      padding: 1rem;
+    }
+
+    .metric-value {
+      font-size: 1.75rem;
+    }
+
+    .metric-name {
+      font-size: 1rem;
+    }
+  }
+</style>

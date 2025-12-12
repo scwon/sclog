@@ -1,0 +1,506 @@
+---
+/**
+ * 모니터링 대시보드 페이지
+ * 블로그의 실시간 성능 정보를 대시보드 형태로 표시
+ *
+ * @description
+ * - Core Web Vitals (LCP, INP, CLS) 실시간 측정
+ * - 추가 성능 지표 (TTFB, FCP)
+ * - 리소스 로딩 분석
+ * - 네비게이션 타이밍 시각화
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import CoreWebVitals from '../components/monitoring/CoreWebVitals.astro';
+import AdditionalMetrics from '../components/monitoring/AdditionalMetrics.astro';
+import ResourceAnalysis from '../components/monitoring/ResourceAnalysis.astro';
+import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
+---
+
+<BaseLayout
+  title="Performance Monitoring | SCLOG"
+  description="SCLOG 블로그의 실시간 성능 모니터링 대시보드. Core Web Vitals, 리소스 분석, 네비게이션 타이밍을 확인하세요."
+>
+  <Header />
+  <main class="monitoring-container">
+    <header class="page-header">
+      <h1 class="page-title">Performance Monitoring</h1>
+      <p class="page-description">
+        이 페이지의 실시간 성능 지표를 측정합니다.
+        <span class="browser-note">일부 지표는 브라우저에 따라 지원되지 않을 수 있습니다.</span>
+      </p>
+    </header>
+
+    <!-- Core Web Vitals Section -->
+    <section id="core-web-vitals" class="dashboard-section">
+      <CoreWebVitals />
+    </section>
+
+    <!-- Additional Metrics Section -->
+    <section id="additional-metrics" class="dashboard-section">
+      <AdditionalMetrics />
+    </section>
+
+    <!-- Resource Analysis Section -->
+    <section id="resource-analysis" class="dashboard-section">
+      <ResourceAnalysis />
+    </section>
+
+    <!-- Navigation Timing Section -->
+    <section id="navigation-timing" class="dashboard-section">
+      <NavigationTiming />
+    </section>
+  </main>
+</BaseLayout>
+
+<!-- 성능 지표 측정 스크립트 -->
+<script>
+  import { onLCP, onINP, onCLS, onTTFB, onFCP, type Metric } from 'web-vitals';
+  import { getMetricStatus, type MetricId, type MetricStatus } from '../utils/performance';
+
+  /**
+   * MetricCard DOM 요소 업데이트
+   */
+  function updateMetricCard(
+    metricId: MetricId,
+    value: number,
+    status: MetricStatus
+  ): void {
+    const card = document.querySelector(`[data-metric-id="${metricId}"]`);
+    if (!card) return;
+
+    const valueEl = card.querySelector('[data-value]');
+    const statusEl = card.querySelector('[data-status]');
+
+    if (valueEl) {
+      // CLS는 소수점 3자리, 나머지는 정수
+      valueEl.textContent =
+        metricId === 'cls' ? value.toFixed(3) : Math.round(value).toString();
+    }
+
+    if (statusEl) {
+      statusEl.setAttribute('data-status', status);
+      statusEl.textContent = getStatusLabel(status);
+    }
+  }
+
+  /**
+   * 상태 라벨 반환
+   */
+  function getStatusLabel(status: MetricStatus): string {
+    switch (status) {
+      case 'good':
+        return '좋음';
+      case 'needs-improvement':
+        return '개선 필요';
+      case 'poor':
+        return '나쁨';
+      case 'pending':
+        return '측정 중...';
+      case 'unsupported':
+        return '미지원';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * 미지원 상태로 설정
+   */
+  function setUnsupported(metricId: MetricId): void {
+    const card = document.querySelector(`[data-metric-id="${metricId}"]`);
+    if (!card) return;
+
+    const valueEl = card.querySelector('[data-value]');
+    const statusEl = card.querySelector('[data-status]');
+
+    if (valueEl) {
+      valueEl.textContent = '--';
+    }
+
+    if (statusEl) {
+      statusEl.setAttribute('data-status', 'unsupported');
+      statusEl.textContent = '미지원';
+    }
+  }
+
+  /**
+   * INP 대기 상태로 설정
+   */
+  function setInpWaiting(): void {
+    const card = document.querySelector('[data-metric-id="inp"]');
+    if (!card) return;
+
+    const statusEl = card.querySelector('[data-status]');
+    if (statusEl && statusEl.getAttribute('data-status') === 'pending') {
+      statusEl.textContent = '인터랙션 대기 중';
+    }
+  }
+
+  // 측정 상태 추적
+  const measured: Record<string, boolean> = {
+    lcp: false,
+    inp: false,
+    cls: false,
+  };
+
+  /**
+   * web-vitals 콜백 핸들러
+   */
+  function handleMetric(metric: Metric): void {
+    const metricId = metric.name.toLowerCase() as MetricId;
+    const status = getMetricStatus(metricId, metric.value);
+    updateMetricCard(metricId, metric.value, status);
+    measured[metricId] = true;
+  }
+
+  // Core Web Vitals 측정 시작
+  onLCP(handleMetric);
+  onINP(handleMetric);
+  onCLS(handleMetric);
+
+  // Additional Metrics 측정 시작
+  onTTFB(handleMetric);
+  onFCP(handleMetric);
+
+  // INP는 사용자 인터랙션이 필요하므로 대기 상태 표시
+  setTimeout(() => {
+    if (!measured.inp) {
+      setInpWaiting();
+    }
+  }, 3000);
+
+  // 5초 후에도 측정되지 않은 지표는 미지원 처리
+  setTimeout(() => {
+    if (!measured.lcp) setUnsupported('lcp');
+    if (!measured.cls) setUnsupported('cls');
+    // INP는 인터랙션 대기 상태 유지
+  }, 5000);
+</script>
+
+<!-- Resource Analysis 스크립트 -->
+<script>
+  import {
+    analyzeResources,
+    getResourceStats,
+    formatBytes,
+    type ResourceSummary,
+  } from '../utils/performance';
+
+  /**
+   * 리소스 카테고리별 색상
+   */
+  const RESOURCE_COLORS: Record<string, string> = {
+    JavaScript: '#f7df1e',
+    CSS: '#264de4',
+    Images: '#4ade80',
+    Fonts: '#a78bfa',
+    Other: '#6b7280',
+  };
+
+  /**
+   * 리소스 요약 렌더링
+   */
+  function renderResourceSummary(stats: { totalCount: number; totalSize: number }): void {
+    const container = document.getElementById('resource-summary');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="summary-item">
+        <div class="summary-value">${stats.totalCount}</div>
+        <div class="summary-label">Total Requests</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value">${formatBytes(stats.totalSize)}</div>
+        <div class="summary-label">Total Size</div>
+      </div>
+    `;
+  }
+
+  /**
+   * 리소스 차트 렌더링
+   */
+  function renderResourceChart(resources: ResourceSummary[]): void {
+    const container = document.getElementById('resource-chart');
+    if (!container || resources.length === 0) return;
+
+    const maxPercentage = Math.max(...resources.map((r) => r.percentage));
+
+    const barsHtml = resources
+      .map((r) => {
+        const widthPercent = maxPercentage > 0 ? (r.percentage / maxPercentage) * 100 : 0;
+        const displayPercent = (r.percentage * 100).toFixed(1);
+
+        return `
+        <div class="chart-bar-wrapper">
+          <div class="chart-bar-header">
+            <span class="chart-bar-label">${r.type}</span>
+            <span class="chart-bar-value">${r.count}개 · ${formatBytes(r.totalSize)}</span>
+          </div>
+          <div class="chart-bar-track">
+            <div
+              class="chart-bar-fill"
+              data-type="${r.type}"
+              style="width: ${widthPercent}%"
+            >
+              <span>${displayPercent}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
+
+    container.innerHTML = `<div class="chart-container">${barsHtml}</div>`;
+  }
+
+  /**
+   * 리소스 상세 카드 렌더링
+   */
+  function renderResourceDetails(resources: ResourceSummary[]): void {
+    const container = document.getElementById('resource-details');
+    if (!container) return;
+
+    const cardsHtml = resources
+      .map((r) => {
+        const color = RESOURCE_COLORS[r.type] || RESOURCE_COLORS.Other;
+        return `
+        <div class="resource-card">
+          <div class="resource-card-header">
+            <div class="resource-card-icon" style="background: ${color}"></div>
+            <span class="resource-card-title">${r.type}</span>
+          </div>
+          <div class="resource-card-stats">
+            <span class="resource-card-count">${r.count} requests</span>
+            <span class="resource-card-size">${formatBytes(r.totalSize)}</span>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
+
+    container.innerHTML = cardsHtml;
+  }
+
+  /**
+   * 리소스 분석 실행
+   */
+  function runResourceAnalysis(): void {
+    const stats = getResourceStats();
+    const resources = analyzeResources();
+
+    renderResourceSummary(stats);
+    renderResourceChart(resources);
+    renderResourceDetails(resources);
+  }
+
+  // 페이지 로딩 완료 후 분석 실행
+  if (document.readyState === 'complete') {
+    runResourceAnalysis();
+  } else {
+    window.addEventListener('load', () => {
+      // 약간의 지연을 두어 모든 리소스가 로드되도록 함
+      setTimeout(runResourceAnalysis, 100);
+    });
+  }
+</script>
+
+<!-- Navigation Timing 스크립트 -->
+<script>
+  import {
+    getNavigationTiming,
+    getTotalLoadTime,
+    formatDuration,
+    type TimingPhase,
+  } from '../utils/performance';
+
+  /**
+   * 타이밍 요약 렌더링
+   */
+  function renderTimingSummary(totalTime: number): void {
+    const container = document.getElementById('timing-summary');
+    if (!container) return;
+
+    const entries = performance.getEntriesByType('navigation');
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="summary-loading">타이밍 정보를 가져올 수 없습니다.</div>';
+      return;
+    }
+
+    const timing = entries[0] as PerformanceNavigationTiming;
+    const domContentLoaded = timing.domContentLoadedEventEnd - timing.startTime;
+    const domInteractive = timing.domInteractive - timing.startTime;
+
+    container.innerHTML = `
+      <div class="timing-summary-item">
+        <div class="timing-summary-value">${formatDuration(totalTime)}</div>
+        <div class="timing-summary-label">Total Load Time</div>
+      </div>
+      <div class="timing-summary-item">
+        <div class="timing-summary-value">${formatDuration(domContentLoaded)}</div>
+        <div class="timing-summary-label">DOMContentLoaded</div>
+      </div>
+      <div class="timing-summary-item">
+        <div class="timing-summary-value">${formatDuration(domInteractive)}</div>
+        <div class="timing-summary-label">DOM Interactive</div>
+      </div>
+    `;
+  }
+
+  /**
+   * 워터폴 차트 렌더링
+   */
+  function renderWaterfallChart(phases: TimingPhase[]): void {
+    const container = document.getElementById('timing-waterfall');
+    if (!container || phases.length === 0) {
+      if (container) {
+        container.innerHTML = '<div style="color: var(--color-text-muted); font-size: 0.9rem;">타이밍 데이터가 없습니다.</div>';
+      }
+      return;
+    }
+
+    // 시작 시간의 최소값 찾기
+    const minStart = Math.min(...phases.map((p) => p.start));
+    const maxEnd = Math.max(...phases.map((p) => p.end));
+    const range = maxEnd - minStart || 1;
+
+    const rowsHtml = phases
+      .map((phase) => {
+        const leftPercent = ((phase.start - minStart) / range) * 100;
+        const widthPercent = Math.max((phase.duration / range) * 100, 0.5);
+        const durationText = phase.duration >= 1 ? formatDuration(phase.duration) : '<1ms';
+
+        return `
+        <div class="waterfall-row">
+          <div class="waterfall-label">${phase.name}</div>
+          <div class="waterfall-track">
+            <div
+              class="waterfall-bar"
+              style="left: ${leftPercent}%; width: ${widthPercent}%; background: ${phase.color}"
+            >
+              ${widthPercent > 8 ? `<span>${durationText}</span>` : ''}
+            </div>
+          </div>
+          <div class="waterfall-duration">${durationText}</div>
+        </div>
+      `;
+      })
+      .join('');
+
+    container.innerHTML = `
+      <div class="waterfall-container">
+        <div class="waterfall-header">
+          <span>0ms</span>
+          <span>${formatDuration(range)}</span>
+        </div>
+        ${rowsHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * 범례 렌더링
+   */
+  function renderTimingLegend(phases: TimingPhase[]): void {
+    const container = document.getElementById('timing-legend');
+    if (!container || phases.length === 0) return;
+
+    const legendHtml = phases
+      .map(
+        (phase) => `
+        <div class="legend-item">
+          <div class="legend-color" style="background: ${phase.color}"></div>
+          <span class="legend-name">${phase.name}</span>
+        </div>
+      `
+      )
+      .join('');
+
+    container.innerHTML = legendHtml;
+  }
+
+  /**
+   * Navigation Timing 분석 실행
+   */
+  function runNavigationTimingAnalysis(): void {
+    const phases = getNavigationTiming();
+    const totalTime = getTotalLoadTime();
+
+    renderTimingSummary(totalTime);
+    renderWaterfallChart(phases);
+    renderTimingLegend(phases);
+  }
+
+  // 페이지 로딩 완료 후 분석 실행
+  if (document.readyState === 'complete') {
+    runNavigationTimingAnalysis();
+  } else {
+    window.addEventListener('load', () => {
+      // 약간의 지연을 두어 타이밍 데이터가 완성되도록 함
+      setTimeout(runNavigationTimingAnalysis, 200);
+    });
+  }
+</script>
+
+<style>
+  .monitoring-container {
+    max-width: var(--max-width-wide);
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 0.75rem;
+  }
+
+  .page-description {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .browser-note {
+    display: block;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+  }
+
+  .dashboard-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .dashboard-section:last-child {
+    margin-bottom: 0;
+  }
+
+  /* 반응형 */
+  @media (max-width: 640px) {
+    .monitoring-container {
+      padding: 1.5rem 1rem;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .page-description {
+      font-size: 0.9rem;
+    }
+
+    .dashboard-section {
+      margin-bottom: 2rem;
+    }
+  }
+</style>

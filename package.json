@@ -14,7 +14,8 @@
     "@astrojs/mdx": "^4.3.12",
     "@astrojs/sitemap": "^3.6.0",
     "astro": "^5.16.4",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "web-vitals": "^5.1.0"
   },
   "volta": {
     "node": "24.11.1",

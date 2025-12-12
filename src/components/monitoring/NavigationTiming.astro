@@ -1,0 +1,227 @@
+---
+/**
+ * Navigation Timing 섹션 컴포넌트
+ * 페이지 로딩 단계를 워터폴 타임라인으로 시각화
+ *
+ * @description
+ * - Navigation Timing API Level 2 사용
+ * - DNS, TCP, SSL, Request, Response, DOM, Load 단계 표시
+ * - 순수 CSS로 워터폴 시각화 구현
+ */
+---
+
+<section class="navigation-timing">
+  <h2 class="section-title">Navigation Timing</h2>
+  <p class="section-description">
+    페이지 로딩 과정의 각 단계별 소요 시간을 시각화합니다.
+  </p>
+
+  <div class="timing-summary" id="timing-summary">
+    <div class="summary-loading">타이밍 분석 중...</div>
+  </div>
+
+  <div class="timing-waterfall" id="timing-waterfall">
+    <!-- 워터폴 차트가 JavaScript로 렌더링됨 -->
+  </div>
+
+  <div class="timing-legend" id="timing-legend">
+    <!-- 범례가 JavaScript로 렌더링됨 -->
+  </div>
+</section>
+
+<style>
+  .navigation-timing {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 0.5rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .timing-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-loading {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  :global(.timing-summary-item) {
+    text-align: center;
+    padding: 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    min-width: 140px;
+  }
+
+  :global(.timing-summary-value) {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+  }
+
+  :global(.timing-summary-label) {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .timing-waterfall {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+  }
+
+  :global(.waterfall-container) {
+    min-width: 400px;
+  }
+
+  :global(.waterfall-header) {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono, monospace);
+  }
+
+  :global(.waterfall-row) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    min-height: 28px;
+  }
+
+  :global(.waterfall-row:last-child) {
+    margin-bottom: 0;
+  }
+
+  :global(.waterfall-label) {
+    flex: 0 0 120px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text);
+    text-align: right;
+  }
+
+  :global(.waterfall-track) {
+    flex: 1;
+    height: 20px;
+    background: var(--color-border);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  :global(.waterfall-bar) {
+    position: absolute;
+    height: 100%;
+    border-radius: 3px;
+    min-width: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global(.waterfall-bar span) {
+    font-size: 0.65rem;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 0 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.waterfall-duration) {
+    flex: 0 0 70px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono, monospace);
+    text-align: right;
+  }
+
+  .timing-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+  }
+
+  :global(.legend-item) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  :global(.legend-color) {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  :global(.legend-name) {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  @media (max-width: 640px) {
+    .section-title {
+      font-size: 1.25rem;
+    }
+
+    .timing-summary {
+      gap: 1rem;
+    }
+
+    :global(.timing-summary-item) {
+      min-width: 110px;
+      padding: 0.75rem;
+    }
+
+    :global(.timing-summary-value) {
+      font-size: 1.25rem;
+    }
+
+    :global(.waterfall-label) {
+      flex: 0 0 80px;
+      font-size: 0.7rem;
+    }
+
+    :global(.waterfall-duration) {
+      flex: 0 0 55px;
+      font-size: 0.7rem;
+    }
+
+    .timing-legend {
+      gap: 0.75rem;
+    }
+
+    :global(.legend-item) {
+      font-size: 0.75rem;
+    }
+  }
+</style>

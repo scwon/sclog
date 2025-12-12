@@ -1,0 +1,99 @@
+---
+/**
+ * Core Web Vitals 섹션 컴포넌트
+ * LCP, INP, CLS 세 가지 핵심 지표를 카드 형태로 표시
+ *
+ * @description
+ * - Google이 정의한 Core Web Vitals 표시
+ * - 3열 그리드 레이아웃 (데스크톱), 1열 (모바일)
+ * - MetricCard 컴포넌트 사용
+ *
+ * @see https://web.dev/vitals/
+ */
+import MetricCard from './MetricCard.astro';
+import { METRIC_INFO } from '../../utils/performance';
+---
+
+<section class="core-web-vitals">
+  <h2 class="section-title">Core Web Vitals</h2>
+  <p class="section-description">
+    Google이 정의한 웹 성능의 핵심 지표입니다.
+    <a href="https://web.dev/vitals/" target="_blank" rel="noopener noreferrer" class="learn-more">
+      자세히 알아보기 →
+    </a>
+  </p>
+  <div class="metrics-grid">
+    <MetricCard
+      id="lcp"
+      name={METRIC_INFO.lcp.name}
+      fullName={METRIC_INFO.lcp.fullName}
+      description={METRIC_INFO.lcp.description}
+      unit={METRIC_INFO.lcp.unit}
+    />
+    <MetricCard
+      id="inp"
+      name={METRIC_INFO.inp.name}
+      fullName={METRIC_INFO.inp.fullName}
+      description={METRIC_INFO.inp.description}
+      unit={METRIC_INFO.inp.unit}
+    />
+    <MetricCard
+      id="cls"
+      name={METRIC_INFO.cls.name}
+      fullName={METRIC_INFO.cls.fullName}
+      description={METRIC_INFO.cls.description}
+      unit={METRIC_INFO.cls.unit}
+    />
+  </div>
+</section>
+
+<style>
+  .core-web-vitals {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 0.5rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .learn-more {
+    color: var(--color-primary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .learn-more:hover {
+    text-decoration: underline;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 900px) {
+    .metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+    }
+  }
+</style>

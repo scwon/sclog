@@ -1,0 +1,236 @@
+---
+/**
+ * Resource Analysis 섹션 컴포넌트
+ * 페이지 리소스를 카테고리별로 분류하여 개수와 용량 표시
+ *
+ * @description
+ * - JS, CSS, Images, Fonts, Other 카테고리별 분석
+ * - 막대 차트로 비율 시각화
+ * - 순수 CSS로 구현 (외부 라이브러리 없음)
+ */
+---
+
+<section class="resource-analysis">
+  <h2 class="section-title">Resource Analysis</h2>
+  <p class="section-description">
+    이 페이지에서 로딩된 리소스를 카테고리별로 분석합니다.
+  </p>
+
+  <div class="resource-summary" id="resource-summary">
+    <div class="summary-loading">리소스 분석 중...</div>
+  </div>
+
+  <div class="resource-chart" id="resource-chart">
+    <!-- 차트가 JavaScript로 렌더링됨 -->
+  </div>
+
+  <div class="resource-details" id="resource-details">
+    <!-- 상세 정보가 JavaScript로 렌더링됨 -->
+  </div>
+</section>
+
+<style>
+  .resource-analysis {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 0.5rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .resource-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-loading {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  :global(.summary-item) {
+    text-align: center;
+    padding: 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    min-width: 120px;
+  }
+
+  :global(.summary-value) {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+  }
+
+  :global(.summary-label) {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .resource-chart {
+    margin-bottom: 1.5rem;
+  }
+
+  :global(.chart-container) {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 1rem;
+  }
+
+  :global(.chart-bar-wrapper) {
+    margin-bottom: 0.75rem;
+  }
+
+  :global(.chart-bar-wrapper:last-child) {
+    margin-bottom: 0;
+  }
+
+  :global(.chart-bar-header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+  }
+
+  :global(.chart-bar-label) {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  :global(.chart-bar-value) {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono, monospace);
+  }
+
+  :global(.chart-bar-track) {
+    height: 24px;
+    background: var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  :global(.chart-bar-fill) {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    padding-left: 0.5rem;
+  }
+
+  :global(.chart-bar-fill span) {
+    font-size: 0.7rem;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* 카테고리별 색상 */
+  :global(.chart-bar-fill[data-type="JavaScript"]) {
+    background: #f7df1e;
+  }
+  :global(.chart-bar-fill[data-type="JavaScript"] span) {
+    color: #1a1a1a;
+  }
+
+  :global(.chart-bar-fill[data-type="CSS"]) {
+    background: #264de4;
+  }
+
+  :global(.chart-bar-fill[data-type="Images"]) {
+    background: #4ade80;
+  }
+  :global(.chart-bar-fill[data-type="Images"] span) {
+    color: #1a1a1a;
+  }
+
+  :global(.chart-bar-fill[data-type="Fonts"]) {
+    background: #a78bfa;
+  }
+
+  :global(.chart-bar-fill[data-type="Other"]) {
+    background: #6b7280;
+  }
+
+  .resource-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  :global(.resource-card) {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 1rem;
+  }
+
+  :global(.resource-card-header) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  :global(.resource-card-icon) {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  :global(.resource-card-title) {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  :global(.resource-card-stats) {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  :global(.resource-card-count) {
+    font-family: var(--font-mono, monospace);
+  }
+
+  :global(.resource-card-size) {
+    font-family: var(--font-mono, monospace);
+  }
+
+  @media (max-width: 640px) {
+    .section-title {
+      font-size: 1.25rem;
+    }
+
+    .resource-summary {
+      gap: 1rem;
+    }
+
+    :global(.summary-item) {
+      min-width: 100px;
+      padding: 0.75rem;
+    }
+
+    :global(.summary-value) {
+      font-size: 1.25rem;
+    }
+  }
+</style>
