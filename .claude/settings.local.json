@@ -5,7 +5,9 @@
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(pnpm astro check:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []
