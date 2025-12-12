@@ -30,13 +30,18 @@ import { METRIC_INFO } from '../../utils/performance';
       description={METRIC_INFO.lcp.description}
       unit={METRIC_INFO.lcp.unit}
     />
-    <MetricCard
-      id="inp"
-      name={METRIC_INFO.inp.name}
-      fullName={METRIC_INFO.inp.fullName}
-      description={METRIC_INFO.inp.description}
-      unit={METRIC_INFO.inp.unit}
-    />
+    <div class="inp-card-wrapper">
+      <MetricCard
+        id="inp"
+        name={METRIC_INFO.inp.name}
+        fullName={METRIC_INFO.inp.fullName}
+        description={METRIC_INFO.inp.description}
+        unit={METRIC_INFO.inp.unit}
+      />
+      <button class="inp-test-btn" id="inp-test-btn" type="button">
+        클릭하여 INP 측정
+      </button>
+    </div>
     <MetricCard
       id="cls"
       name={METRIC_INFO.cls.name}
@@ -46,6 +51,29 @@ import { METRIC_INFO } from '../../utils/performance';
     />
   </div>
 </section>
+
+<script>
+  const btn = document.getElementById('inp-test-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      // 간단한 계산 작업으로 인터랙션 발생
+      const start = performance.now();
+      let sum = 0;
+      for (let i = 0; i < 1000; i++) {
+        sum += Math.sqrt(i);
+      }
+      const duration = performance.now() - start;
+      btn.textContent = `측정됨! (${duration.toFixed(1)}ms 작업)`;
+      btn.classList.add('clicked');
+
+      // 3초 후 원래 텍스트로 복원
+      setTimeout(() => {
+        btn.textContent = '다시 클릭하여 측정';
+        btn.classList.remove('clicked');
+      }, 3000);
+    });
+  }
+</script>
 
 <style>
   .core-web-vitals {
@@ -81,6 +109,44 @@ import { METRIC_INFO } from '../../utils/performance';
     gap: 1rem;
   }
 
+  .inp-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .inp-card-wrapper > :global(.metric-card) {
+    flex: 1;
+  }
+
+  .inp-test-btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.1);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-tag);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .inp-test-btn:hover {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .inp-test-btn:active {
+    transform: scale(0.98);
+  }
+
+  .inp-test-btn.clicked {
+    background: rgba(12, 206, 107, 0.15);
+    border-color: #0cce6b;
+    color: #0cce6b;
+  }
+
   @media (max-width: 900px) {
     .metrics-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -94,6 +160,11 @@ import { METRIC_INFO } from '../../utils/performance';
 
     .section-title {
       font-size: 1.25rem;
+    }
+
+    .inp-test-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
     }
   }
 </style>

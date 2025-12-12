@@ -29,6 +29,39 @@ import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
         이 페이지의 실시간 성능 지표를 측정합니다.
         <span class="browser-note">일부 지표는 브라우저에 따라 지원되지 않을 수 있습니다.</span>
       </p>
+
+      <!-- 성능 점수 및 실시간 상태 -->
+      <div class="score-section">
+        <div class="overall-score" id="overall-score">
+          <div class="score-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="score-bg" cx="60" cy="60" r="54" />
+              <circle class="score-progress" id="score-progress" cx="60" cy="60" r="54" />
+            </svg>
+            <div class="score-value" id="score-value">--</div>
+          </div>
+          <div class="score-label">Performance Score</div>
+          <div class="score-status" id="score-status">측정 중...</div>
+        </div>
+
+        <div class="live-status" id="live-status">
+          <div class="status-item">
+            <span class="status-icon">&#9201;</span>
+            <span class="status-label">체류 시간</span>
+            <span class="status-value" id="session-time">0:00</span>
+          </div>
+          <div class="status-item" id="memory-status" style="display: none;">
+            <span class="status-icon">&#128200;</span>
+            <span class="status-label">JS Heap</span>
+            <span class="status-value" id="memory-usage">--</span>
+          </div>
+          <div class="status-item">
+            <span class="status-icon">&#128338;</span>
+            <span class="status-label">마지막 측정</span>
+            <span class="status-value" id="last-measured">--</span>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- Core Web Vitals Section -->
@@ -52,6 +85,174 @@ import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
     </section>
   </main>
 </BaseLayout>
+
+<!-- 실시간 상태 표시 스크립트 -->
+<script>
+  import { formatBytes } from '../utils/performance';
+
+  const startTime = Date.now();
+  let lastMeasuredTime: number | null = null;
+
+  /**
+   * 체류 시간 업데이트
+   */
+  function updateSessionTime(): void {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const el = document.getElementById('session-time');
+    if (el) {
+      el.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  }
+
+  /**
+   * 메모리 사용량 업데이트 (Chrome 전용)
+   */
+  function updateMemoryUsage(): void {
+    const perf = performance as Performance & {
+      memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number };
+    };
+
+    if (perf.memory) {
+      const memoryStatus = document.getElementById('memory-status');
+      const memoryUsage = document.getElementById('memory-usage');
+
+      if (memoryStatus && memoryUsage) {
+        memoryStatus.style.display = 'flex';
+        const used = perf.memory.usedJSHeapSize;
+        memoryUsage.textContent = formatBytes(used);
+      }
+    }
+  }
+
+  /**
+   * 마지막 측정 시간 업데이트
+   */
+  function updateLastMeasured(): void {
+    const el = document.getElementById('last-measured');
+    if (!el || !lastMeasuredTime) return;
+
+    const ago = Math.floor((Date.now() - lastMeasuredTime) / 1000);
+    if (ago < 5) {
+      el.textContent = '방금';
+    } else if (ago < 60) {
+      el.textContent = `${ago}초 전`;
+    } else {
+      el.textContent = `${Math.floor(ago / 60)}분 전`;
+    }
+  }
+
+  // 전역으로 마지막 측정 시간 설정 함수 노출
+  (window as Window & { setLastMeasured?: () => void }).setLastMeasured = () => {
+    lastMeasuredTime = Date.now();
+    updateLastMeasured();
+  };
+
+  // 성능 점수 저장 및 계산
+  interface MetricScores {
+    lcp?: number;
+    fcp?: number;
+    cls?: number;
+    ttfb?: number;
+    inp?: number;
+  }
+
+  const metricScores: MetricScores = {};
+
+  /**
+   * 각 지표를 0-100 점수로 변환
+   */
+  function getMetricScore(metric: string, value: number): number {
+    const thresholds: Record<string, { good: number; poor: number }> = {
+      lcp: { good: 2500, poor: 4000 },
+      fcp: { good: 1800, poor: 3000 },
+      cls: { good: 0.1, poor: 0.25 },
+      ttfb: { good: 800, poor: 1800 },
+      inp: { good: 200, poor: 500 },
+    };
+
+    const t = thresholds[metric];
+    if (!t) return 50;
+
+    if (value <= t.good) {
+      // good 범위: 90-100점
+      return 90 + (1 - value / t.good) * 10;
+    } else if (value <= t.poor) {
+      // needs improvement: 50-90점
+      const range = t.poor - t.good;
+      const position = (value - t.good) / range;
+      return 90 - position * 40;
+    } else {
+      // poor: 0-50점
+      const beyondPoor = value - t.poor;
+      const decay = Math.min(beyondPoor / t.poor, 1);
+      return Math.max(0, 50 - decay * 50);
+    }
+  }
+
+  /**
+   * 전체 점수 계산 및 업데이트
+   */
+  function updateOverallScore(): void {
+    const scores = Object.values(metricScores).filter((s) => s !== undefined) as number[];
+    if (scores.length === 0) return;
+
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const score = Math.round(avg);
+
+    // 점수 표시
+    const scoreValue = document.getElementById('score-value');
+    const scoreProgress = document.getElementById('score-progress');
+    const scoreStatus = document.getElementById('score-status');
+    const overallScore = document.getElementById('overall-score');
+
+    if (scoreValue) scoreValue.textContent = score.toString();
+
+    // 링 애니메이션 (둘레 = 2 * PI * 54 ≈ 339)
+    if (scoreProgress) {
+      const circumference = 339;
+      const offset = circumference - (score / 100) * circumference;
+      scoreProgress.style.strokeDasharray = `${circumference}`;
+      scoreProgress.style.strokeDashoffset = `${offset}`;
+    }
+
+    // 상태 및 색상
+    let status = '';
+    let color = '';
+    if (score >= 90) {
+      status = '우수';
+      color = '#0cce6b';
+    } else if (score >= 50) {
+      status = '개선 필요';
+      color = '#ffa400';
+    } else {
+      status = '나쁨';
+      color = '#ff4e42';
+    }
+
+    if (scoreStatus) scoreStatus.textContent = status;
+    if (overallScore) overallScore.setAttribute('data-score-level', score >= 90 ? 'good' : score >= 50 ? 'average' : 'poor');
+    if (scoreProgress) scoreProgress.style.stroke = color;
+  }
+
+  // 전역으로 점수 업데이트 함수 노출
+  (window as Window & { updateMetricScore?: (metric: string, value: number) => void }).updateMetricScore = (metric, value) => {
+    metricScores[metric as keyof MetricScores] = getMetricScore(metric, value);
+    updateOverallScore();
+  };
+
+  // 1초마다 업데이트
+  setInterval(() => {
+    updateSessionTime();
+    updateMemoryUsage();
+    updateLastMeasured();
+  }, 1000);
+
+  // 초기 실행
+  updateSessionTime();
+  updateMemoryUsage();
+</script>
 
 <!-- 성능 지표 측정 스크립트 -->
 <script>
@@ -152,12 +353,26 @@ import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
     const status = getMetricStatus(metricId, metric.value);
     updateMetricCard(metricId, metric.value, status);
     measured[metricId] = true;
+
+    // 마지막 측정 시간 업데이트
+    const win = window as Window & {
+      setLastMeasured?: () => void;
+      updateMetricScore?: (metric: string, value: number) => void;
+    };
+    if (win.setLastMeasured) {
+      win.setLastMeasured();
+    }
+
+    // 성능 점수 업데이트
+    if (win.updateMetricScore) {
+      win.updateMetricScore(metricId, metric.value);
+    }
   }
 
   // Core Web Vitals 측정 시작
   onLCP(handleMetric);
-  onINP(handleMetric);
-  onCLS(handleMetric);
+  onINP(handleMetric, { reportAllChanges: true }); // 모든 인터랙션 즉시 보고
+  onCLS(handleMetric, { reportAllChanges: true }); // 레이아웃 변화 즉시 보고
 
   // Additional Metrics 측정 시작
   onTTFB(handleMetric);
@@ -477,6 +692,104 @@ import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
     opacity: 0.8;
   }
 
+  .score-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .overall-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .score-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .score-ring svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+
+  .score-bg {
+    fill: none;
+    stroke: var(--color-border);
+    stroke-width: 8;
+  }
+
+  .score-progress {
+    fill: none;
+    stroke: #6b7280;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 339;
+    stroke-dashoffset: 339;
+    transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
+  }
+
+  .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+  }
+
+  .score-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .score-status {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .live-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .status-icon {
+    font-size: 1rem;
+    opacity: 0.7;
+  }
+
+  .status-label {
+    color: var(--color-text-muted);
+  }
+
+  .status-value {
+    font-weight: 600;
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+  }
+
   .dashboard-section {
     margin-bottom: 2.5rem;
   }
@@ -496,6 +809,38 @@ import NavigationTiming from '../components/monitoring/NavigationTiming.astro';
     }
 
     .page-description {
+      font-size: 0.9rem;
+    }
+
+    .score-section {
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .score-ring {
+      width: 100px;
+      height: 100px;
+    }
+
+    .score-value {
+      font-size: 1.75rem;
+    }
+
+    .live-status {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0.6rem 0.75rem;
+    }
+
+    .status-item {
+      font-size: 0.8rem;
+      gap: 0.35rem;
+    }
+
+    .status-icon {
       font-size: 0.9rem;
     }
 
