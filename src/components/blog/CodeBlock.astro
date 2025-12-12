@@ -102,6 +102,7 @@
     margin-bottom: 1.25rem;
     border-radius: var(--radius-card);
     overflow: hidden;
+    max-width: 100%;
   }
 
   .code-block-header {
@@ -144,6 +145,14 @@
   .code-block-wrapper pre {
     margin: 0 !important;
     border-radius: 0 0 var(--radius-card) var(--radius-card) !important;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .code-block-wrapper pre code {
+    display: block;
+    overflow-x: auto;
+    white-space: pre;
   }
 
   /* 인쇄 시 복사 버튼 숨김 */

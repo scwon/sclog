@@ -102,6 +102,8 @@ function formatDate(date: Date): string {
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
   @media (min-width: 1025px) {
@@ -124,6 +126,9 @@ function formatDate(date: Date): string {
     background: var(--color-bg);
     border-radius: var(--radius-card);
     padding: 2rem;
+    overflow-x: hidden;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .post-header {
@@ -192,6 +197,8 @@ function formatDate(date: Date): string {
   .post-content {
     line-height: 1.8;
     color: var(--color-text);
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   .post-content :global(h1),
@@ -232,6 +239,20 @@ function formatDate(date: Date): string {
     padding: 1rem;
     overflow-x: auto;
     margin-bottom: 1.25rem;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  /* 코드 블럭 반응형 */
+  .post-content :global(.code-block-wrapper) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .post-content :global(pre code) {
+    display: block;
+    overflow-x: auto;
+    white-space: pre;
   }
 
   .post-content :global(code) {
