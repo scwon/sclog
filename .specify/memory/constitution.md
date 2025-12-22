@@ -1,14 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0
+Version change: 1.2.0 → 1.3.0
 Modified:
-  - Added: VI. Design System (새로운 디자인 원칙 추가)
-  - Added: Design Tokens 섹션 (컬러, 타이포그래피, 테마 정의)
-Rationale: 라이트 테마 기본, 다크 모드 지원, 브랜드 컬러 및 폰트 시스템 정립
+  - Added: VII. Observability & Performance (성능 모니터링 원칙 추가)
+Rationale: 모니터링 대시보드 기능 추가에 따른 성능 관찰 및 측정 원칙 정립
 Templates requiring updates:
-  - src/layouts/BaseLayout.astro ⚠ 스타일 업데이트 필요
-  - src/styles/global.css ⚠ 생성 필요
+  - .specify/templates/plan-template.md ✅ (Constitution Check 섹션에서 참조)
+  - .specify/templates/spec-template.md ✅ (기존 구조 호환)
+Follow-up TODOs: None
 -->
 
 # SCLOG Constitution
@@ -44,7 +44,7 @@ Templates requiring updates:
 
 블로그로서 검색 엔진 최적화와 접근성을 우선시한다.
 
-- 모든 페이지에 적절한 meta 태그 (title, description, og:\*) 필수
+- 모든 페이지에 적절한 meta 태그 (title, description, og:*) 필수
 - 시맨틱 HTML 사용 (header, main, article, nav 등)
 - 이미지에 alt 텍스트 필수
 - Core Web Vitals 기준 충족 (LCP < 2.5s, FID < 100ms, CLS < 0.1)
@@ -69,6 +69,17 @@ Templates requiring updates:
 - **타이포그래피**: Roboto (영문), Noto Sans KR (한글) 사용
 - **레이아웃**: 미니멀하고 콘텐츠 중심, 중앙 정렬 (max-width 제한)
 - **여백**: 충분한 화이트스페이스로 가독성 확보
+
+### VII. Observability & Performance
+
+실시간 성능 모니터링과 관찰 가능성을 제공한다.
+
+- **Core Web Vitals 측정**: LCP, INP, CLS를 실시간으로 측정하고 시각화한다
+- **추가 성능 지표**: TTFB, FCP 등 추가 지표를 통해 상세 분석 제공
+- **리소스 분석**: JavaScript, CSS, 이미지, 폰트 등 리소스 로딩 현황 파악
+- **클라이언트 측 측정**: 외부 서비스 의존 없이 브라우저 API로 직접 측정
+- **비용 제로 원칙**: 유료 서비스 없이 정적 사이트로 모니터링 구현
+- **교육적 가치**: 모니터링 구현 자체가 포트폴리오 시연 항목으로 활용 가능
 
 ## Design Tokens
 
@@ -100,6 +111,14 @@ Templates requiring updates:
 - **기본 패딩**: 1rem (모바일), 2rem (데스크톱)
 - **컴포넌트 라운딩**: 8px (카드), 4px (버튼), 9999px (태그)
 
+### 성능 지표 시각화
+
+| 상태 | 색상 | 기준 |
+|------|------|------|
+| 좋음 (Good) | `#0cce6b` | Google 권장 기준 충족 |
+| 개선 필요 (Needs Improvement) | `#ffa400` | 기준 초과, 개선 권장 |
+| 나쁨 (Poor) | `#ff4e42` | 사용자 경험 저하 우려 |
+
 ## Technology Stack
 
 프로젝트의 기술 스택과 제약사항을 정의한다.
@@ -109,11 +128,14 @@ Templates requiring updates:
 | Frontend        | Astro + TypeScript   | Astro 5.x |
 | Content         | MDX (Markdown + JSX) | -         |
 | Package Manager | pnpm                 | -         |
+| Performance     | web-vitals           | ~2KB      |
 
 ### 구조 원칙
 
 - **소스 코드**: `src/` 디렉토리 (루트), Astro 기반 SSG
 - **정적 파일**: `public/` 디렉토리
+- **성능 유틸리티**: `src/utils/performance.ts` (측정 함수 집중)
+- **모니터링 컴포넌트**: `src/components/monitoring/` (대시보드 UI)
 - 정적 콘텐츠(블로그 글)는 빌드 타임에 생성한다
 - 백엔드는 필요시 추가 (현재 미사용)
 
@@ -137,6 +159,7 @@ Templates requiring updates:
 1. 린트/포맷 검사 통과
 2. 타입 체크 통과 (`astro check`)
 3. 핵심 기능 테스트 통과 (해당 시)
+4. 빌드 성공 (`pnpm build`)
 
 ## Governance
 
@@ -147,4 +170,4 @@ Templates requiring updates:
 - 복잡성 추가 시 반드시 정당화 필요 (YAGNI 원칙)
 - 의심스러운 경우, 단순한 해결책을 선택한다
 
-**Version**: 1.2.0 | **Ratified**: 2025-12-06 | **Last Amended**: 2025-12-06
+**Version**: 1.3.0 | **Ratified**: 2025-12-06 | **Last Amended**: 2025-12-15

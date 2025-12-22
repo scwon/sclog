@@ -124,6 +124,12 @@ const { profile, socialLinks = [] } = Astro.props;
     }
   }
 
+  /* 스핀 애니메이션 중 CSS transition 비활성화 */
+  .profile-avatar.spinning .avatar-default,
+  .profile-avatar.spinning .avatar-alternate {
+    transition: none !important;
+  }
+
   /* 접근성: 동작 감소 설정 존중 */
   @media (prefers-reduced-motion: reduce) {
     .avatar-default,
@@ -153,17 +159,196 @@ const { profile, socialLinks = [] } = Astro.props;
 
 <script>
   /**
-   * 프로필 사진 터치 이벤트 핸들러
-   * 터치 기기에서 탭으로 hover 효과를 대체
+   * 프로필 스핀 애니메이션 상수
+   * @description 마우스 속도 임계값과 물리 시뮬레이션 파라미터
    */
-  function initProfileHover() {
-    const avatar = document.querySelector('.profile-avatar');
-    if (!avatar) return;
+  const VELOCITY_THRESHOLD = 500; // 스핀 트리거 최소 속도 (px/s)
+  const FRICTION = 0.96; // 감속 계수 (낮을수록 빨리 멈춤)
+  const MIN_ANGULAR_VELOCITY = 0.5; // 정지 판정 임계값 (deg/frame)
+  const VELOCITY_TO_ANGULAR = 0.008; // 마우스 속도 → 각속도 변환 계수 (낮출수록 느리게 회전)
 
-    // 터치 기기 대응: 탭으로 .active 클래스 토글
+  /**
+   * 프로필 사진 인터랙션 초기화
+   * - 터치 기기: 탭으로 hover 효과 대체
+   * - 마우스: 빠른 패스로 스핀 애니메이션 트리거
+   */
+  function initProfileInteraction() {
+    const avatarEl = document.querySelector('.profile-avatar') as HTMLElement | null;
+    const defaultEl = document.querySelector('.avatar-default') as HTMLElement | null;
+    const alternateEl = document.querySelector('.avatar-alternate') as HTMLElement | null;
+
+    if (!avatarEl || !defaultEl || !alternateEl) return;
+
+    // Non-null 보장된 참조
+    const avatar = avatarEl;
+    const avatarDefault = defaultEl;
+    const avatarAlternate = alternateEl;
+
+    // 접근성: 동작 감소 설정 확인
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // 마우스 속도 측정 상태
+    let lastX = 0;
+    let lastY = 0;
+    let lastTime = 0;
+
+    // 스핀 애니메이션 상태
+    let rotation = 0;
+    let angularVelocity = 0;
+    let isSpinning = false;
+    let animationId: number | null = null;
+
+    /**
+     * 마우스 이동 속도 계산
+     * @param e - 마우스 이벤트
+     * @returns 속도 (px/s)
+     */
+    function calculateVelocity(e: MouseEvent): number {
+      const now = performance.now();
+      const dt = now - lastTime;
+
+      if (dt === 0 || lastTime === 0) {
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastTime = now;
+        return 0;
+      }
+
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const velocity = (distance / dt) * 1000; // px/s
+
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastTime = now;
+
+      return velocity;
+    }
+
+    /**
+     * 스핀 애니메이션 시작
+     * @param mouseVelocity - 마우스 속도 (px/s)
+     */
+    function startSpin(mouseVelocity: number): void {
+      // 마우스 속도를 각속도로 변환
+      const newAngularVelocity = mouseVelocity * VELOCITY_TO_ANGULAR;
+
+      if (isSpinning) {
+        // 이미 스핀 중이면 추가 회전력 부여
+        angularVelocity += newAngularVelocity;
+      } else {
+        angularVelocity = newAngularVelocity;
+        isSpinning = true;
+        avatar.classList.add('spinning');
+        animate();
+      }
+    }
+
+    /**
+     * 스핀 애니메이션 루프 (requestAnimationFrame)
+     * @description 지수 감쇠 모델로 자연스러운 감속 구현
+     */
+    function animate(): void {
+      if (Math.abs(angularVelocity) < MIN_ANGULAR_VELOCITY) {
+        stopSpin();
+        return;
+      }
+
+      rotation += angularVelocity;
+      angularVelocity *= FRICTION; // 마찰에 의한 감속
+
+      // 양면 모두 동일하게 회전
+      avatarDefault.style.transform = `rotateY(${rotation}deg)`;
+      avatarAlternate.style.transform = `rotateY(${rotation + 180}deg)`;
+
+      animationId = requestAnimationFrame(animate);
+    }
+
+    /**
+     * 스핀 애니메이션 정지
+     * @description 현재 위치에서 그대로 멈춤
+     */
+    function stopSpin(): void {
+      isSpinning = false;
+      angularVelocity = 0;
+
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      // 현재 회전 각도를 0~360 범위로 정규화
+      rotation = ((rotation % 360) + 360) % 360;
+
+      // spinning 클래스 제거 (CSS transition 복원)
+      avatar.classList.remove('spinning');
+
+      // 현재 위치 그대로 유지 (inline style 유지)
+      // hover 시 CSS가 다시 작동하도록 나중에 정리
+    }
+
+    // 문서 전체에서 마우스 위치 추적 (프로필 진입 전 속도 측정)
+    document.addEventListener('mousemove', (e) => {
+      calculateVelocity(e);
+    });
+
+    // 마우스가 프로필 영역에 진입할 때 속도 체크
+    avatar.addEventListener('mouseenter', (e) => {
+      if (prefersReducedMotion) return;
+
+      const velocity = calculateVelocity(e);
+
+      if (velocity > VELOCITY_THRESHOLD && !isSpinning) {
+        startSpin(velocity);
+      }
+    });
+
+    // 클릭으로 스핀 정지 (빠른 감속)
+    avatar.addEventListener('click', () => {
+      if (isSpinning) {
+        angularVelocity *= 0.3; // 급정지 대신 빠른 감속
+      }
+    });
+
+    // 터치 기기 대응: 스와이프로 스핀 트리거
+    let touchStartX = 0;
+    let touchStartTime = 0;
+
     avatar.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      avatar.classList.toggle('active');
+      if (prefersReducedMotion) {
+        // 동작 감소 모드에서는 기존 탭 동작만
+        e.preventDefault();
+        avatar.classList.toggle('active');
+        return;
+      }
+
+      touchStartX = e.touches[0].clientX;
+      touchStartTime = performance.now();
+    });
+
+    avatar.addEventListener('touchend', (e) => {
+      if (prefersReducedMotion) return;
+
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dt = performance.now() - touchStartTime;
+
+      // 짧은 탭은 기존 동작 (active 토글)
+      if (dt < 200 && Math.abs(dx) < 20) {
+        if (isSpinning) {
+          angularVelocity *= 0.3; // 탭으로 감속
+        } else {
+          avatar.classList.toggle('active');
+        }
+        return;
+      }
+
+      // 스와이프로 스핀 트리거
+      const velocity = Math.abs(dx / dt) * 1000;
+      if (velocity > VELOCITY_THRESHOLD) {
+        e.preventDefault();
+        startSpin(velocity);
+      }
     });
 
     // 다른 곳 탭 시 상태 해제
@@ -172,8 +357,24 @@ const { profile, socialLinks = [] } = Astro.props;
         avatar.classList.remove('active');
       }
     });
+
+    // View Transition 시 애니메이션 cleanup
+    document.addEventListener('astro:before-swap', () => {
+      if (isSpinning) {
+        stopSpin();
+      }
+    });
   }
 
-  // Astro View Transitions 대응
-  document.addEventListener('astro:page-load', initProfileHover);
+  // 초기화: DOMContentLoaded 또는 즉시 실행
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProfileInteraction);
+  } else {
+    initProfileInteraction();
+  }
+
+  // Astro View Transitions 대응 (페이지 전환 시 재초기화)
+  document.addEventListener('astro:page-load', initProfileInteraction);
+
+  console.log('🔧 ProfileSection script loaded');
 </script>
