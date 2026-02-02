@@ -125,11 +125,31 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
-9. Completion validation:
+9. **New Technology/Skill Discovery**:
+   - If a task requires technology or patterns not covered in CLAUDE.md or existing skills:
+     1. **STOP** implementation immediately
+     2. Explain to the user what new technology/pattern is needed and why
+     3. Wait for user decision
+     4. If approved: Update CLAUDE.md or create a new skill in `.claude/skills/`
+     5. Resume implementation
+
+10. Completion validation:
    - Verify all required tasks are completed
+   - **REQUIRED**: Compare implementation against spec.md acceptance criteria:
+     - Read spec.md and extract all acceptance scenarios
+     - Verify each "Given/When/Then" scenario is satisfied
+     - Report any unmet criteria before marking complete
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+
+## Constitution Rules Reference
+
+From `.specify/memory/constitution.md`:
+- **Task 분할**: task 하나가 파일 5개 이상 수정하면 분할
+- **Acceptance Criteria**: implement 완료 후 반드시 spec.md와 대조 검증
+- **Clarify**: 불확실한 설계 결정 시 `/speckit.clarify`로 돌아갈 것
+- **새 기술 추가**: 사용자와 논의 후 CLAUDE.md 또는 skill로 추가

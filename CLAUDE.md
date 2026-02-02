@@ -1,42 +1,48 @@
-# sclog Development Guidelines
+# CLAUDE.md
 
-Auto-generated from all feature plans. Last updated: 2025-12-06
-
-## Active Technologies
-- 정적 데이터 (TypeScript 상수 또는 JSON) (003-portfolio-home)
-- TypeScript 5.6, Astro 5.x + Astro, @astrojs/mdx (이미 설치됨) (004-reading-experience)
-- N/A (정적 사이트, localStorage로 상태 유지 불필요) (004-reading-experience)
-- TypeScript 5.6, Astro 5.x + Astro (이미 설치됨) (005-profile-hover)
-- N/A (정적 이미지 파일 사용) (005-profile-hover)
-- TypeScript 5.6, Astro 5.x + Giscus (외부 스크립트, 설치 불필요) (007-comments)
-- GitHub Discussions (외부 서비스) (007-comments)
-- TypeScript 5.6, Astro 5.x + Astro (이미 설치됨), web-vitals (Core Web Vitals 측정용 - 선택적) (008-monitoring-dashboard)
-- N/A (클라이언트 측 실시간 측정, 데이터 저장 없음) (008-monitoring-dashboard)
-- TypeScript 5.6, Astro 5.x + Astro (이미 설치됨), 추가 라이브러리 없음 (순수 JavaScript/CSS) (009-profile-spin)
-- N/A (상태 저장 없음) (009-profile-spin)
-
-- TypeScript 5.6, Astro 5.x + Astro, @astrojs/mdx, Google Fonts (Roboto, Noto Sans KR) (002-design-system)
-
-## Project Structure
-
-```text
-src/
-tests/
-```
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands
 
-npm test && npm run lint
+```bash
+pnpm dev              # 개발 서버 (localhost:4321)
+pnpm build            # 타입 체크 + 빌드
+pnpm astro check      # 타입 체크만
+```
 
-## Code Style
+## Project Context
 
-TypeScript 5.6, Astro 5.x: Follow standard conventions
+Personal blog built with Astro 5.x, TypeScript, and MDX. Features are developed using Speckit workflow (`specs/` directory).
 
-## Recent Changes
-- 009-profile-spin: Added TypeScript 5.6, Astro 5.x + Astro (이미 설치됨), 추가 라이브러리 없음 (순수 JavaScript/CSS)
-- 008-monitoring-dashboard: Added TypeScript 5.6, Astro 5.x + Astro (이미 설치됨), web-vitals (Core Web Vitals 측정용 - 선택적)
-- 007-comments: Added TypeScript 5.6, Astro 5.x + Giscus (외부 스크립트, 설치 불필요)
+## Tech Stack
 
+- **Framework**: Astro 5.x (static site generation)
+- **Language**: TypeScript 5.6 (strict mode)
+- **Content**: MDX via @astrojs/mdx
+- **Styling**: Tailwind CSS (utility-first, no CSS-in-JS)
+- **Package Manager**: pnpm
+- **Deployment**: Vercel (Edge Runtime compatible)
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+## Coding Conventions
+
+- `any` 타입 사용 금지
+- 모든 export 함수/컴포넌트에 JSDoc 작성
+- Conventional Commits 형식 사용 (`feat:`, `fix:`, `chore:`)
+- 빌드 전 `pnpm astro check` 통과 필수
+
+## Library Selection
+
+검증된 라이브러리를 우선 사용하고 커스텀 구현을 피한다:
+- 날짜 처리: `date-fns`
+- 스키마 검증: `zod`
+- 성능 측정: `web-vitals`
+
+새로운 라이브러리 추가 시 번들 사이즈와 tree-shaking 지원 여부를 고려한다.
+
+## Adding New Tech/Skills
+
+작업 중 새로운 기술이나 구조가 필요한 경우:
+1. 작업을 멈추고 사용자에게 필요성 설명
+2. 사용자와 논의 후 결정
+3. 결정된 내용을 CLAUDE.md 또는 새 skill로 추가
+4. 작업 계속
