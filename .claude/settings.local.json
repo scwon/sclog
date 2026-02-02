@@ -7,7 +7,13 @@
       "Bash(pnpm astro check:*)",
       "Bash(pnpm build:*)",
       "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(pnpm astro add:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev              # 개발 서버 (localhost:4321)
 pnpm build            # 타입 체크 + 빌드
 pnpm astro check      # 타입 체크만
+pnpm storybook        # Storybook (localhost:6006)
+pnpm test             # Vitest 테스트
 ```
 
 ## Project Context
@@ -19,7 +21,10 @@ Personal blog built with Astro 5.x, TypeScript, and MDX. Features are developed 
 - **Framework**: Astro 5.x (static site generation)
 - **Language**: TypeScript 5.6 (strict mode)
 - **Content**: MDX via @astrojs/mdx
-- **Styling**: Tailwind CSS (utility-first, no CSS-in-JS)
+- **UI Components**: React 19 + shadcn/ui (Radix + Tailwind)
+- **Styling**: Tailwind CSS 4 (utility-first)
+- **Component Dev**: Storybook 10 (`src/**/*.stories.tsx`)
+- **Testing**: Vitest 4 + Testing Library
 - **Package Manager**: pnpm
 - **Deployment**: Vercel (Edge Runtime compatible)
 
