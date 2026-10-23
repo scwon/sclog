@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      'astro:content': resolve(__dirname, './src/test/astro-content.stub.ts'),
     },
   },
 });

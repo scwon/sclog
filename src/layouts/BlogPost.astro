@@ -13,12 +13,11 @@ import Comments from '../components/blog/Comments.astro';
 interface Props {
   post: CollectionEntry<'blog'>;
   headings?: MarkdownHeading[];
-  rawBody?: string;
 }
 
-const { post, headings = [], rawBody } = Astro.props;
+const { post, headings = [] } = Astro.props;
 const { title, description, pubDate, updatedDate, heroImage, tags } = post.data;
-const readingTime = getReadingTime(rawBody || post.body || '');
+const readingTime = getReadingTime(post.body ?? '');
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('ko-KR', {
