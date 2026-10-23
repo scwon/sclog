@@ -28,7 +28,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **Component Dev**: Storybook (`src/**/*.stories.tsx`)
 - **Testing**: Vitest (node 환경)
 - **Lint/Format**: Oxlint + Oxfmt (`.astro` 포맷, Tailwind 클래스 정렬 포함)
-- **Package Manager**: pnpm
+- **Package Manager**: pnpm 12. 로컬 Node·pnpm 버전은 mise가 `package.json`의 `devEngines.runtime`과 `packageManager`를 읽어 맞춘다
 - **Deployment**: Vercel (Edge Runtime compatible)
 
 ## Coding Conventions

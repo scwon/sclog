@@ -1,0 +1,3 @@
+# esbuild는 플랫폼별 바이너리를 optionalDependencies로 받으므로 postinstall이 필요 없다.
+allowBuilds:
+  esbuild: false
