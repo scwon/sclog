@@ -1,13 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript",
-    "unicorn",
-    "oxc",
-    "react",
-    "jsx-a11y",
-    "vitest"
-  ],
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "vitest"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -16,18 +9,10 @@
     "typescript/no-explicit-any": "error",
     "react/react-in-jsx-scope": "off"
   },
-  "ignorePatterns": [
-    ".claude/**",
-    ".specify/**",
-    "specs/**",
-    "dist/**",
-    "storybook-static/**"
-  ],
+  "ignorePatterns": [".claude/**", ".specify/**", "specs/**", "dist/**", "storybook-static/**"],
   "overrides": [
     {
-      "files": [
-        "**/*.d.ts"
-      ],
+      "files": ["**/*.d.ts"],
       "rules": {
         "typescript/triple-slash-reference": "off"
       }

@@ -19,20 +19,12 @@ function formatDate(date: Date): string {
 
 <article class="blog-card">
   <a href={`/blog/${post.id}`} class="card-link">
-    {heroImage && (
-      <img
-        class="card-image"
-        src={heroImage}
-        alt={title}
-      />
-    )}
+    {heroImage && <img class="card-image" src={heroImage} alt={title} />}
     <div class="card-content">
       <h2 class="card-title">{title}</h2>
       <p class="card-description">{description}</p>
       <div class="card-meta">
-        <time datetime={pubDate.toISOString()}>
-          {formatDate(pubDate)}
-        </time>
+        <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time>
       </div>
       {tags.length > 0 && (
         <div class="card-tags">
@@ -51,7 +43,10 @@ function formatDate(date: Date): string {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s,
+      border-color 0.2s;
   }
 
   .blog-card:hover {

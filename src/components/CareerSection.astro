@@ -39,9 +39,7 @@ function getPeriod(startDate: string, endDate: string | null): string {
           <span class="career-period">{getPeriod(career.startDate, career.endDate)}</span>
           <h3 class="career-company">{career.company}</h3>
           <p class="career-role">{career.role}</p>
-          {career.description && (
-            <p class="career-description">{career.description}</p>
-          )}
+          {career.description && <p class="career-description">{career.description}</p>}
         </li>
       ))}
     </ul>

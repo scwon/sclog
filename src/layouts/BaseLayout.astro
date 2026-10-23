@@ -31,17 +31,22 @@ const {
     <!-- Google Fonts: Roboto (영문), Noto Sans KR (한글) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <!-- Preload profile hover alternate image -->
     <link rel="preload" href="/images/scwon_dot.png" as="image" />
     <!-- FOUC Prevention: Apply theme before first paint -->
     <script is:inline>
-      (function() {
+      (function () {
         var stored = null;
         try {
           stored = localStorage.getItem('theme');
         } catch (e) {
-          try { stored = sessionStorage.getItem('theme'); } catch (e2) {}
+          try {
+            stored = sessionStorage.getItem('theme');
+          } catch (e2) {}
         }
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         var theme = stored || (prefersDark ? 'dark' : 'light');
@@ -117,7 +122,9 @@ const {
     color: var(--color-text);
     line-height: 1.6;
     /* Theme transition (150ms per spec) */
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
   }
 
   body {

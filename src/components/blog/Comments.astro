@@ -13,7 +13,9 @@
 ---
 
 <section class="comments-section" aria-labelledby="comments-title">
-  <h2 id="comments-title" class="comments-title">댓글</h2>
+  <h2 id="comments-title" class="comments-title">
+    댓글
+  </h2>
   <div class="giscus-container">
     <script
       is:inline
@@ -42,23 +44,18 @@
    * document.documentElement의 'dark' 클래스 유무로 테마 결정
    */
   function updateGiscusTheme(): void {
-    const theme = document.documentElement.classList.contains('dark')
-      ? 'dark'
-      : 'light';
+    const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
     if (!iframe?.contentWindow) return;
 
-    iframe.contentWindow.postMessage(
-      { giscus: { setConfig: { theme } } },
-      'https://giscus.app'
-    );
+    iframe.contentWindow.postMessage({ giscus: { setConfig: { theme } } }, 'https://giscus.app');
   }
 
   // 테마 변경 감지 (MutationObserver)
   const observer = new MutationObserver(updateGiscusTheme);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class']
+    attributeFilter: ['class'],
   });
 
   // 초기 테마 설정 (iframe 로드 후)

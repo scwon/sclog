@@ -26,12 +26,12 @@ const { profile, socialLinks = [] } = Astro.props;
     <img class="avatar-default" src={profile.avatar} alt={`${profile.name} 프로필 사진`} />
     <img class="avatar-alternate" src="/images/scwon_dot.png" alt="" aria-hidden="true" />
   </div>
-  <h1 id="profile-name" class="profile-name">{profile.name}</h1>
+  <h1 id="profile-name" class="profile-name">
+    {profile.name}
+  </h1>
   <p class="profile-tagline">{profile.tagline}</p>
   <p class="profile-bio">{profile.bio}</p>
-  {socialLinks.length > 0 && (
-    <SocialLinks links={socialLinks} email={profile.email} />
-  )}
+  {socialLinks.length > 0 && <SocialLinks links={socialLinks} email={profile.email} />}
 </section>
 
 <style>

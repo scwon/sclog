@@ -32,7 +32,9 @@ const sortedTags = [...tags.entries()].toSorted((a, b) => b[1] - a[1]);
     padding: 0.5rem 1rem;
     border-radius: var(--radius-tag);
     font-size: 0.9rem;
-    transition: opacity 0.2s, transform 0.2s;
+    transition:
+      opacity 0.2s,
+      transform 0.2s;
   }
 
   :global(.dark) .tag-item {

@@ -42,48 +42,38 @@ function formatDate(date: Date): string {
   <main class="container">
     <div class="content-grid">
       <article class="blog-post">
-      <header class="post-header">
-        {heroImage && (
-          <img
-            class="hero-image"
-            src={heroImage}
-            alt={title}
-          />
-        )}
-        <h1 class="post-title">{title}</h1>
-        <div class="post-meta">
-          <time datetime={pubDate.toISOString()}>
-            {formatDate(pubDate)}
-          </time>
-          <span class="reading-time">{readingTime}분 읽기</span>
-          {updatedDate && (
-            <span class="updated">
-              (수정: <time datetime={updatedDate.toISOString()}>
-                {formatDate(updatedDate)}
-              </time>)
-            </span>
-          )}
-        </div>
-        {tags.length > 0 && (
-          <div class="post-tags">
-            {tags.map((tag) => (
-              <a href={`/blog/tags/${tag}`} class="tag">
-                #{tag}
-              </a>
-            ))}
+        <header class="post-header">
+          {heroImage && <img class="hero-image" src={heroImage} alt={title} />}
+          <h1 class="post-title">{title}</h1>
+          <div class="post-meta">
+            <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time>
+            <span class="reading-time">{readingTime}분 읽기</span>
+            {updatedDate && (
+              <span class="updated">
+                (수정: <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time>)
+              </span>
+            )}
           </div>
-        )}
-      </header>
+          {tags.length > 0 && (
+            <div class="post-tags">
+              {tags.map((tag) => (
+                <a href={`/blog/tags/${tag}`} class="tag">
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          )}
+        </header>
 
-      <div class="post-content">
-        <slot />
-      </div>
+        <div class="post-content">
+          <slot />
+        </div>
 
-      <Comments />
-    </article>
-    <aside class="toc-sidebar">
-      <TableOfContents headings={headings} />
-    </aside>
+        <Comments />
+      </article>
+      <aside class="toc-sidebar">
+        <TableOfContents headings={headings} />
+      </aside>
     </div>
   </main>
   <CodeBlock />

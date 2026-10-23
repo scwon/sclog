@@ -15,14 +15,13 @@ const { tag } = Astro.params;
 const posts = await getPostsByTag(tag);
 ---
 
-<BaseLayout
-  title={`#${tag} 태그 글`}
-  description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}
->
+<BaseLayout title={`#${tag} 태그 글`} description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}>
   <Header />
   <main class="container">
     <header class="page-header">
-      <a href="/blog/tags" class="back-link">← 모든 태그</a>
+      <a href="/blog/tags" class="back-link">
+        ← 모든 태그
+      </a>
       <h1>#{tag}</h1>
       <p class="subtitle">{posts.length}개의 글</p>
     </header>

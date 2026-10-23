@@ -51,6 +51,4 @@ const imageURL = image ? new URL(image, Astro.site) : undefined;
 {type === 'article' && modifiedTime && (
   <meta property="article:modified_time" content={modifiedTime.toISOString()} />
 )}
-{type === 'article' && tags.map((tag) => (
-  <meta property="article:tag" content={tag} />
-))}
+{type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}

@@ -8,12 +8,7 @@
  */
 ---
 
-<button
-  type="button"
-  class="theme-toggle"
-  aria-label="테마 전환"
-  title="테마 전환"
->
+<button type="button" class="theme-toggle" aria-label="테마 전환" title="테마 전환">
   <svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <circle cx="12" cy="12" r="5"></circle>
     <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -41,7 +36,9 @@
     justify-content: center;
     color: var(--color-text);
     border-radius: var(--radius-button);
-    transition: color 0.15s, background-color 0.15s;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
   }
 
   .theme-toggle:hover {

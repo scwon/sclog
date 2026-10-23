@@ -5,12 +5,7 @@
  */
 ---
 
-<button
-  class="scroll-to-top"
-  id="scroll-to-top"
-  aria-label="맨 위로 이동"
-  type="button"
->
+<button class="scroll-to-top" id="scroll-to-top" aria-label="맨 위로 이동" type="button">
   <svg
     width="20"
     height="20"
@@ -59,7 +54,7 @@
     button.addEventListener('click', () => {
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     });
 
@@ -69,7 +64,7 @@
         e.preventDefault();
         window.scrollTo({
           top: 0,
-          behavior: 'smooth'
+          behavior: 'smooth',
         });
       }
     });

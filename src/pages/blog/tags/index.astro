@@ -7,10 +7,7 @@ import { getAllTags } from '../../../utils/blog';
 const tags = await getAllTags();
 ---
 
-<BaseLayout
-  title="태그"
-  description="SCLOG 블로그의 모든 태그 목록입니다."
->
+<BaseLayout title="태그" description="SCLOG 블로그의 모든 태그 목록입니다.">
   <Header />
   <main class="container">
     <header class="page-header">
@@ -18,11 +15,7 @@ const tags = await getAllTags();
       <p class="subtitle">관심 있는 주제를 선택하세요.</p>
     </header>
 
-    {tags.size === 0 ? (
-      <p class="no-tags">아직 태그가 없습니다.</p>
-    ) : (
-      <TagList tags={tags} />
-    )}
+    {tags.size === 0 ? <p class="no-tags">아직 태그가 없습니다.</p> : <TagList tags={tags} />}
   </main>
 </BaseLayout>
 

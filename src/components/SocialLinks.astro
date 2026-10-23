@@ -44,11 +44,7 @@ const iconComponents = {
       </a>
     );
   })}
-  <a
-    href={`mailto:${email}`}
-    aria-label="이메일 보내기"
-    class="social-link"
-  >
+  <a href={`mailto:${email}`} aria-label="이메일 보내기" class="social-link">
     <EmailIcon size={24} />
   </a>
 </nav>
@@ -69,7 +65,9 @@ const iconComponents = {
     height: 44px;
     border-radius: 50%;
     color: var(--color-text-muted);
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
   }
 
   .social-link:hover,

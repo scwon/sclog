@@ -18,7 +18,8 @@
       if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
 
       // 언어 정보 추출 (Shiki/Astro가 생성하는 data-language 또는 class에서)
-      const language = pre.dataset.language ||
+      const language =
+        pre.dataset.language ||
         pre.className.match(/language-(\w+)/)?.[1] ||
         pre.querySelector('code')?.className.match(/language-(\w+)/)?.[1] ||
         '';
@@ -130,7 +131,9 @@
     cursor: pointer;
     padding: 0.25rem;
     border-radius: var(--radius-button, 4px);
-    transition: color 0.2s, background 0.2s;
+    transition:
+      color 0.2s,
+      background 0.2s;
   }
 
   .code-copy-btn:hover {
