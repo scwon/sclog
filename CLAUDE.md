@@ -24,7 +24,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **UI Components**: React + shadcn/ui (Radix + Tailwind)
 - **Styling**: Tailwind CSS (utility-first)
 - **Component Dev**: Storybook (`src/**/*.stories.tsx`)
-- **Testing**: Vitest + Testing Library
+- **Testing**: Vitest (node 환경)
 - **Package Manager**: pnpm
 - **Deployment**: Vercel (Edge Runtime compatible)
 
