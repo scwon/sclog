@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "astro": true,
+  "sortTailwindcss": {
+    "stylesheet": "./src/styles/global.css",
+    "functions": [
+      "cn",
+      "cva"
+    ]
+  },
+  "ignorePatterns": [
+    ".claude/**",
+    ".specify/**",
+    "specs/**",
+    "docs/**",
+    "**/*.md",
+    "**/*.mdx",
+    "pnpm-lock.yaml",
+    "skills-lock.json"
+  ],
+  "sortPackageJson": false
+}

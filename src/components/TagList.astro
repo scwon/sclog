@@ -4,7 +4,7 @@ interface Props {
 }
 
 const { tags } = Astro.props;
-const sortedTags = [...tags.entries()].sort((a, b) => b[1] - a[1]);
+const sortedTags = [...tags.entries()].toSorted((a, b) => b[1] - a[1]);
 ---
 
 <div class="tag-list">

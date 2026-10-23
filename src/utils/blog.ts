@@ -13,7 +13,7 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
     return !data.draft && data.pubDate <= now;
   });
 
-  return posts.sort(
+  return posts.toSorted(
     (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
   );
 }

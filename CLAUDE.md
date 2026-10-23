@@ -10,6 +10,8 @@ pnpm build            # 타입 체크 + 빌드
 pnpm astro check      # 타입 체크만
 pnpm storybook        # Storybook (localhost:6006)
 pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
+pnpm lint             # Oxlint
+pnpm format           # Oxfmt로 포맷 적용 (검사만: pnpm format:check)
 ```
 
 ## Project Context
@@ -25,6 +27,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **Styling**: Tailwind CSS (utility-first)
 - **Component Dev**: Storybook (`src/**/*.stories.tsx`)
 - **Testing**: Vitest (node 환경)
+- **Lint/Format**: Oxlint + Oxfmt (`.astro` 포맷, Tailwind 클래스 정렬 포함)
 - **Package Manager**: pnpm
 - **Deployment**: Vercel (Edge Runtime compatible)
 
@@ -34,6 +37,8 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - 모든 export 함수/컴포넌트에 JSDoc 작성
 - Conventional Commits 형식 사용 (`feat:`, `fix:`, `chore:`)
 - 빌드 전 `pnpm astro check` 통과 필수
+- 커밋 전 `pnpm lint`, `pnpm format:check` 통과 필수 (CI도 같은 검사를 돈다)
+- 클래스 합치기는 `@/lib/utils`의 `cn`(shadcn `cn` 패키지)을 쓴다
 
 ## Library Selection
 
