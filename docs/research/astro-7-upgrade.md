@@ -105,6 +105,7 @@
 ## 미확인/불확실
 
 - **5.x에서 `post.body`가 비어 있던 원인**: legacy 에뮬레이션 동작으로 추정되나 v5/v6 가이드에 `body` 관련 서술이 없어 1차 출처로 확인하지 못했다. 마이그레이션 후 `post.body`가 채워지는지 빌드로 검증해야 한다.
+  - **검증 결과(2026-10-23)**: glob 로더 이전 후 `post.body`로 계산한 읽기 시간이 `node:fs` 원문 기준과 같은 7분으로 빌드됐다(5.16·7.4 모두). `body`는 채워진다.
 - **`@astrojs/check`와 Astro 7의 공식 호환 표**: CHANGELOG·npm에 Astro 버전 조건이 없다. 최신(0.9.12)으로 올리고 `astro check` 통과로 확인.
 - **pnpm peer 해석**: `@tailwindcss/vite`·vitest·storybook이 서로 다른 Vite 복사본을 참조할 때 pnpm 10이 경고만 내는지, 실패하는지는 실제 설치 전엔 알 수 없다(이번 조사에서 설치 금지).
 - **MDX 본문의 `<p align="center"><img/></p>` 같은 HTML**: Rust 컴파일러의 엄격함은 `.astro` 템플릿 대상이고 MDX는 Sätteri가 처리한다. Sätteri의 MDX 내 raw HTML 처리 차이는 문서에서 찾지 못했다. 빌드 결과 비교 필요.

@@ -30,21 +30,28 @@ updatedDate: 2024-01-20              # 수정일
 
 ## 스키마 정의 위치
 
-`src/content/config.ts`에 Zod 스키마로 정의됨:
+`src/content.config.ts`에 Zod 스키마로 정의됨 (`glob()` 로더, `z`는 `astro/zod`):
 
 ```typescript
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
+
 const blogCollection = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/blog' }),
   schema: z.object({
     title: z.string().min(1).max(100),
     pubDate: z.date(),
+    updatedDate: z.date().optional(),
     description: z.string().min(1).max(160),
-    tags: z.array(z.string().min(1).max(30)).max(10),
+    tags: z.array(z.string().min(1).max(30)).max(10).default([]),
     heroImage: z.string().optional(),
     draft: z.boolean().default(false),
-    updatedDate: z.date().optional(),
   }),
 });
 ```
+
+글의 `id`는 파일명에서 확장자를 뺀 slug이며 URL `/blog/<id>/`가 된다. 본문 원문은 `post.body`, 렌더는 `render(post)`.
 
 ## 파일 위치
 

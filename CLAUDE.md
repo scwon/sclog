@@ -14,17 +14,17 @@ pnpm test             # Vitest 테스트
 
 ## Project Context
 
-Personal blog built with Astro 5.x, TypeScript, and MDX. Features are developed using Speckit workflow (`specs/` directory).
+Personal blog built with Astro 7.x, TypeScript, and MDX. Features are developed using Speckit workflow (`specs/` directory).
 
 ## Tech Stack
 
-- **Framework**: Astro 5.x (static site generation)
+- **Framework**: Astro 7.x (static site generation)
 - **Language**: TypeScript 5.6 (strict mode)
 - **Content**: MDX via @astrojs/mdx
 - **UI Components**: React 19 + shadcn/ui (Radix + Tailwind)
 - **Styling**: Tailwind CSS 4 (utility-first)
 - **Component Dev**: Storybook 10 (`src/**/*.stories.tsx`)
-- **Testing**: Vitest 4 + Testing Library
+- **Testing**: Vitest 5 + Testing Library
 - **Package Manager**: pnpm
 - **Deployment**: Vercel (Edge Runtime compatible)
 
@@ -50,7 +50,7 @@ MCP 서버·플러그인·스킬은 항상 프로젝트 레벨로 설치한다: 
 
 | 종류 | 이름 | 출처 | 쓰는 때 |
 | --- | --- | --- | --- |
-| MCP | `astro-docs` | Astro 공식 원격 서버 | Astro API·설정 확인. 문서는 최신(v7) 기준이므로 업그레이드 전까지 5.x와의 차이에 주의 |
+| MCP | `astro-docs` | Astro 공식 원격 서버 | Astro API·설정 확인 (문서·저장소 모두 v7) |
 | MCP | `shadcn` | shadcn CLI | 레지스트리 검색, 컴포넌트 추가 |
 | 플러그인 | `frontend-design` | Anthropic 공식 마켓 | 화면 디자인 품질 |
 | 플러그인 | `modern-web-guidance` | Google Chrome (공식 마켓) | 최신 HTML·CSS·Web API 패턴 |

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Entry = {
   id: string;
@@ -15,7 +15,7 @@ vi.mock('astro:content', () => ({
 
 const { getReadingTime, getPublishedPosts, getAllTags, getPostsByTag } = await import('./blog');
 
-function entry(id: string, pubDate: string, tags: string[] = [], draft = false): Entry {
+function makePost(id: string, pubDate: string, tags: string[] = [], draft = false): Entry {
   return { id, data: { title: id, pubDate: new Date(pubDate), tags, draft, description: id } };
 }
 
@@ -39,27 +39,37 @@ describe('getReadingTime', () => {
   });
 });
 
-describe('getPublishedPosts', () => {
-  it('drops drafts and future posts, newest first', async () => {
+describe('published posts', () => {
+  beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-23'));
     entries.splice(
       0,
       entries.length,
-      entry('old', '2023-04-30', ['회고']),
-      entry('new', '2026-01-01', ['회고', '커리어']),
-      entry('draft', '2026-02-01', [], true),
-      entry('future', '2027-01-01'),
+      makePost('old', '2023-04-30', ['회고']),
+      makePost('new', '2026-01-01', ['회고', '커리어']),
+      makePost('draft', '2026-02-01', [], true),
+      makePost('future', '2027-01-01'),
     );
+  });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('getPublishedPosts drops drafts and future posts, newest first', async () => {
     const posts = await getPublishedPosts();
     expect(posts.map((p) => p.id)).toEqual(['new', 'old']);
+  });
 
+  it('getAllTags counts tags across published posts only', async () => {
     expect([...(await getAllTags()).entries()]).toEqual([
       ['회고', 2],
       ['커리어', 1],
     ]);
+  });
+
+  it('getPostsByTag returns published posts carrying the tag', async () => {
     expect((await getPostsByTag('커리어')).map((p) => p.id)).toEqual(['new']);
-    vi.useRealTimers();
   });
 });

@@ -7,7 +7,6 @@ interface Props {
 
 const { post } = Astro.props;
 const { title, description, pubDate, tags, heroImage } = post.data;
-const slug = post.id.replace(/\.mdx?$/, '');
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('ko-KR', {
@@ -19,7 +18,7 @@ function formatDate(date: Date): string {
 ---
 
 <article class="blog-card">
-  <a href={`/blog/${slug}`} class="card-link">
+  <a href={`/blog/${post.id}`} class="card-link">
     {heroImage && (
       <img
         class="card-image"
