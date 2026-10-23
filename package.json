@@ -2,6 +2,7 @@
   "name": "",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -10,8 +11,8 @@
     "astro": "astro",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",

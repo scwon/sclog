@@ -5,7 +5,14 @@
     "jsxImportSource": "react",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
-  }
+  },
+  "exclude": [
+    "dist",
+    "storybook-static",
+    "specs"
+  ]
 }

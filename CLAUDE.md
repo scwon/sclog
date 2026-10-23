@@ -9,22 +9,22 @@ pnpm dev              # 개발 서버 (localhost:4321)
 pnpm build            # 타입 체크 + 빌드
 pnpm astro check      # 타입 체크만
 pnpm storybook        # Storybook (localhost:6006)
-pnpm test             # Vitest 테스트
+pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
 ```
 
 ## Project Context
 
-Personal blog built with Astro 7.x, TypeScript, and MDX. Features are developed using Speckit workflow (`specs/` directory).
+Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이 기준이다. Features are developed using Speckit workflow (`specs/` directory).
 
 ## Tech Stack
 
-- **Framework**: Astro 7.x (static site generation)
-- **Language**: TypeScript 5.6 (strict mode)
+- **Framework**: Astro (static site generation)
+- **Language**: TypeScript (strict mode)
 - **Content**: MDX via @astrojs/mdx
-- **UI Components**: React 19 + shadcn/ui (Radix + Tailwind)
-- **Styling**: Tailwind CSS 4 (utility-first)
-- **Component Dev**: Storybook 10 (`src/**/*.stories.tsx`)
-- **Testing**: Vitest 5 + Testing Library
+- **UI Components**: React + shadcn/ui (Radix + Tailwind)
+- **Styling**: Tailwind CSS (utility-first)
+- **Component Dev**: Storybook (`src/**/*.stories.tsx`)
+- **Testing**: Vitest + Testing Library
 - **Package Manager**: pnpm
 - **Deployment**: Vercel (Edge Runtime compatible)
 

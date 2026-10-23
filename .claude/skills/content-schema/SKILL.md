@@ -30,28 +30,11 @@ updatedDate: 2024-01-20              # 수정일
 
 ## 스키마 정의 위치
 
-`src/content.config.ts`에 Zod 스키마로 정의됨 (`glob()` 로더, `z`는 `astro/zod`):
+`src/content.config.ts`가 단일 기준이다. 필드와 제한값은 그 파일을 읽는다. 여기에는 코드가 말해 주지 않는 규칙만 둔다.
 
-```typescript
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
-
-const blogCollection = defineCollection({
-  loader: glob({ pattern: '**/*.mdx', base: './src/content/blog' }),
-  schema: z.object({
-    title: z.string().min(1).max(100),
-    pubDate: z.date(),
-    updatedDate: z.date().optional(),
-    description: z.string().min(1).max(160),
-    tags: z.array(z.string().min(1).max(30)).max(10).default([]),
-    heroImage: z.string().optional(),
-    draft: z.boolean().default(false),
-  }),
-});
-```
-
-글의 `id`는 파일명에서 확장자를 뺀 slug이며 URL `/blog/<id>/`가 된다. 본문 원문은 `post.body`, 렌더는 `render(post)`.
+- 글의 `id`는 파일명에서 확장자를 뺀 slug이며 URL `/blog/<id>/`가 된다. 파일명을 바꾸면 URL이 바뀐다.
+- 본문 원문은 `post.body`, 렌더는 `render(post)` (`astro:content`). `node:fs`로 원문을 읽지 않는다.
+- `draft: true`이거나 `pubDate`가 미래인 글은 목록에서 빠진다 (`src/utils/blog.ts`).
 
 ## 파일 위치
 
