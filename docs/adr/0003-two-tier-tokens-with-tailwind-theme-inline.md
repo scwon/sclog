@@ -1,8 +1,8 @@
 # 토큰은 원시·의미 2단계로 두고, 의미 토큰만 Tailwind `@theme inline`으로 노출한다
 
-디자인 시스템의 토큰(GLOSSARY.md)은 원시 토큰(값만 말하는 이름, 테마 무관)과 의미 토큰(역할 이름) 2단계로만 둔다. 색 의미 토큰은 테마가 값을 바꾸고, 반경·모션·치수·타이포 스케일 의미 토큰은 테마와 무관하다. 의미 토큰 중 색·글꼴·반경·이징은 `@theme inline`으로 Tailwind 네임스페이스(`--color-*`, `--font-*`, `--radius-*`, `--ease-*`)에 매핑해 `bg-surface-panel` 같은 유틸리티를 만들고, 원시 토큰은 `@theme`에 넣지 않아 `bg-palette-coral-400` 같은 유틸리티가 생기지 않게 한다. Tailwind 기본 색 팔레트는 `--color-*: initial`로 끈다. `inline`을 쓰는 이유는 유틸리티에 `var()`가 그대로 복사돼야 `data-theme`로 바꾼 값이 반영되기 때문이다(`docs/research/design-system-tokens.md` 1절).
+디자인 시스템의 토큰(GLOSSARY.md)은 원시 토큰(값만 말하는 이름, 테마 무관)과 의미 토큰(역할 이름) 2단계로만 둔다. 색 의미 토큰은 테마가 값을 바꾸고, 반경·모션·치수·글꼴·타이포 스케일 의미 토큰은 테마와 무관하다. 의미 토큰 중 색·글꼴·반경·이징은 `@theme inline`으로 Tailwind 네임스페이스(`--color-*`, `--font-*`, `--radius-*`, `--ease-*`)에 매핑해 `bg-surface-panel` 같은 유틸리티를 만들고, 원시 토큰은 `@theme`에 넣지 않아 `bg-palette-coral-400` 같은 유틸리티가 생기지 않게 한다. Tailwind 기본 색 팔레트는 `--color-*: initial`로 끈다. `inline`을 쓰는 이유는 유틸리티에 `var()`가 그대로 복사돼야 `data-theme`로 바꾼 값이 반영되기 때문이다(`docs/research/design-system-tokens.md` 1절).
 
-토큰 이름에는 IDE 용어를 쓰지 않는다. 원시 토큰은 값만 말하고(`--size-38`, `--duration-160`), 의미 토큰은 범용 역할(surface·text·border·accent·prose·code·state·marker·scrim, corner·motion·bar·rail·panel·gutter·track·type)로 짓는다. IDE 용어(explorer, status bar)는 컴포넌트 이름에만 쓴다. 다른 프로젝트에서 같은 시스템을 쓸 때 토큰 이름이 블로그 화면 구조에 묶이지 않게 하기 위해서다.
+토큰 이름에는 IDE 용어를 쓰지 않는다. 원시 토큰은 값만 말하고(`--size-38`, `--duration-160`), 의미 토큰은 범용 역할(surface·text·border·accent·prose·code·state·marker·scrim, corner·motion·bar·rail·panel·gutter·track·family·type)로 짓는다. IDE 용어(explorer, status bar)는 컴포넌트 이름에만 쓴다. 다른 프로젝트에서 같은 시스템을 쓸 때 토큰 이름이 블로그 화면 구조에 묶이지 않게 하기 위해서다.
 
 ## Considered Options
 

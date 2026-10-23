@@ -19,7 +19,7 @@ _Avoid_: 팔레트 변수, 기본값, 베이스 토큰
 _Avoid_: 별칭 토큰, 역할 변수, 컴포넌트 토큰(이번 시스템에는 없다)
 
 **역할 (role)**:
-의미 토큰이 가리키는 쓰임새의 묶음. 이 시스템의 색 역할은 바탕(surface), 글자(text), 선(border), 강조(accent), 본문(prose), 코드(code), 상태(state), 형광 띠(marker), 가림막(scrim)이고, 테마가 값을 바꾼다. 테마와 무관한 역할은 반경(corner), 모션(motion), 치수(bar·rail·panel·gutter·track), 타이포 스케일(type)이다. 역할 이름에는 IDE 용어(탐색기·상태줄 등)를 쓰지 않는다.
+의미 토큰이 가리키는 쓰임새의 묶음. 이 시스템의 색 역할은 바탕(surface), 글자(text), 선(border), 강조(accent), 본문(prose), 코드(code), 상태(state), 형광 띠(marker), 가림막(scrim)이고, 테마가 값을 바꾼다. 테마와 무관한 역할은 반경(corner), 모션(motion), 치수(bar·rail·panel·gutter·track), 글꼴(family), 타이포 스케일(type)이다. 역할 이름에는 IDE 용어(탐색기·상태줄 등)를 쓰지 않는다.
 
 **층 (layer)**:
 디자인 시스템을 이루는 네 단계. 토큰 → CSS → React 컴포넌트 → Storybook 순서이며, 아래층은 위층을 모른다.

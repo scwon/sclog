@@ -13,6 +13,9 @@
     background-color: var(--surface);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
+    /* 한국어는 어절 단위로 줄을 바꾸고, 긴 영단어·URL만 중간에서 끊는다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   ::selection {

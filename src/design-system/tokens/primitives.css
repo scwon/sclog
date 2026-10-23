@@ -80,6 +80,16 @@
   --size-76: 76px;
   --size-272: 272px;
 
+  /* 글꼴 묶음(폴백 포함). 첫 이름은 @font-face의 font-family 이름이다 */
+  --font-family-bricolage:
+    'Bricolage Grotesque Variable', 'Pretendard Variable', -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-family-pretendard:
+    'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  --font-family-maruburi: 'MaruBuri', 'AppleMyungjo', 'Noto Serif KR', serif;
+  --font-family-jetbrains-mono:
+    'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
   /* 글자 크기·행간 */
   --font-size-17: 17px;
   --font-size-18_5: 18.5px;

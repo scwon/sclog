@@ -33,6 +33,12 @@
   --gutter-width-sm: var(--size-34); /* 좁은 화면의 줄 번호 열 */
   --track-width: var(--size-28); /* 줄 번호 옆 세로선·마디 열 */
 
+  /* 글꼴 */
+  --family-display: var(--font-family-bricolage); /* 블로그 이름·큰 숫자 */
+  --family-sans: var(--font-family-pretendard); /* 제목·메뉴·메타 정보 */
+  --family-serif: var(--font-family-maruburi); /* 글 본문 */
+  --family-mono: var(--font-family-jetbrains-mono); /* 코드·줄 번호·경로 */
+
   /* 타이포 스케일 */
   --type-body: var(--font-size-18_5);
   --type-body-sm: var(--font-size-17);

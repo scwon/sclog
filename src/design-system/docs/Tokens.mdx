@@ -5,6 +5,7 @@ import {
   MotionTokens,
   RadiusTokens,
   SemanticColors,
+  FamilySamples,
   TypeScaleTokens,
 } from './TokenDocs';
 
@@ -42,8 +43,14 @@ Tailwind에는 의미 토큰 중 색·반경·이징을 `@theme inline`으로 �
 
 <DimensionTokens />
 
+## 글꼴
+
+글꼴 파일은 모두 사이트가 제공하고 외부 글꼴 서비스에 요청하지 않는다. 어떤 글꼴을 어떤 파일로 제공하는지는 `styles/fonts.css`에, 글꼴마다의 쓰임새는 `semantic.css`의 `--family-*` 주석에 있다. 아래 제목의 설명은 그 주석이다.
+
+<FamilySamples />
+
 ## 타이포 스케일
 
-글꼴 견본은 글꼴 토큰과 함께 추가한다(티켓 02). 여기서는 크기와 행간만 보인다.
+크기와 행간 토큰이다. 견본은 `font-sans`로 그린다.
 
 <TypeScaleTokens />

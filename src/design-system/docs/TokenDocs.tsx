@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ColorItem, ColorPalette } from '@storybook/addon-docs/blocks';
+import { ColorItem, ColorPalette, Typeset } from '@storybook/addon-docs/blocks';
+import { cn } from '@/lib/utils';
 import semanticCss from '../tokens/semantic.css?raw';
 import stylesCss from '../styles/index.css?raw';
 
@@ -20,7 +21,7 @@ function tokensOf(selector: RegExp): Token[] {
 /** 어두운 테마 블록의 색 토큰. 두 테마의 이름이 같다는 것은 tokens.test.ts가 지킨다. */
 const colorNames = tokensOf(/:root,\s*\[data-theme='dark'\]/).map(({ name }) => name);
 
-/** 테마와 무관한 의미 토큰(반경·모션·치수·타이포 스케일). */
+/** 테마와 무관한 의미 토큰(반경·모션·치수·글꼴·타이포 스케일). */
 const shared = tokensOf(/:root(?!\s*,)/);
 const sharedWith = (pattern: RegExp) => shared.filter(({ name }) => pattern.test(name));
 
@@ -31,6 +32,7 @@ const radii = [...stylesCss.matchAll(/--radius-(\w+):\s*var\((--[\w-]+)\)/g)].ma
 
 const motion = sharedWith(/^--motion-/);
 const dimensions = sharedWith(/^--(bar|rail|panel|gutter|track)-/);
+const families = sharedWith(/^--family-/);
 const typeScale = sharedWith(/^--type-/).filter(({ name }) => !name.endsWith('-leading'));
 
 const roles: [role: string, title: string][] = [
@@ -106,7 +108,7 @@ export function SemanticColors() {
 
 /** 이름·계산된 값·설명 한 칸. */
 function TokenLabel({ name, value, note }: { name: string; value: string; note?: string }) {
-  // Storybook 문서의 `li` 글자색 규칙은 레이어 밖이라 `li`에 준 유틸리티보다 우선한다. 그래서 여기서 직접 칠한다.
+  // Storybook 문서의 `li` 글자색 규칙은 캐스케이드 레이어(`@layer`) 밖이라 `li`에 준 유틸리티보다 우선한다. 그래서 여기서 직접 칠한다.
   return (
     <span className="text-text">
       {name}
@@ -120,7 +122,8 @@ function TokenLabel({ name, value, note }: { name: string; value: string; note?:
 }
 
 const panel = 'm-0 grid list-none gap-1 rounded-lg bg-surface p-6 font-mono text-xs text-text';
-const row = 'grid grid-cols-[18rem_1fr] items-center gap-4 py-1 text-text';
+// 문서 테마가 `li`에 거는 글꼴은 캐스케이드 레이어(`@layer`) 밖 규칙이라 `!`로 덮는다.
+const row = 'grid grid-cols-[18rem_1fr] items-center gap-4 py-1 font-mono! text-text';
 
 /** 반경 토큰: 유틸리티 이름, 의미 토큰, 값, 견본. */
 export function RadiusTokens() {
@@ -202,14 +205,17 @@ export function TypeScaleTokens() {
         const leading = `${name}-leading`;
         const hasLeading = names.includes(leading);
         return (
-          <li key={name} className="grid gap-1 border-b border-border-subtle py-3 last:border-0">
+          <li
+            key={name}
+            className="grid gap-1 border-b border-border-subtle py-3 font-mono! last:border-0"
+          >
             <TokenLabel
               name={hasLeading ? `${name} / ${leading}` : name}
               value={hasLeading ? `${values[name]} / ${values[leading]}` : values[name]}
               note={note}
             />
             <span
-              className="truncate font-sans text-prose"
+              className="truncate font-sans! text-prose"
               style={{
                 fontSize: `var(${name})`,
                 lineHeight: hasLeading ? `var(${leading})` : 1.2,
@@ -221,6 +227,49 @@ export function TypeScaleTokens() {
         );
       })}
     </ul>
+  );
+}
+
+/** `Typeset` 상자(`.docblock-typeset`)와 크기 라벨에 의미 토큰을 입힌다. */
+const typesetBox = cn(
+  'grid grid-cols-[minmax(0,1fr)] gap-4',
+  '[&_.docblock-typeset]:m-0! [&_.docblock-typeset]:border-border! [&_.docblock-typeset]:bg-surface! [&_.docblock-typeset]:text-text!',
+  '[&_.docblock-typeset>div>div:first-child]:text-text-muted!',
+);
+
+/** 모든 글꼴에 같은 기준으로 보여 줄 굵기와 크기 토큰. */
+const sampleWeights = [400, 800];
+const sampleSizes = ['--type-body-sm', '--type-title-sm'];
+
+/**
+ * 글꼴 토큰(`--family-*`)마다 `Typeset` 견본을 그린다. 한글 문장과 블로그 이름을 함께 보인다.
+ * `Typeset` 상자는 Storybook 문서 테마의 흰 바탕을 캐스케이드 레이어(`@layer`) 밖 스타일로 칠한다.
+ * 툴바 테마를 따르도록 상자 바탕·선·글자색만 `!`로 의미 토큰을 입힌다. 이 선택자는 Storybook의
+ * `Typeset` DOM 구조(`.docblock-typeset > div > div`)에 기대므로 Storybook을 올릴 때 확인한다.
+ */
+export function FamilySamples() {
+  const { values } = useTokenValues(sampleSizes);
+  return (
+    <>
+      {families.map(({ name, note }) => (
+        <section key={name}>
+          <h3>
+            <code>{name}</code> · <code>font-{name.replace('--family-', '')}</code> · {note}
+          </h3>
+          <div className={typesetBox}>
+            {sampleWeights.map((weight) => (
+              <Typeset
+                key={weight}
+                fontFamily={`var(${name})`}
+                fontWeight={weight}
+                fontSizes={sampleSizes.map((size) => values[size] || `var(${size})`)}
+                sampleText="scwon’s blog — 읽는 위치의 줄 번호가 코랄로 바뀐다. 0123456789"
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </>
   );
 }
 

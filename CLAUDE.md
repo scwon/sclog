@@ -12,6 +12,7 @@ pnpm storybook        # Storybook (localhost:6006)
 pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
 pnpm lint             # Oxlint
 pnpm format           # Oxfmt로 포맷 적용 (검사만: pnpm format:check)
+uv run scripts/subset-maruburi.py  # 마루 부리 서브셋 재생성 (빌드에 포함 안 함, 글꼴을 바꿀 때만)
 ```
 
 ## Project Context
