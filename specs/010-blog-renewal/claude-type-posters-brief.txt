@@ -1,0 +1,24 @@
+You are Claude Opus 5.5, the art director explicitly selected by the user. Create FIVE complete STATIC typographic poster proposals in this directory. This is art direction BEFORE animation, not another effects demo.
+
+CRITICAL USER CORRECTION:
+'모두 근본적으로 틀린게, 타이포를 포함해서 그래피컬하게 표현해야하는데, 지금은 그냥 신기한 효과랑 텍스트가 한눈에 보이는 화면이야'
+They rejected every prior option: a generic bold title next to/over a weave, lens, letter grid, arch, contour field. Even the letter-grid option failed because it treated type as a background pattern under a separate title. They approved: first build a finished STILL poster where scwon’s blog itself IS the graphic composition, then choose before motion. Prior request was five genuinely different proposals, still applies. DO NOT animate anything now.
+
+THE PRIMARY TASK IS TYPOGRAPHIC COMPOSITION:
+- Design the actual lettering 'scwon’s blog' as the poster. Letters, counters, strokes, ligatures, shapes, and negative space should be a single integrated construction. Do not reserve a blank rectangle for a normal h1. Do not make a background effect with an untouched h1 on top. Do not write the brand once as a normal title and repeat it behind as texture. No standalone illustration plus title layout.
+- Make all five genuinely different in composition and lettering logic, not variants of color/layout. At least one should use substantial custom vector lettering; others may use carefully transformed real SVG text/glyphs combined with masks, strokes, counters, interlocking structural forms, editorial spacing. Avoid a generic Arial Black lockup pasted over doodles. Crisp bespoke visual thinking is the point.
+- The overall title must still resolve to 'scwon’s blog' on inspection. Letterforms can be expressive, stretched, joined, stacked, or cropped at edges, but don't replace the entire word with unreadable symbols. Keep the apostrophe intentional.
+- Word and graphic must depend on each other: deleting the typography should destroy the composition, not leave a finished standalone background. A small punctuation mark or supporting structural accent is fine. Do not turn the five posters into the same oversized type with five decorative squiggles.
+- Clean flat editorial/graphic identity aesthetic. Confident proportions, purposeful negative space, graphic tension. Main coral #E9AC9F, paper #FAF8F5, ink #242424. No gradients, chrome/glass, 3D lighting, generic blobs, particle fields, fake projects, slogans or invented metrics.
+- Small signature 원성철 may be incorporated as a quiet annotation, not a separate hero title. Never '개발자 원성철'.
+
+DELIVERABLE:
+Write only files within cwd specs/010-blog-renewal/prototype/type-posters/. Do not modify src, existing proposals, other prototypes or root files. You have Read/Write/Edit tools, no browser. Create index.html, styles.css, app.js and README.md, optionally SVG/module files if needed. Simple static HTML/CSS/JS, no build/install/CDN. SVG is recommended because these are crisp static typographic compositions. No animation library is needed. No Canvas effects.
+
+Browser route /type-posters/?variant=A through E. One poster at a time with small bottom A–E selector and previous/next (keys left/right except input/contenteditable). Shareable URL, browser history, no auto cycling. Current key/name and '정지 구도 시안' label in controls. The selector is outside the art and shouldn't hide lettering. Optional small '전체 보기' to show all five only if trivial, not necessary. No pause button, there is no animation.
+
+Use a minimal surrounding navigation (small scwon wordmark; '타이포 구도 5안' prototype label) if useful, not a whole website rebuild. The central artifact is the poster. Do not add a second visible scwon’s blog title outside the art; accessible hidden heading or SVG aria label is fine. Skip career/article content for this focused art-direction review.
+
+Desktop1440x900 and1280x800, mobile390x844: the entire designed lettering must be inspectable without being covered by controls. Preserve intended layout on scaled SVG artboards. Give the poster substantial space; avoid an unnecessarily tiny framed square in a huge white viewport. Each poster may have its own viewBox/aspect ratio if needed, but make a coherent comparison frame.
+
+Before coding pick five named directions, then implement each completely. Do not stop at a design brief or return prose-only suggestions. Keep code concise; the previous multi-minute programmatic renderers were the wrong problem. Spend effort on art direction of these still compositions. In README record each direction, how letterforms and geometry are integrated, and one short possible future motion behavior deriving from that construction (do not implement motion). End with a short Korean report listing the five concepts, and accurately say browser rendering has not been checked. I will render and evaluate the posters after you finish.

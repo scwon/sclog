@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>타이포 구도 5안 — scwon</title>
+  <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+  <header class="bar">
+    <a class="mark" href="?variant=A">scwon</a>
+    <span class="label">타이포 구도 5안</span>
+  </header>
+
+  <!-- 공유 글리프. A의 기하 획 글자(140 셀)와 D의 사각 모듈 글자(100×130 박스) -->
+  <svg class="sprite" aria-hidden="true" width="0" height="0">
+    <defs>
+      <path id="g-s" d="M99.4 34.75A34 23.5 0 1 0 70 70A34 23.5 0 1 1 40.6 105.25"/>
+      <path id="g-c" d="M103.2 36.8A47 47 0 1 0 103.2 103.2"/>
+      <path id="g-w" d="M23 23L46.5 117L70 52L93.5 117L117 23"/>
+      <circle id="g-o" cx="70" cy="70" r="47"/>
+      <path id="g-n" d="M23 117V23M23 70A47 47 0 0 1 117 70V117"/>
+      <path id="g-ap" d="M14 37A14 14 0 0 1 42 37L22 72Z"/>
+      <path id="g-b" d="M23 -50V117M70 23A47 47 0 1 1 70 117A47 47 0 1 1 70 23"/>
+      <path id="g-l" d="M70 10V130"/>
+      <path id="g-g" d="M70 23A47 47 0 1 1 70 117A47 47 0 1 1 70 23M117 23V140A47 47 0 0 1 29.3 163.5"/>
+
+      <path id="d-s" d="M100 15H35A20 20 0 0 0 15 35V45A20 20 0 0 0 35 65H65A20 20 0 0 1 85 85V95A20 20 0 0 1 65 115H0"/>
+      <path id="d-c" d="M85 42V35A20 20 0 0 0 65 15H35A20 20 0 0 0 15 35V95A20 20 0 0 0 35 115H65A20 20 0 0 0 85 95V88"/>
+      <path id="d-w" d="M15 0V95A20 20 0 0 0 35 115H65A20 20 0 0 0 85 95V0M50 40V115"/>
+      <path id="d-o" d="M35 15H65A20 20 0 0 1 85 35V95A20 20 0 0 1 65 115H35A20 20 0 0 1 15 95V35A20 20 0 0 1 35 15Z"/>
+      <path id="d-n" d="M15 130V15H65A20 20 0 0 1 85 35V130"/>
+      <path id="d-b" d="M15 0V115H65A20 20 0 0 0 85 95V65A20 20 0 0 0 65 45H15"/>
+      <path id="d-l" d="M40 0V95A20 20 0 0 0 60 115H100"/>
+      <path id="d-g" d="M85 15H35A20 20 0 0 0 15 35V55A20 20 0 0 0 35 75H85M85 0V95A20 20 0 0 1 65 115H0"/>
+      <path id="d-ap" d="M10 15H40V55L20 82V55H10Z"/>
+    </defs>
+  </svg>
+
+  <main class="stage">
+    <h1 class="sr-only">scwon’s blog 타이포 구도 5안</h1>
+
+    <!-- A 교차: 가로 scwon’s 와 세로 blog 가 o 하나를 공유 -->
+    <figure class="poster" data-variant="A">
+      <svg viewBox="0 0 1000 1000" role="img" aria-label="scwon’s blog — A 교차">
+        <rect class="art" width="1000" height="1000"/>
+        <rect x="472" y="490" width="140" height="140" fill="#E9AC9F"/>
+        <g fill="none" stroke="#242424" stroke-width="26">
+          <use href="#g-s" x="52" y="490"/>
+          <use href="#g-c" x="192" y="490"/>
+          <use href="#g-w" x="332" y="490"/>
+          <use href="#g-o" x="472" y="490"/>
+          <use href="#g-n" x="612" y="490"/>
+          <use href="#g-s" x="808" y="490"/>
+          <use href="#g-b" x="472" y="210"/>
+          <use href="#g-l" x="472" y="350"/>
+          <use href="#g-g" x="472" y="630"/>
+        </g>
+        <use href="#g-ap" x="752" y="490" fill="#E9AC9F"/>
+        <g class="note" fill="#242424" font-size="15" text-anchor="end">
+          <text x="44" y="510">1</text>
+          <text x="464" y="230">2</text>
+          <text x="948" y="950" font-size="18">원성철</text>
+        </g>
+      </svg>
+      <figcaption>A 교차</figcaption>
+    </figure>
+
+    <!-- B 속공간: 크롭된 거대 blog, 그 속공간 안에 scwon’s -->
+    <figure class="poster" data-variant="B" hidden>
+      <svg viewBox="0 0 1500 1000" role="img" aria-label="scwon’s blog — B 속공간">
+        <rect class="art" width="1500" height="1000"/>
+        <g fill="#242424">
+          <rect x="22" y="-10" width="95" height="740"/>
+          <circle cx="232" cy="520" r="210"/>
+          <rect x="476" y="-10" width="95" height="740"/>
+          <circle cx="815" cy="520" r="210"/>
+          <circle cx="1269" cy="520" r="210"/>
+          <rect x="1384" y="520" width="95" height="280"/>
+          <path d="M1479 800A210 210 0 0 1 1059 800H1154A115 115 0 0 0 1384 800Z"/>
+        </g>
+        <g fill="#E9AC9F">
+          <circle cx="232" cy="520" r="115"/>
+          <circle cx="815" cy="520" r="115"/>
+          <circle cx="1269" cy="520" r="115"/>
+        </g>
+        <g fill="none" stroke="#242424" stroke-width="28">
+          <g transform="translate(145.2 476.6) scale(.62)">
+            <use href="#g-s"/><use href="#g-c" x="140"/>
+          </g>
+          <g transform="translate(728.2 476.6) scale(.62)">
+            <use href="#g-w"/><use href="#g-o" x="140"/>
+          </g>
+          <g transform="translate(1164.8 476.6) scale(.62)">
+            <use href="#g-n"/><use href="#g-ap" x="140" fill="#242424" stroke="none"/><use href="#g-s" x="196"/>
+          </g>
+        </g>
+        <text class="note" x="22" y="966" font-size="22" fill="#242424">원성철</text>
+      </svg>
+      <figcaption>B 속공간</figcaption>
+    </figure>
+
+    <!-- C 겹인쇄: 두 줄 세리프가 맞물리고 겹친 면은 종이로 빠짐 -->
+    <figure class="poster" data-variant="C" hidden>
+      <svg viewBox="0 0 1000 640" role="img" aria-label="scwon’s blog — C 겹인쇄">
+        <defs>
+          <text id="c-top" class="serif" x="60" y="272" font-size="236" textLength="880" lengthAdjust="spacingAndGlyphs">scwon’s</text>
+          <text id="c-bot" class="serif" x="60" y="432" font-size="440" textLength="880" lengthAdjust="spacingAndGlyphs">blog</text>
+          <mask id="c-m-top" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="640">
+            <rect width="1000" height="640" fill="#fff"/><use href="#c-bot" fill="#000"/>
+          </mask>
+          <mask id="c-m-bot" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="640">
+            <rect width="1000" height="640" fill="#fff"/><use href="#c-top" fill="#000"/>
+          </mask>
+        </defs>
+        <rect class="art" width="1000" height="640"/>
+        <use href="#c-bot" fill="#E9AC9F" mask="url(#c-m-bot)"/>
+        <use href="#c-top" fill="#242424" mask="url(#c-m-top)"/>
+        <text class="note" x="940" y="604" font-size="18" fill="#242424" text-anchor="end">원성철</text>
+      </svg>
+      <figcaption>C 겹인쇄</figcaption>
+    </figure>
+
+    <!-- D 타일: 사각 모듈 글자가 칸을 꽉 채우고, 칸마다 바탕과 글자가 뒤집힘 -->
+    <figure class="poster" data-variant="D" hidden>
+      <svg viewBox="0 0 900 987" role="img" aria-label="scwon’s blog — D 타일">
+        <rect class="art" width="900" height="987"/>
+        <g fill="none" stroke-width="30" stroke-miterlimit="10">
+          <g transform="scale(2.67857)">
+            <rect width="112" height="142" fill="#242424"/><use href="#d-s" x="6" y="6" stroke="#FAF8F5"/>
+            <rect x="112" width="112" height="142" fill="#FAF8F5"/><use href="#d-c" x="118" y="6" stroke="#242424"/>
+            <rect x="224" width="112" height="142" fill="#E9AC9F"/><use href="#d-w" x="230" y="6" stroke="#242424"/>
+          </g>
+          <g transform="translate(0 380.36) scale(2.26131)">
+            <rect width="112" height="142" fill="#FAF8F5"/><use href="#d-o" x="6" y="6" stroke="#242424"/>
+            <rect x="112" width="112" height="142" fill="#E9AC9F"/><use href="#d-n" x="118" y="6" stroke="#242424"/>
+            <rect x="224" width="62" height="142" fill="#242424"/><use href="#d-ap" x="230" y="6" fill="#E9AC9F" stroke="none"/>
+            <rect x="286" width="112" height="142" fill="#FAF8F5"/><use href="#d-s" x="292" y="6" stroke="#242424"/>
+          </g>
+          <g transform="translate(0 701.47) scale(2.00893)">
+            <rect width="112" height="142" fill="#242424"/><use href="#d-b" x="6" y="6" stroke="#FAF8F5"/>
+            <rect x="112" width="112" height="142" fill="#FAF8F5"/><use href="#d-l" x="118" y="6" stroke="#E9AC9F"/>
+            <rect x="224" width="112" height="142" fill="#242424"/><use href="#d-o" x="230" y="6" stroke="#FAF8F5"/>
+            <rect x="336" width="112" height="142" fill="#E9AC9F"/><use href="#d-g" x="342" y="6" stroke="#242424"/>
+            <text class="note" x="216" y="24" font-size="9" fill="#242424" stroke="none" text-anchor="end">원성철</text>
+          </g>
+        </g>
+      </svg>
+      <figcaption>D 타일</figcaption>
+    </figure>
+
+    <!-- E 한 줄: 왼쪽에서 들어와 되돌아 나가는 한 줄의 글줄 위에 글자가 선다 -->
+    <figure class="poster" data-variant="E" hidden>
+      <svg viewBox="0 0 1600 1000" role="img" aria-label="scwon’s blog — E 한 줄">
+        <rect class="art" width="1600" height="1000"/>
+        <path d="M1320 362A158 158 0 0 1 1320 678Z" fill="#E9AC9F"/>
+        <g fill="none" stroke="#242424" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M0 350H1320A170 170 0 0 1 1320 690H0"/>
+          <path d="M202.6 210A55 40 0 1 0 155 270A55 40 0 1 1 107.4 330"/>
+          <path d="M396.6 213.4A80 80 0 1 0 396.6 326.6"/>
+          <path d="M450 190L495 350L540 190L585 350L630 190"/>
+          <circle cx="760" cy="270" r="80"/>
+          <path d="M890 350V190M890 270A80 80 0 0 1 1050 270V350"/>
+          <path d="M1252.6 210A55 40 0 1 0 1205 270A55 40 0 1 1 1157.4 330"/>
+          <path d="M420 430V690"/>
+          <circle cx="500" cy="610" r="80"/>
+          <path d="M630 430V690"/>
+          <circle cx="760" cy="610" r="80"/>
+          <circle cx="970" cy="610" r="80"/>
+          <path d="M1050 530V730A80 80 0 0 1 900.7 770"/>
+        </g>
+        <path d="M1078 196A22 22 0 0 1 1122 196L1088 262Z" fill="#E9AC9F"/>
+        <text class="note" x="60" y="748" font-size="22" fill="#242424">원성철</text>
+      </svg>
+      <figcaption>E 한 줄</figcaption>
+    </figure>
+  </main>
+
+  <nav class="controls" aria-label="시안 선택">
+    <p class="now"><b id="now-key">A</b> <span id="now-name">교차</span> <span class="tag">정지 구도 시안</span></p>
+    <div class="pick">
+      <button type="button" class="step" data-step="-1" aria-label="이전 시안">←</button>
+      <a href="?variant=A" data-v="A">A</a>
+      <a href="?variant=B" data-v="B">B</a>
+      <a href="?variant=C" data-v="C">C</a>
+      <a href="?variant=D" data-v="D">D</a>
+      <a href="?variant=E" data-v="E">E</a>
+      <button type="button" class="step" data-step="1" aria-label="다음 시안">→</button>
+      <a href="?view=all" data-v="all" class="all-link">전체 보기</a>
+    </div>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

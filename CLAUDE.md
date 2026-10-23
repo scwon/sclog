@@ -44,6 +44,24 @@ Personal blog built with Astro 5.x, TypeScript, and MDX. Features are developed 
 
 새로운 라이브러리 추가 시 번들 사이즈와 tree-shaking 지원 여부를 고려한다.
 
+## Agent Harness
+
+MCP 서버·플러그인·스킬은 항상 프로젝트 레벨로 설치한다: `.mcp.json`, `.claude/settings.json`의 `enabledPlugins`, `.claude/skills/`. 사용자 레벨에 설치하지 않는다. 새로 추가할 때는 공식 배포처이고 최근 3개월 안에 유지보수된 것만 고른다.
+
+| 종류 | 이름 | 출처 | 쓰는 때 |
+| --- | --- | --- | --- |
+| MCP | `astro-docs` | Astro 공식 원격 서버 | Astro API·설정 확인. 문서는 최신(v7) 기준이므로 업그레이드 전까지 5.x와의 차이에 주의 |
+| MCP | `shadcn` | shadcn CLI | 레지스트리 검색, 컴포넌트 추가 |
+| 플러그인 | `frontend-design` | Anthropic 공식 마켓 | 화면 디자인 품질 |
+| 플러그인 | `modern-web-guidance` | Google Chrome (공식 마켓) | 최신 HTML·CSS·Web API 패턴 |
+| 스킬 | `shadcn` | shadcn/ui | 컴포넌트 추가·테마·레지스트리 |
+| 스킬 | `web-design-guidelines` | Vercel Labs | UI·접근성 점검 |
+| 스킬 | `vercel-composition-patterns` | Vercel Labs | React 컴포넌트 API 설계 |
+| 스킬 | `storybook-stories`, `astro-components`, `design-tokens`, `content-schema`, `blog-writing` | 이 저장소 | 프로젝트 규칙 |
+
+- 외부 스킬은 `skills` CLI로 받은 사본이며 `skills-lock.json`이 출처와 해시를 기록한다. 갱신: `pnpm dlx skills@1.7.4 update -p`
+- 브라우저 확인은 ego-browser를 쓴다. Playwright·Chrome DevTools MCP는 추가하지 않는다.
+
 ## Adding New Tech/Skills
 
 작업 중 새로운 기술이나 구조가 필요한 경우:

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko" data-variant="A">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>scwon’s blog — 시안 프로토타입</title>
+  <script>
+    // 레이아웃이 깜빡이지 않도록 CSS보다 먼저 시안을 지정한다.
+    (function () {
+      var v = (new URLSearchParams(location.search).get('variant') || 'A').toUpperCase();
+      if (!/^[ABC]$/.test(v)) v = 'A';
+      document.documentElement.setAttribute('data-variant', v);
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#about">본문으로 건너뛰기</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top">scwon</a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="#about">소개</a>
+      <a href="#writing">글</a>
+      <a href="https://github.com/scwon" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-art hero-art--back" aria-hidden="true"><canvas></canvas></div>
+
+      <div class="hero-copy">
+        <h1 class="hero-title" id="hero-title">
+          <span class="sr-only">scwon’s blog</span>
+          <span class="title-visual" aria-hidden="true"><span class="title-line">scwon’s</span><span class="title-line">blog</span></span>
+        </h1>
+        <div class="hero-meta">
+          <p class="hero-name">원성철</p>
+          <a class="hero-down" href="#about">소개 <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+
+      <div class="hero-art hero-art--front" aria-hidden="true"><canvas></canvas></div>
+    </section>
+
+    <section class="section" id="about" aria-labelledby="about-title">
+      <div class="section-head">
+        <h2 id="about-title">소개</h2>
+        <span class="section-index" aria-hidden="true">01</span>
+        <span class="rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="about-grid">
+        <p class="about-name reveal">원성철</p>
+
+        <div class="career reveal">
+          <h3 class="career-label">경력</h3>
+          <p class="career-company">WhaTapLabs</p>
+          <p class="career-meta">
+            <span>Frontend Developer</span>
+            <span><time datetime="2017-10">2017.10</time> —<span class="sr-only"> 현재</span></span>
+          </p>
+          <ul class="work">
+            <li>제품 프론트엔드 개발</li>
+            <li>Canvas 기반 차트 구현</li>
+            <li>개발 환경 개선</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="writing" aria-labelledby="writing-title">
+      <div class="section-head">
+        <h2 id="writing-title">글</h2>
+        <span class="section-index" aria-hidden="true">02</span>
+        <span class="rule" aria-hidden="true"></span>
+      </div>
+
+      <article class="post-card reveal">
+        <div class="post-thumb">
+          <img src="assets/article-hero.png" alt="" loading="lazy" decoding="async">
+        </div>
+        <div class="post-body">
+          <p class="post-date"><time datetime="2023-04-30">2023.04.30</time></p>
+          <h3 class="post-title">
+            <a class="post-link" href="#post-excerpt" data-excerpt>프로 개발자 2023일 후기</a>
+          </h3>
+          <p class="post-desc">개발자로 일하며 배운 비즈니스와 팀의 이야기</p>
+          <span class="post-more" aria-hidden="true">읽기 <span class="arrow">→</span></span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="footer-brand">scwon’s blog</p>
+    <nav class="footer-links" aria-label="연락">
+      <a href="https://github.com/scwon" rel="noopener">GitHub</a>
+      <a href="mailto:scwon1999@gmail.com">Email</a>
+    </nav>
+  </footer>
+
+  <dialog class="excerpt" id="post-excerpt" aria-labelledby="excerpt-title">
+    <div class="excerpt-inner">
+      <img class="excerpt-thumb" src="assets/article-hero.png" alt="">
+      <p class="post-date"><time datetime="2023-04-30">2023.04.30</time></p>
+      <h2 class="excerpt-title" id="excerpt-title">프로 개발자 2023일 후기</h2>
+      <p class="excerpt-desc">개발자로 일하며 배운 비즈니스와 팀의 이야기</p>
+      <p class="excerpt-note">시안에서는 글 요약만 보여 줍니다. 전체 글 페이지는 블로그 구현 단계에서 연결합니다.</p>
+      <form method="dialog">
+        <button class="excerpt-close" type="submit">닫기</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- 프로토타입 전용 비교 컨트롤 -->
+  <div class="proto-bar" role="region" aria-label="시안 비교 (프로토타입 전용)">
+    <span class="proto-label" aria-hidden="true">시안</span>
+    <nav class="proto-variants" aria-label="시안 선택">
+      <a href="?variant=A" data-variant="A" aria-label="A안 날의 직물">A</a>
+      <a href="?variant=B" data-variant="B" aria-label="B안 뒤집히는 글자">B</a>
+      <a href="?variant=C" data-variant="C" aria-label="C안 끊기지 않는 한 줄">C</a>
+    </nav>
+    <span class="proto-name"></span>
+    <button class="proto-toggle" type="button"></button>
+  </div>
+
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

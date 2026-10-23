@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#1A1817">
+<meta name="description" content="원성철의 블로그">
+<title>scwon’s blog</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23E9AC9F'/%3E%3Cpath d='M13.2 8.5h6.3l-3.4 9.6c-.9 2.6-2.4 4.4-4.6 5.4l-1-1.6c1.4-.8 2.3-1.9 2.7-3.4h-2.9z' fill='%23242424'/%3E%3C/svg%3E">
+<script>try{const t=localStorage.getItem("sclog-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/pretendard.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="ide.css">
+<script src="app.js" defer></script>
+</head>
+<body class="ide-app" data-page="home">
+<a class="skip-link" href="#editor">본문으로 건너뛰기</a>
+<header class="titlebar">
+  <button class="tb-btn tb-menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="탐색기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  <a class="tb-brand" href="./">scwon<span class="apos">’</span>s blog</a>
+  <p class="tb-title" aria-hidden="true">posts.log — scwon’s blog</p>
+  <div class="tb-end">
+    <span class="tb-author"><span class="sign" aria-hidden="true">’</span>원성철</span>
+    <a class="tb-link" href="https://github.com/scwon">GitHub<svg class="icon icon-out" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 13 13 7m-5 0h5v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <button class="tb-btn tb-theme" type="button" aria-label="밝은 테마로 전환"><svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.2m0 14.6v2.2M2.5 12h2.2m14.6 0h2.2M5.3 5.3l1.6 1.6m10.2 10.2 1.6 1.6m0-13.4-1.6 1.6M6.9 17.1l-1.6 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+  </div>
+</header>
+<nav class="activitybar" aria-label="작업 막대">
+  <button class="ab-btn ab-explorer" type="button" aria-pressed="true" aria-controls="sidebar" aria-label="탐색기"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h7l4 4V17a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 17V5A1.5 1.5 0 0 1 8 3.5Z M15 3.5V8h4 M4.5 7v12A1.5 1.5 0 0 0 6 20.5h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+  <a class="ab-btn" href="https://github.com/scwon/sclog" aria-label="이 블로그의 소스"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8.5 7.5-5 4.5 5 4.5m7-9 5 4.5-5 4.5m-2-11-3 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+</nav>
+<aside class="sidebar" id="sidebar" aria-label="탐색기">
+  <p class="side-title">탐색기</p>
+  <section class="side-section" aria-labelledby="side-posts">
+    <h2 class="side-head" id="side-posts"><span class="twisty" aria-hidden="true"></span>posts</h2>
+    <ul class="tree"><li><p class="tree-dir"><span class="twisty" aria-hidden="true"></span>2023<span class="tree-count">1</span></p>
+          <ul><li><a class="tree-file" href="article.html" title="pro-developer-2023-days.mdx"><span class="file-dot" aria-hidden="true"></span>pro-developer-2023-days.mdx</a></li></ul></li></ul>
+  </section>
+  <div class="side-page"></div>
+</aside>
+<div class="scrim" hidden></div>
+<main class="editor" id="editor" tabindex="-1">
+  <div class="editor-head">
+    <nav class="tabs" aria-label="열린 파일"><div class="tab-item is-active" data-href="./"><a class="tab" href="./" aria-current="page"><span class="log-glyph" aria-hidden="true"></span>posts.log</a></div></nav>
+    <div class="crumbs-bar"><nav class="crumbs" aria-label="위치"><span>posts</span><span class="crumb-sep" aria-hidden="true">›</span><span class="crumb-file" aria-current="page">posts.log</span></nav></div>
+  </div>
+  <div class="editor-body home-body">
+    <ol class="flow">
+        <li class="line line-banner" data-line="1"><span class="ln" aria-hidden="true">1</span><h1 class="banner">scwon<span class="apos">’</span>s blog</h1></li>
+        <li class="line line-comment" data-line="2"><span class="ln" aria-hidden="true">2</span><p class="comment"><span class="c-mark" aria-hidden="true">//</span> 원성철 · <a href="https://github.com/scwon">github.com/scwon</a></p></li>
+        <li class="line line-blank" data-line="3"><span class="ln" aria-hidden="true">3</span></li>
+        <li class="line line-dir" data-line="4"><span class="ln" aria-hidden="true">4</span><h2 class="dir-label"><span aria-hidden="true">2023/</span><span class="sr-only">2023년 글</span></h2><span class="dir-rule" aria-hidden="true"></span><span class="dir-count">1</span></li>
+        <li class="line line-log" data-line="5" id="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">5</span><button class="fold" type="button" aria-expanded="true" aria-controls="post-pro-developer-2023-days-steps-1 post-pro-developer-2023-days-steps-2 post-pro-developer-2023-days-steps-3 post-pro-developer-2023-days-steps-4 post-pro-developer-2023-days-steps-5" aria-label="프로 개발자 2023일 후기 장 흐름 접기"></button>
+          <p class="log-head"><time datetime="2023-04-30">2023-04-30</time><span class="log-tag">[회고]</span><span class="log-file">pro-developer-2023-days.mdx</span></p>
+          <article class="flow-card">
+            <div class="flow-thumb mat"><img src="assets/hero.png" alt="" width="357" height="229"></div>
+            <div class="flow-body">
+              <h3 class="flow-title"><a class="flow-link" href="article.html">프로 개발자 2023일 후기</a></h3>
+              <p class="flow-excerpt">2017년 10월 16일 특성화 고등학교 학생이었던 나는 하루 아침에 프론트엔드 개발자라는 타이틀을 달고 인생에 큰 전환점을 맞이하게 된다.</p>
+              <p class="flow-meta"><span>읽는 시간 8분</span><span>5개 장</span><span>이미지 2</span></p>
+            </div>
+          </article></li>
+        <li class="line line-step" data-line="6" id="post-pro-developer-2023-days-steps-1" data-group="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">6</span><div class="step-wrap"><a class="step" href="article.html#오늘은-2023년-04월-30일"><span class="step-no">01</span><span class="step-text">오늘은 2023년 04월 30일</span></a></div></li>
+        <li class="line line-step" data-line="7" id="post-pro-developer-2023-days-steps-2" data-group="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">7</span><div class="step-wrap"><a class="step" href="article.html#왜-개발자"><span class="step-no">02</span><span class="step-text">왜 개발자?</span></a></div></li>
+        <li class="line line-step" data-line="8" id="post-pro-developer-2023-days-steps-3" data-group="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">8</span><div class="step-wrap"><a class="step" href="article.html#프론트엔드-개발자"><span class="step-no">03</span><span class="step-text">프론트엔드 개발자</span></a></div></li>
+        <li class="line line-step" data-line="9" id="post-pro-developer-2023-days-steps-4" data-group="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">9</span><div class="step-wrap"><a class="step" href="article.html#개발자란"><span class="step-no">04</span><span class="step-text">개발자란?</span></a><ol class="subflow" aria-label="04장 세부 흐름"><li><a href="article.html#입사-직후">입사 직후</a></li><li><a href="article.html#12년차">1~2년차</a></li><li><a href="article.html#34년차">3~4년차</a></li><li><a href="article.html#56년차">5~6년차</a></li></ol></div></li>
+        <li class="line line-step" data-line="10" id="post-pro-developer-2023-days-steps-5" data-group="post-pro-developer-2023-days"><span class="ln" aria-hidden="true">10</span><div class="step-wrap"><a class="step" href="article.html#마치며"><span class="step-no">05</span><span class="step-text">마치며</span></a><ol class="subflow" aria-label="05장 세부 흐름"><li><a href="article.html#하고-싶은-말">하고 싶은 말</a></li><li><a href="article.html#목표">목표</a></li></ol></div></li>
+        <li class="line line-folded" data-line="" data-group-folded="post-pro-developer-2023-days" hidden><span class="ln" aria-hidden="true"></span><button class="folded-label" type="button" data-unfold-post="post-pro-developer-2023-days">··· 5개 장 접힘</button></li>
+        <li class="line line-end" data-line="11"><span class="ln" aria-hidden="true">11</span><span class="end-label">(END)</span><span class="end-count">글 1편</span><span class="cursor" aria-hidden="true"></span></li>
+    </ol>
+  </div>
+</main>
+<div class="minimap" aria-hidden="true" hidden><div class="mm-bars"></div><div class="mm-view"></div></div>
+<section class="panel" id="output-panel" aria-label="출력" hidden>
+  <div class="panel-head"><span class="panel-tab">출력</span><button class="panel-close" type="button" aria-label="출력 닫기">×</button></div>
+  <ol class="panel-log"><li class="log-entry"><p class="log-cmd"><span class="log-time"></span><span class="log-caret" aria-hidden="true">❯</span>open posts.log</p><dl class="log-rows"><div><dt>2023/</dt><dd>pro-developer-2023-days.mdx</dd></div><div><dt>완료</dt><dd>글 1편</dd></div></dl></li></ol>
+</section>
+<footer class="statusbar">
+  <span class="sb-branch" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 15c0-4 10-3 10-8M7 20a2 2 0 1 0 0-.01M7 6a2 2 0 1 0 0-.01M17 7a2 2 0 1 0 0-.01" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>main</span>
+  <button class="sb-output" type="button" aria-controls="output-panel" aria-expanded="false">출력</button>
+  <span class="sb-log" aria-hidden="true"></span>
+  <div class="sb-page"><span class="sb-item" aria-hidden="true">글 1편</span><span class="sb-item" data-ln aria-hidden="true">Ln 1</span><span class="sb-spacer"></span><span class="sb-keys" aria-hidden="true"><kbd>↑</kbd><kbd>↓</kbd> 이동 <kbd>↵</kbd> 열기</span><span class="sb-item" aria-hidden="true">Log</span><span class="sb-item" aria-hidden="true">UTF-8</span></div>
+</footer>
+<p class="sr-only" id="route-status" aria-live="polite"></p>
+<script type="application/json" id="page-meta">{"kind": "home", "href": "./", "file": "posts.log", "log": {"command": "open posts.log", "rows": [["2023/", "pro-developer-2023-days.mdx"], ["완료", "글 1편"]]}}</script>
+</body>
+</html>

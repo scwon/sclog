@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>scwon’s blog — 모션 스터디 5안</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="#top">scwon</a>
+    <nav aria-label="주요 메뉴">
+      <ul>
+        <li><a href="#about">소개</a></li>
+        <li><a href="#writing">글</a></li>
+        <li><a href="https://github.com/scwon" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="top" data-hero data-layout="weave" aria-labelledby="hero-title">
+      <div class="art" data-art></div>
+      <div class="hero-copy" data-copy>
+        <p class="hero-name">원성철</p>
+        <h1 class="hero-title" id="hero-title"><span>scwon’s</span> <span>blog</span></h1>
+      </div>
+    </section>
+
+    <section class="section about" id="about" aria-labelledby="about-title">
+      <div class="section-head">
+        <p class="eyebrow">소개</p>
+        <h2 id="about-title">원성철</h2>
+      </div>
+      <div class="career">
+        <dl class="career-meta">
+          <div><dt>회사</dt><dd>WhaTapLabs</dd></div>
+          <div><dt>역할</dt><dd>Frontend Developer</dd></div>
+          <div><dt>기간</dt><dd>2017.10 —</dd></div>
+        </dl>
+        <ul class="career-work">
+          <li>제품 프론트엔드 개발</li>
+          <li>Canvas 기반 차트 구현</li>
+          <li>개발 환경 개선</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section writing" id="writing" aria-labelledby="writing-title">
+      <div class="section-head">
+        <p class="eyebrow">글</p>
+        <h2 id="writing-title">최근 글</h2>
+      </div>
+      <article class="post-card">
+        <div class="post-media">
+          <img src="../assets/article-hero.png" alt="" width="1200" height="675" loading="lazy">
+        </div>
+        <div class="post-body">
+          <time datetime="2023-04-30">2023.04.30</time>
+          <h3><a href="../motion-poster/#writing">프로 개발자 2023일 후기</a></h3>
+          <p>개발자로 일하며 배운 비즈니스와 팀의 이야기</p>
+          <span class="post-more" aria-hidden="true">미리보기 →</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="footer-name">scwon</p>
+    <a href="https://github.com/scwon" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+
+  <div class="switcher" role="group" aria-label="모션 시안 선택">
+    <p class="sw-info" aria-live="polite">
+      <span class="sw-name" data-name></span>
+      <span class="sw-status" data-status></span>
+    </p>
+    <span class="sw-tag">시안</span>
+    <button type="button" class="sw-step" data-prev aria-label="이전 시안">←</button>
+    <span class="sw-keys" data-keys></span>
+    <button type="button" class="sw-step" data-next aria-label="다음 시안">→</button>
+    <button type="button" class="sw-play" data-play aria-pressed="false"></button>
+  </div>
+
+  <script src="../vendor/gsap.min.js"></script>
+  <script src="variants/shared.js"></script>
+  <script src="variants/a-weave.js"></script>
+  <script src="variants/b-engrave.js"></script>
+  <script src="variants/c-glyph.js"></script>
+  <script src="variants/d-louvre.js"></script>
+  <script src="variants/e-contour.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

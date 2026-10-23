@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>scwon’s blog — 모션 시안</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="#top">scwon</a>
+    <nav aria-label="주요 메뉴">
+      <ul>
+        <li><a href="#about">소개</a></li>
+        <li><a href="#writing">글</a></li>
+        <li><a href="https://github.com/scwon" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="stage" data-stage>
+        <!-- 1층: 종이 + 코랄 컷아웃 -->
+        <div class="layer layer-light">
+          <svg class="paper" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+            <path class="paper-coral" data-blob d="M0 0 Z"/>
+            <path class="paper-ink" data-seed d="M0 0 Z"/>
+          </svg>
+          <div class="giant giant-light" aria-hidden="true"><span>s</span><span>c</span></div>
+          <div class="title-block">
+            <p class="kicker">원성철</p>
+            <h1 class="title" id="hero-title">scwon’s<br>blog</h1>
+          </div>
+        </div>
+
+        <!-- 2층: 차콜 면 (polygon 마스크) -->
+        <div class="layer layer-dark" aria-hidden="true">
+          <div class="giant giant-dark"><span>W</span><span>O</span><span>N</span></div>
+          <div class="title-block">
+            <p class="kicker">원성철</p>
+            <p class="title">scwon’s<br>blog</p>
+          </div>
+        </div>
+
+        <!-- 3층: 코랄 종이 (유기적 SVG clipPath) -->
+        <div class="layer layer-coral" aria-hidden="true">
+          <div class="giant giant-coral"><span>b</span><span>l</span><span>o</span><span>g</span></div>
+          <div class="title-block">
+            <p class="kicker">원성철</p>
+            <p class="title">scwon’s<br>blog</p>
+          </div>
+        </div>
+      </div>
+
+      <svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <clipPath id="cutClip" clipPathUnits="objectBoundingBox">
+          <path data-cut transform="scale(0.001)" d="M0 0 Z"/>
+        </clipPath>
+      </svg>
+    </section>
+
+    <section class="section about" id="about" aria-labelledby="about-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">소개</p>
+        <h2 id="about-title">원성철</h2>
+      </div>
+      <div class="career reveal">
+        <dl class="career-meta">
+          <div><dt>회사</dt><dd>WhaTapLabs</dd></div>
+          <div><dt>역할</dt><dd>Frontend Developer</dd></div>
+          <div><dt>기간</dt><dd>2017.10 —</dd></div>
+        </dl>
+        <ul class="career-work">
+          <li>제품 프론트엔드 개발</li>
+          <li>Canvas 기반 차트 구현</li>
+          <li>개발 환경 개선</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section writing" id="writing" aria-labelledby="writing-title">
+      <div class="section-head reveal">
+        <p class="eyebrow">글</p>
+        <h2 id="writing-title">최근 글</h2>
+      </div>
+      <article class="post-card reveal">
+        <div class="post-media">
+          <img src="../assets/article-hero.png" alt="" width="1200" height="675" loading="lazy">
+        </div>
+        <div class="post-body">
+          <time datetime="2023-04-30">2023.04.30</time>
+          <h3><button type="button" class="post-open" data-open aria-haspopup="dialog">프로 개발자 2023일 후기</button></h3>
+          <p>개발자로 일하며 배운 비즈니스와 팀의 이야기</p>
+          <span class="post-more" aria-hidden="true">미리보기 →</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="footer-name">scwon</p>
+    <ul>
+      <li><a href="https://github.com/scwon" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="mailto:scwon1999@gmail.com">Email</a></li>
+    </ul>
+  </footer>
+
+  <dialog class="preview" data-dialog aria-labelledby="preview-title">
+    <div class="preview-inner">
+      <p class="preview-tag">시안 미리보기 · 실제 글 페이지 아님</p>
+      <img src="../assets/article-hero.png" alt="" width="1200" height="675">
+      <time datetime="2023-04-30">2023.04.30</time>
+      <h3 id="preview-title">프로 개발자 2023일 후기</h3>
+      <p>개발자로 일하며 배운 비즈니스와 팀의 이야기.</p>
+      <p class="preview-note">요약 미리보기입니다. 본문 연결은 구현 단계에서 정합니다.</p>
+      <button type="button" class="preview-close" data-close>닫기</button>
+    </div>
+  </dialog>
+
+  <div class="motion-ctrl" role="group" aria-label="모션 시안 제어">
+    <span class="ctrl-label" data-ctrl-label>모션 시안</span>
+    <button type="button" data-toggle aria-pressed="false">일시정지</button>
+    <button type="button" data-restart>처음부터 보기</button>
+  </div>
+
+  <script src="../vendor/gsap.min.js"></script>
+  <script src="../vendor/ScrollTrigger.min.js"></script>
+  <script src="app.js?v=continuous-motion"></script>
+</body>
+</html>

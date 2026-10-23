@@ -1,0 +1,17 @@
+사용자가 A/B/C 실제 GSAP 시안을 전부 거절했다: "너무 별론데, 모션 그래픽 느낌으로 만들어줘". 디자인 방향 전환이다. 당신 Claude Opus 5.5가 새 모션그래픽 시안 한 개를 실제 구현하라. 현재 cwd인 새 폴더 motion-poster에만 index.html/styles.css/app.js/README.md를 작성한다. 다른 파일 수정 금지. 추가 질문 없이 파일을 직접 완성하라. Write/Read/Edit 도구 사용 가능. 쉘 필요 없음.
+
+웹 배경에 선이 흔들리거나 캔버스 리본 하나가 지나가는 정도는 거절됐다. 장면 전체가 변하는, 키네틱 아이덴티티 필름 같은 '모션그래픽 포스터'를 만들어라. 기본 원/사각형 띄우기, 바코드, 도로 같은 굵은 선, 텍스트 가로줄, 웹 로더 느낌 금지.
+
+추천 소재: 불규칙한 잉크 면/잘린 종이 같은 선명한 유기적 실루엣 + 초대형 타이포 + 정교한 마스크. 영상 한 프레임도 포스터처럼 완결된 구도. hero 전체가 무대. 캔버스 위/제목 아래의 이전 구성 폐기. 실제 title은 읽히되 장식용 초대형 글자 일부는 크롭 가능. 가로 넘침 없음.
+
+배경 #FAF8F5, 코랄 #E9AC9F, 차콜 #242424, 보조 #66615D. 평면의 강한 색 면과 컷아웃, 유리/크롬/그라데이션/입체 리본 금지. 코랄 면적 충분히 쓰고 차콜 장면도 대담하게. 글꼴 Helvetica Neue/Arial Black 초굵은 산세리프. 문구 scwon’s blog, 소개 원성철. 타이틀 고정/교차 레이어와 변형 면 아래에서 색이나 타이포 배열이 드러남. 처음 0.5초부터 읽히는 타이틀. nav는 안정적으로 조작.
+
+12초 반복 sequence 예시: (1) 타이틀+코랄 면이 강한 구도로 정착 (2) 큰 마스크가 열리며 색/글자 배열 장면전환 (3) 유기적 형태 확장/수축과 타이포 엇갈리는 이동 (4) 역재생처럼 보이지 않게 처음에 연결. 더 좋은 미술 판단으로 바꿔도 좋다. 움직임과 멈춤의 리듬, 두세 요소의 안무, GSAP timeline/stagger/clipPath/SVG path morph(동일 노드 path attr tween) 사용. 포인터는 subtle parallax 정도, 주 움직임은 타임라인. 노이즈 랜덤 금지.
+
+기술: ../vendor/gsap.min.js, ../vendor/ScrollTrigger.min.js 준비됨. 외부 CDN 필요 없음. 유기적 SVG path 직접 작성 가능하나 반드시 실제 animation. 600줄 안팎의 단순 코드. DOM 참조/상태는 setup 전에 전부 선언: 이전 matchMedia callback에서 toggle TDZ 오류 있었음. 재발 금지.
+
+페이지 header scwon / 소개 #about / 글 #writing / GitHub https://github.com/scwon. hero 100svh, 바로 스크롤 가능. 아래 경력: 원성철 / WhaTapLabs / Frontend Developer / 2017.10 — / 제품 프론트엔드 개발 / Canvas 기반 차트 구현 / 개발 환경 개선. 글 한 편 프로 개발자 2023일 후기 / 2023.04.30 / 개발자로 일하며 배운 비즈니스와 팀의 이야기. 이미지 ../assets/article-hero.png. 가로 카드 얇은 테두리·약간 둥근 모서리, 모바일 세로. 클릭하면 요약 미리보기 dialog 열고 닫기(시안임을 표시). footer GitHub, Email mailto:scwon1999@gmail.com. AI/프로젝트/거창한 슬로건 없음.
+
+하단 작은 '모션 시안' label + 일시정지/재생 + 처음부터 보기. A/B/C 선택 없음. pause는 timeline/parallax 정지, 재개시 튀지 않음. reduced-motion이면 멋진 정적 구도와 모든 내용 보이기. 화면 밖/탭 숨김에서 재생 중지, 복귀시 사용자 정지 상태 존중. 1440x900/1280x800/390x844에서 타이틀과 nav 안 잘리기. fixed 컨트롤이 정보 가리지 않게.
+
+ScrollTrigger로 hero 전체 장면이 물러나며 경력/글 등장, 긴 pin/강제 스크롤 금지. 제품 구현이 아니라 새 디자인 비교용 프로토타입이다. 완료하면 호출자가 Playwright 검증 후 오르카에 연다. 파일을 직접 작성한 뒤 변경 파일과 sequence만 짧게 요약. 설계 설명으로 끝내지 마라.

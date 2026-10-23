@@ -1,0 +1,35 @@
+You are the requested Claude Opus 5.5 art director and frontend implementer. Build FIVE distinctly different polished, actually running motion graphic hero proposals for scwon's blog. This is a visual prototype, not production implementation.
+
+USER'S LATEST FEEDBACK (authoritative):
+Previous 12-second poster sequentially switched cream/coral/charcoal full-screen scenes with masks and type. User said the method itself of 'one scene after another' feels awkward, even after idle drifting was added. They now explicitly ask: 'Claude Opus 5.5 시켜서 그럴싸한 시작 모션 그래픽 안 5개 만들게 시켜 각각 다르게'.
+Therefore: NO timed scene switches, slide shows, successive panel wipes, swapping background palettes, chapter sequences, or objects taking turns appearing. Each proposal is ONE enduring, immediately complete composition, with several coordinated elements moving simultaneously. Smooth continuous motion, zero hold/frozen intervals, no input needed. An opening entrance can be subtle <0.6s, but must never gate the content. Aim for crafted motion design, not a screensaver or generic circles and squares.
+
+WRITE ONLY files inside your cwd: specs/010-blog-renewal/prototype/motion-studies/. Existing prototypes and src must remain untouched. You may read ../motion-poster/index.html, ../motion-poster/styles.css or root DESIGN.md for context, but latest feedback overrides their sequential motion guidance. Make index.html, styles.css, app.js, README.md (and any necessary local small variant modules). Use existing ../vendor/gsap.min.js (3.13) and optionally ../vendor/ScrollTrigger.min.js, and ../assets/article-hero.png. No network dependency, build tool, installation, or fake static image. GSAP ticker/timeline + native SVG or Canvas2D are fine. You have Read, Write, Edit tools.
+
+ART DIRECTION:
+- Main brand coral #E9AC9F, warm paper #FAF8F5, ink #242424, secondary #66615D. Shades or one minimal secondary accent are possible, but coral must be unmistakable.
+- Flat, clean, bold editorial motion graphics. No glass/chrome/neon or generic gradient blobs. Users rejected isolated basic circles/squares/bars and a wavy line/ribbon in earlier proposals; avoid returning to those unchanged. Complex designed silhouettes, negative spaces, pattern deformation, typographic construction, interlocking structures are possible. You choose five creative mechanisms, but each MUST be recognizably different in a screenshot and in 3 seconds of motion. Do not use the same blob renderer with five parameters or same layout with five colors.
+- At least three substantially different graphic construction families across five options. Think silhouette, density, negative space, rhythm, and how shapes relate. One can be typography-driven, but don't make all five huge sc/WON letter backgrounds. No stock particle orbit sphere.
+- Decide five concrete concepts BEFORE writing; document names and one-sentence distinction in README. Choose your own best concepts, not a rigid interpretation of these examples.
+- Suitable for a product-building developer's personal editorial site, demonstrating craft. Not a loading screen/demo dashboard. First frame must already look composed.
+- Exact title scwon’s blog, name 원성철 only. No '개발자 원성철', marketing slogan, fake projects, AI, or fake metrics.
+- Title and nav remain comfortably readable, no overlapping multiple title copies, clipping of primary title, or background detail overpowering title. Vary hero layout meaningfully across concepts.
+- Responsive 1440x900,1280x800 and390x844; no horizontal overflow. Recompose the art on mobile, not just huge crop of title. Name and title visible without scrolling. Bottom selector must not cover title or important graphic.
+
+PAGE:
+- Shared simple header: scwon logo, 소개 #about, 글 #writing, GitHub https://github.com/scwon
+- Hero is the focus; each variant may set layout class and render its unique graphic.
+- Below hero restrained career and blog material: 원성철; WhaTapLabs / Frontend Developer / 2017.10 —; 제품 프론트엔드 개발, Canvas 기반 차트 구현, 개발 환경 개선. Article horizontal card with actual asset and '프로 개발자 2023일 후기',2023.04.30,'개발자로 일하며 배운 비즈니스와 팀의 이야기'. No invented article contents. Can link to existing ../motion-poster/#writing preview. Same content across variants.
+- Small bottom-center clearly marked 시안 control, five numbered buttons1–5 or A–E (names displayed for active), prev/next arrows, pause/play. URL ?variant=A through E; reload stable; keyboard left/right except input/contenteditable; select with History API without full reload. Show active key/name and paused/running. Compact mobile, no large labels wrapping over hero.
+- DO NOT automatically cycle variants. User chooses them.
+
+MOTION / LIFECYCLE:
+- Coordinated simultaneous continuous movement should be visibly meaningful (not1px drift), title stable. Fast bursts punctuated by complete stops forbidden.
+- Prefer sin/cos, GSAP ticker dt, smoothly phased cycles. No harsh reset seams. Use only elapsed active time so pause/resume doesn't jump. Pointer reaction optional and secondary.
+- Respect prefers-reduced-motion with attractive static snapshot. Pause stops EVERY layer including CSS/parallax. Pause when hidden/offscreen; user pause persists. Switching cleans up listeners/tickers/tweens/DOM and resizes without duplicate loops or blank canvas.
+- Canvas DPR cap2. Avoid rebuilding hundreds of DOM nodes per frame.
+- All const DOM references/state must be initialized BEFORE synchronous GSAP matchMedia callbacks. Layer stacking must not let text escape.
+- Reduced-motion must show all career/article content. No pinned long scroll sequence.
+
+QUALITY / SCOPE:
+Implement all five completely, do not stop at planning/scaffolding. Clean and short enough to audit. No test framework or production migration. I will verify actual browser frames and desktop/mobile screenshots, so ensure executable. README launch URL /motion-studies/?variant=A, each concept mechanism, controls. End with short Korean completion report listing names/files, honest about browser testing you did not do.
