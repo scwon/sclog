@@ -17,5 +17,9 @@
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "astro-docs",
+    "shadcn"
+  ]
 }
