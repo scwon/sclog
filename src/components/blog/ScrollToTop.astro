@@ -92,10 +92,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 50%;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     opacity: 0;
@@ -112,27 +112,18 @@
   }
 
   .scroll-to-top:hover {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    color: var(--accent-text);
+    border-color: var(--accent);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .scroll-to-top:focus {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
   .scroll-to-top:active {
     transform: translateY(0) scale(0.95);
-  }
-
-  /* 다크 모드 그림자 조정 */
-  :global(.dark) .scroll-to-top {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  :global(.dark) .scroll-to-top:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
   /* 모바일에서 약간 작게 */

@@ -5,7 +5,7 @@
  *
  * @description
  * - GitHub Discussions를 백엔드로 사용하는 Giscus 위젯 임베드
- * - 다크 모드 테마 자동 동기화 지원
+ * - 사이트 테마(<html data-theme>) 자동 동기화 지원
  * - 지연 로딩으로 초기 페이지 로딩 성능 최적화
  *
  * @see https://giscus.app
@@ -41,10 +41,10 @@
 <script>
   /**
    * Giscus 테마를 현재 사이트 테마와 동기화
-   * document.documentElement의 'dark' 클래스 유무로 테마 결정
+   * <html data-theme>이 light일 때만 밝은 테마, 그 밖에는 어두운 테마(사이트 기본값)
    */
   function updateGiscusTheme(): void {
-    const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
     const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
     if (!iframe?.contentWindow) return;
 
@@ -55,7 +55,7 @@
   const observer = new MutationObserver(updateGiscusTheme);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class'],
+    attributeFilter: ['data-theme'],
   });
 
   // 초기 테마 설정 (iframe 로드 후)
@@ -66,14 +66,14 @@
   .comments-section {
     margin-top: 3rem;
     padding-top: 2rem;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--border);
   }
 
   .comments-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1.5rem;
-    color: var(--color-text);
+    color: var(--text);
   }
 
   .giscus-container {

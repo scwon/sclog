@@ -3,8 +3,8 @@ import { resolve } from 'path';
 import tailwindcss from '@tailwindcss/vite';
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-  addons: ['@storybook/addon-a11y'],
+  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  addons: ['@storybook/addon-docs', '@storybook/addon-a11y', '@storybook/addon-themes'],
   framework: {
     name: '@storybook/react-vite',
     options: {},

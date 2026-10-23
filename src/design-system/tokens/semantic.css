@@ -1,0 +1,76 @@
+/*
+ * 의미 토큰: 역할 이름. 값은 반드시 원시 토큰 참조이고, 테마는 이 값만 바꾼다(ADR 0003).
+ * 테마는 <html data-theme="dark|light">로 고르고, 속성이 없으면 어두운 테마다(ADR 0002).
+ */
+:root,
+[data-theme='dark'] {
+  /* 바탕 */
+  --surface: var(--palette-sand-755);
+  --surface-sunken: var(--palette-sand-789);
+  --surface-panel: var(--palette-sand-741);
+  --surface-raised: var(--palette-sand-713);
+
+  /* 글자 */
+  --text: var(--palette-sand-49);
+  --text-soft: var(--palette-sand-166);
+  --text-muted: var(--palette-sand-309);
+  --text-faint: var(--palette-sand-478);
+
+  /* 선 */
+  --border: var(--palette-sand-668);
+  --border-subtle: var(--palette-sand-49-a10);
+  --border-strong: var(--palette-sand-49-a26);
+
+  /* 강조 */
+  --accent: var(--palette-coral-202);
+  --accent-text: var(--palette-coral-202);
+  --on-accent: var(--palette-sand-740);
+
+  /* 본문·코드 */
+  --prose: var(--palette-sand-105);
+  --prose-strong: var(--palette-sand-25);
+  --code-string: var(--palette-gold-165);
+
+  /* 상태·형광 띠·가림막 */
+  --state-hover: var(--palette-sand-49-a6);
+  --state-current: var(--palette-sand-49-a4);
+  --state-selected: var(--palette-coral-202-a16);
+  --marker: var(--palette-coral-202-a30);
+  --scrim: var(--palette-sand-859-a55);
+}
+
+[data-theme='light'] {
+  /* 바탕 */
+  --surface: var(--palette-sand-20);
+  --surface-sunken: var(--palette-sand-64);
+  --surface-panel: var(--palette-sand-43);
+  --surface-raised: var(--palette-sand-5);
+
+  /* 글자 */
+  --text: var(--palette-sand-740);
+  --text-soft: var(--palette-sand-624);
+  --text-muted: var(--palette-sand-504);
+  --text-faint: var(--palette-sand-299);
+
+  /* 선 */
+  --border: var(--palette-sand-123);
+  --border-subtle: var(--palette-sand-740-a10);
+  --border-strong: var(--palette-sand-740-a30);
+
+  /* 강조 */
+  --accent: var(--palette-coral-202);
+  --accent-text: var(--palette-coral-468);
+  --on-accent: var(--palette-sand-740);
+
+  /* 본문·코드 */
+  --prose: var(--palette-sand-708);
+  --prose-strong: var(--palette-sand-740);
+  --code-string: var(--palette-gold-495);
+
+  /* 상태·형광 띠·가림막 */
+  --state-hover: var(--palette-sand-740-a5);
+  --state-current: var(--palette-sand-740-a3_5);
+  --state-selected: var(--palette-coral-202-a30);
+  --marker: var(--palette-coral-202-a42);
+  --scrim: var(--palette-sand-740-a30);
+}

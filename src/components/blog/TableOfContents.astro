@@ -120,7 +120,7 @@ const showToc = tocHeadings.length >= 3;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     margin: 0 0 0.75rem;
   }
 
@@ -142,7 +142,7 @@ const showToc = tocHeadings.length >= 3;
   .toc-link {
     display: block;
     padding: 0.375rem 0.5rem;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     text-decoration: none;
     border-left: 2px solid transparent;
     transition: all 0.2s ease;
@@ -154,13 +154,13 @@ const showToc = tocHeadings.length >= 3;
   }
 
   .toc-link:hover {
-    color: var(--color-text);
-    border-left-color: var(--color-border);
+    color: var(--text);
+    border-left-color: var(--border);
   }
 
   .toc-link.active {
-    color: var(--color-primary);
-    border-left-color: var(--color-primary);
+    color: var(--accent-text);
+    border-left-color: var(--accent);
     font-weight: 500;
   }
 

@@ -27,18 +27,14 @@ const sortedTags = [...tags.entries()].toSorted((a, b) => b[1] - a[1]);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--color-primary);
-    color: #fff;
+    background: var(--accent);
+    color: var(--on-accent);
     padding: 0.5rem 1rem;
-    border-radius: var(--radius-tag);
+    border-radius: 9999px;
     font-size: 0.9rem;
     transition:
       opacity 0.2s,
       transform 0.2s;
-  }
-
-  :global(.dark) .tag-item {
-    color: #1a1a1a;
   }
 
   .tag-item:hover {
@@ -52,13 +48,10 @@ const sortedTags = [...tags.entries()].toSorted((a, b) => b[1] - a[1]);
   }
 
   .tag-count {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--surface);
+    color: var(--text);
     padding: 0.1rem 0.5rem;
-    border-radius: var(--radius-tag);
+    border-radius: 9999px;
     font-size: 0.75rem;
-  }
-
-  :global(.dark) .tag-count {
-    background: rgba(0, 0, 0, 0.2);
   }
 </style>

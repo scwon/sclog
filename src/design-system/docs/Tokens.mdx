@@ -1,0 +1,29 @@
+import { Meta, Story } from '@storybook/addon-docs/blocks';
+import * as TokensStories from './Tokens.stories';
+import { MotionTokens, RadiusTokens, SemanticColors } from './TokenDocs';
+
+<Meta of={TokensStories} />
+
+# 토큰
+
+토큰은 원시 토큰(`src/design-system/tokens/primitives.css`, 값 그 자체)과 의미 토큰(`semantic.css`, 역할 이름) 두 단계다. 의미 토큰 값은 모두 원시 토큰을 가리키고, 테마는 의미 토큰 값만 바꾼다. Tailwind에는 의미 토큰·반경·이징만 `@theme inline`으로 노출한다(ADR 0003). 기본 색 팔레트(`bg-red-500` 등)는 꺼져 있다.
+
+테마는 `<html data-theme="dark|light">`로 고르며, 속성이 없으면 어두운 테마다. 툴바의 테마 메뉴로 바꾸면 아래 견본과 값이 함께 바뀐다.
+
+<Story of={TokensStories.Sample} />
+
+## 색
+
+견본 값은 `<html>`의 계산된 CSS 변수를 런타임에 읽는다. 유틸리티 이름은 `bg-`·`text-`·`border-` 뒤에 토큰 이름을 붙인다(예: `bg-surface-panel`, `text-prose`).
+
+<SemanticColors />
+
+## 반경
+
+<RadiusTokens />
+
+## 모션
+
+이징은 `ease-standard` 유틸리티로 쓴다. 지속 시간은 Tailwind 기본 `duration-*` 유틸리티에 같은 숫자를 쓴다(예: `duration-300`).
+
+<MotionTokens />

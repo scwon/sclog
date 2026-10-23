@@ -1,5 +1,6 @@
 ---
 import SEO from '../components/SEO.astro';
+import '../styles/global.css';
 
 interface Props {
   title: string;
@@ -28,31 +29,19 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Google Fonts: Roboto (영문), Noto Sans KR (한글) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Roboto:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
     <!-- Preload profile hover alternate image -->
     <link rel="preload" href="/images/scwon_dot.png" as="image" />
-    <!-- FOUC Prevention: Apply theme before first paint -->
+    <!-- 첫 페인트 전에 테마를 정한다: 저장값 → 시스템 설정 → 어두운 테마 -->
     <script is:inline>
       (function () {
-        var stored = null;
+        var theme = null;
         try {
-          stored = localStorage.getItem('theme');
-        } catch (e) {
-          try {
-            stored = sessionStorage.getItem('theme');
-          } catch (e2) {}
+          theme = localStorage.getItem('theme');
+        } catch (e) {}
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         }
-        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var theme = stored || (prefersDark ? 'dark' : 'light');
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        }
+        document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
     <meta name="generator" content={Astro.generator} />
@@ -70,90 +59,3 @@ const {
     <slot />
   </body>
 </html>
-
-<style is:global>
-  /* ========================================
-   * Design Tokens - Light Mode (Default)
-   * Constitution v1.2.0 Design System
-   * ======================================== */
-  :root {
-    /* Colors */
-    --color-primary: rgb(233, 172, 159);
-    --color-bg: #ffffff;
-    --color-text: #1a1a1a;
-    --color-text-muted: #6b7280;
-    --color-border: #e5e7eb;
-
-    /* Typography */
-    --font-sans: 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-logo: 'Roboto', sans-serif;
-    --font-mono: Menlo, Monaco, 'Courier New', monospace;
-
-    /* Layout */
-    --max-width-content: 800px;
-    --max-width-wide: 1000px;
-    --radius-card: 8px;
-    --radius-button: 4px;
-    --radius-tag: 9999px;
-  }
-
-  /* ========================================
-   * Dark Mode Override
-   * ======================================== */
-  .dark {
-    --color-bg: #13151a;
-    --color-text: #e0e0e0;
-    --color-text-muted: #9ca3af;
-    --color-border: #2d2d2d;
-  }
-
-  /* ========================================
-   * Base Styles
-   * ======================================== */
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  html {
-    font-family: var(--font-sans);
-    background: var(--color-bg);
-    color: var(--color-text);
-    line-height: 1.6;
-    /* Theme transition (150ms per spec) */
-    transition:
-      background-color 0.15s ease,
-      color 0.15s ease;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-  }
-
-  a {
-    color: var(--color-primary);
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  /* Keyboard accessibility - focus styles */
-  :focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
-
-  code {
-    font-family: var(--font-mono);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-</style>

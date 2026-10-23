@@ -42,18 +42,18 @@ import Header from '../components/Header.astro';
     font-weight: 700;
     margin: 0;
     line-height: 1;
-    color: var(--color-primary);
+    color: var(--accent-text);
   }
 
   .error-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin: 1rem 0;
-    color: var(--color-text);
+    color: var(--text);
   }
 
   .error-message {
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     margin-bottom: 2rem;
   }
 
@@ -67,18 +67,14 @@ import Header from '../components/Header.astro';
   .btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-card);
+    border-radius: var(--radius-md);
     font-weight: 500;
     transition: all 0.2s;
   }
 
   .btn-primary {
-    background: var(--color-primary);
-    color: #fff;
-  }
-
-  :global(.dark) .btn-primary {
-    color: #1a1a1a;
+    background: var(--accent);
+    color: var(--on-accent);
   }
 
   .btn-primary:hover {
@@ -87,8 +83,8 @@ import Header from '../components/Header.astro';
   }
 
   .btn-secondary {
-    background: var(--color-border);
-    color: var(--color-text);
+    background: var(--border);
+    color: var(--text);
   }
 
   .btn-secondary:hover {

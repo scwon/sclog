@@ -38,7 +38,7 @@ const { profile, socialLinks = [] } = Astro.props;
   .profile-section {
     text-align: center;
     padding: 3rem 0;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--border);
     margin-bottom: 3rem;
   }
 
@@ -83,18 +83,18 @@ const { profile, socialLinks = [] } = Astro.props;
     font-size: 2rem;
     font-weight: 700;
     margin: 0 0 0.5rem;
-    color: var(--color-text);
+    color: var(--text);
   }
 
   .profile-tagline {
     font-size: 1.1rem;
-    color: var(--color-primary);
+    color: var(--accent-text);
     margin: 0 0 1rem;
     font-weight: 500;
   }
 
   .profile-bio {
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     font-size: 1rem;
     line-height: 1.6;
     max-width: 600px;

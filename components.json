@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/styles/global.css",
+    "css": "src/design-system/styles/index.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
@@ -15,7 +15,7 @@
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
-    "ui": "@/components/ui",
+    "ui": "@/design-system/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

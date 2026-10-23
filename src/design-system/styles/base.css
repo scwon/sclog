@@ -1,0 +1,27 @@
+/* 요소 기본 스타일. 값은 의미 토큰만 쓴다. */
+@layer base {
+  :root,
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--marker);
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+}
