@@ -69,3 +69,17 @@ MCP 서버·플러그인·스킬은 항상 프로젝트 레벨로 설치한다: 
 2. 사용자와 논의 후 결정
 3. 결정된 내용을 CLAUDE.md 또는 새 skill로 추가
 4. 작업 계속
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown under `.scratch/<feature-slug>/` (spec.md + issues/NN-slug.md). Speckit's `specs/` is separate. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five roles, each label string equal to its name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the root (created lazily) + `docs/adr/`. See `docs/agents/domain.md`.
