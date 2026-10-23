@@ -25,16 +25,22 @@ const primitives = parseBlocks(read('primitives.css')).get(':root') ?? new Map()
 const semantic = parseBlocks(read('semantic.css'));
 const dark = semantic.get(":root, [data-theme='dark']") ?? new Map();
 const light = semantic.get("[data-theme='light']") ?? new Map();
+const shared = semantic.get(':root') ?? new Map();
 const themes = { dark, light };
+const theme = /@theme inline\s*\{([^}]*)\}/.exec(read('../styles/index.css'))?.[1] ?? '';
 
 describe('semantic tokens', () => {
-  it('define both themes', () => {
+  it('define both themes and the theme-independent tokens', () => {
     expect(dark.size).toBeGreaterThan(0);
     expect(light.size).toBeGreaterThan(0);
+    expect(shared.size).toBeGreaterThan(0);
+  });
+
+  it('are not redefined by a theme when theme-independent', () => {
+    expect([...shared.keys()].filter((name) => dark.has(name) || light.has(name))).toEqual([]);
   });
 
   it('are all exposed as Tailwind colors through @theme inline', () => {
-    const theme = /@theme inline\s*\{([^}]*)\}/.exec(read('../styles/index.css'))?.[1] ?? '';
     const exposed = new Set(
       [...theme.matchAll(/--color-([\w-]+):\s*var\(--([\w-]+)\)/g)]
         .filter(([, utility, token]) => utility === token)
@@ -47,8 +53,8 @@ describe('semantic tokens', () => {
     expect([...light.keys()].toSorted()).toEqual([...dark.keys()].toSorted());
   });
 
-  it.each(Object.entries(themes))(
-    'only reference primitive tokens in the %s theme',
+  it.each(Object.entries({ ...themes, shared }))(
+    'only reference primitive tokens (%s)',
     (_, tokens) => {
       const invalid = [...tokens].filter(([, value]) => {
         const reference = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
@@ -57,6 +63,14 @@ describe('semantic tokens', () => {
       expect(invalid).toEqual([]);
     },
   );
+});
+
+describe('@theme inline', () => {
+  it('only exposes semantic tokens, never primitives', () => {
+    const references = [...theme.matchAll(/var\((--[\w-]+)\)/g)].map(([, name]) => name);
+    expect(references.length).toBeGreaterThan(0);
+    expect(references.filter((name) => !dark.has(name) && !shared.has(name))).toEqual([]);
+  });
 });
 
 /** WCAG 2.x 상대 휘도. 불투명 `#rrggbb`만 받는다. */

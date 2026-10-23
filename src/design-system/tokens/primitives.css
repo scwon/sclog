@@ -3,8 +3,10 @@
  * Tailwind 유틸리티로 노출하지 않으므로 소비자와 컴포넌트는 의미 토큰만 쓴다.
  * 출처: specs/010-blog-renewal/prototype/blog-opus/ide.css, styles.css
  *
+ * 이름은 값만 말하고 쓰임새는 말하지 않는다. 쓰임새 이름은 의미 토큰(semantic.css)이 붙인다.
  * 팔레트 이름의 숫자는 (1 − OKLCH 명도) × 1000을 반올림한 값이다. 클수록 어둡다.
- * `-aN`은 같은 색의 N% 투명도다(`a3_5` = 3.5%).
+ * 그 밖의 숫자는 값 그대로다(`--size-38` = 38px). 소수점은 `_`로 쓴다(`a3_5` = 3.5%, `--line-height-1_92` = 1.92).
+ * `-aN`은 같은 색의 N% 투명도다.
  */
 :root {
   /* 팔레트: 모래(따뜻한 무채색) */
@@ -52,40 +54,38 @@
   --palette-gold-165: #d9c7a3;
   --palette-gold-495: #7d5f28;
 
-  /* 반경 */
-  --corner-6: 6px;
-  --corner-8: 8px;
-  --corner-12: 12px;
-  --corner-14: 14px;
-
-  /* 모션 */
-  --easing-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* 시간 */
+  --duration-34: 34ms;
   --duration-160: 160ms;
   --duration-300: 300ms;
   --duration-320: 320ms;
   --duration-420: 420ms;
   --duration-450: 450ms;
-  --stagger-unfold: 34ms;
 
-  /* 창 치수. 구현 중 조정 가능 */
-  --window-titlebar: 38px;
-  --window-statusbar: 24px;
-  --window-activitybar: 48px;
-  --window-explorer: 272px;
-  --window-tabs: 38px;
-  --window-breadcrumb: 32px;
-  --window-minimap: 76px;
-  --window-gutter: 56px;
-  --window-gutter-md: 38px;
-  --window-gutter-sm: 34px;
-  --window-rail: 28px;
+  /* 이징: 빠르게 출발해 부드럽게 멈추는 곡선 */
+  --easing-decelerate: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* 타이포 스케일. 구현 중 조정 가능 */
-  --type-body: 18.5px;
-  --type-body-sm: 17px;
-  --type-title: 68px;
-  --type-title-sm: 38px;
-  --type-brand-max: 116px;
-  --type-leading-body: 1.92;
-  --type-leading-body-sm: 1.9;
+  /* 길이 */
+  --size-6: 6px;
+  --size-8: 8px;
+  --size-12: 12px;
+  --size-14: 14px;
+  --size-24: 24px;
+  --size-28: 28px;
+  --size-32: 32px;
+  --size-34: 34px;
+  --size-38: 38px;
+  --size-48: 48px;
+  --size-56: 56px;
+  --size-76: 76px;
+  --size-272: 272px;
+
+  /* 글자 크기·행간 */
+  --font-size-17: 17px;
+  --font-size-18_5: 18.5px;
+  --font-size-38: 38px;
+  --font-size-68: 68px;
+  --font-size-116: 116px;
+  --line-height-1_9: 1.9;
+  --line-height-1_92: 1.92;
 }
