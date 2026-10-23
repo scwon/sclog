@@ -62,7 +62,6 @@ MCP 서버·플러그인·스킬은 항상 프로젝트 레벨로 설치한다: 
 | 스킬 | `shadcn` | shadcn/ui | 컴포넌트 추가·테마·레지스트리 |
 | 스킬 | `web-design-guidelines` | Vercel Labs | UI·접근성 점검 |
 | 스킬 | `vercel-composition-patterns` | Vercel Labs | React 컴포넌트 API 설계 |
-| 스킬 | `storybook-stories`, `astro-components`, `design-tokens`, `content-schema`, `blog-writing` | 이 저장소 | 프로젝트 규칙 |
 
 - 외부 스킬은 `skills` CLI로 받은 사본이며 `skills-lock.json`이 출처와 해시를 기록한다. 갱신: `pnpm dlx skills@1.7.4 update -p`
 - 브라우저 확인은 ego-browser를 쓴다. Playwright·Chrome DevTools MCP는 추가하지 않는다.

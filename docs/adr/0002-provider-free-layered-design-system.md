@@ -6,3 +6,5 @@
 
 - shadcn/Radix 컴포넌트를 들여올 때 Context 기반 테마나 전역 Provider가 필요한지 확인하고, 필요하면 감싸지 말고 토큰·속성 방식으로 바꾼다.
 - 오버레이처럼 반드시 클라이언트에서 동작해야 하는 컴포넌트는 Astro에서 `client:*` 지시어가 필요하다.
+- 테마 속성 `data-theme`는 반드시 `<html>`에 둔다. Radix Portal이 `document.body`에 그려지므로 아일랜드 래퍼에 두면 오버레이가 테마를 물려받지 못한다. 속성이 없으면 어두운 테마다.
+- Provider 없이는 동작하지 않는 컴포넌트(Radix Tooltip, shadcn Sidebar)는 Provider를 컴포넌트 안에 내장하거나(Tooltip) 들여오지 않고 자체 구현한다(Sidebar → 탐색기). next-themes에 기대는 래퍼(Sonner)는 그 호출을 떼고 `data-theme`를 읽게 바꾼다. 근거: `docs/research/design-system-tokens.md` 2절.
