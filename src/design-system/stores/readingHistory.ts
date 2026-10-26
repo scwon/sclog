@@ -1,6 +1,7 @@
 import { atom } from 'nanostores';
 import {
   emptyHistory,
+  forgetPosition,
   keepPublished,
   record,
   restoreHistory,
@@ -73,6 +74,11 @@ export function recordReading(url: string, chapter: string | null, percent: numb
 /** 발행된 글(탐색기 트리의 URL)에 없는 글의 기록을 버린다. 창 틀이 트리를 받았을 때 한 번 부른다. */
 export function keepPublishedHistory(published: readonly string[]): void {
   commit(keepPublished($readingHistory.get(), published));
+}
+
+/** 글 하나의 마지막 읽은 위치를 버린다. 이어 읽기가 저장된 장을 지금 개요에서 찾지 못했을 때 부른다. */
+export function forgetReadingPosition(url: string): void {
+  commit(forgetPosition($readingHistory.get(), url));
 }
 
 /** 읽기 기록을 모두 지운다(`read`·`position` 두 키). 확인 창 없이 바로 지우고 모든 꼬리표가 사라진다. */

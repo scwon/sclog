@@ -5,6 +5,7 @@
  * 화면이 새로고침 뒤에도 남는지 본다. 이어서 펼침이 탭이 새로 생겨 처음 보일 때만 일어나는지(처음 열기 → 다른 탭 → 돌아오기 → 닫기 → 다시 열기)
  * 에디터 루트의 펼침 표시로 본다.
  * 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
+ * 글 가운데 장에서 홈으로 떠났다가 돌아오면 열기 요약 뒤 이어 읽기 버튼이 뜨고, 누르면 그 장으로 가며 사라지는지 본다.
  * 끝으로 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
@@ -318,6 +319,55 @@ if (copyId) {
     [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
   );
   check('장 주소로 들어오면 그 장이 강조됨', arrived.join() === arriveId, arrived.join());
+}
+
+// 이어 읽기: 글 중간(가운데 장)에서 떠났다가 돌아오면 열기 요약 뒤 상태줄에 버튼이 뜨고, 누르면 그 장으로 가며 사라진다.
+await page.goto(`${QA.base}/`);
+await page.evaluate(() => {
+  for (const key of ['read', 'position']) localStorage.removeItem(key);
+  return true;
+});
+// 기록 스토어는 처음 한 번만 저장소를 읽으므로 새로고침해 빈 기록에서 시작한다.
+await page.reload();
+await page.waitForTimeout(800);
+await page.evaluate(() => {
+  window.qaShell = document.getElementById('panel')?.closest('astro-island');
+  return true;
+});
+await page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 열기' });
+await page.waitForTimeout(1500);
+const middle = await page.evaluate(() => {
+  const outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');
+  const chapter = outline[Math.floor(outline.length / 2)];
+  if (!chapter || outline.length < 2) return null;
+  document.getElementById(chapter.id)?.scrollIntoView();
+  window.scrollBy(0, 40);
+  return chapter.id;
+});
+if (middle) {
+  await page.waitForTimeout(1500);
+  await page.click("loc=css:header a[href='/']", { label: '홈으로' });
+  await page.waitForTimeout(800);
+  await page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 다시 열기' });
+  await page.waitForTimeout(1000);
+  check(
+    '이어 읽기: 열기 요약 동안은 버튼이 없음',
+    !(await page.evaluate(() => !!document.querySelector('footer button'))),
+  );
+  await page.waitForTimeout(1700);
+  const offered = await statusLine();
+  check('이어 읽기: 버튼이 뜸', offered.includes('에서 이어 읽기 ·'), offered);
+  await page.click('loc=css:footer button', { label: '이어 읽기 누르기' });
+  await page.waitForTimeout(800);
+  const resumed = await page.evaluate(() => ({
+    hash: decodeURIComponent(location.hash.slice(1)),
+    button: !!document.querySelector('footer button'),
+  }));
+  check('이어 읽기: 누르면 그 장으로 감', resumed.hash === middle, resumed.hash);
+  check('이어 읽기: 누르면 사라짐', !resumed.button);
+  check('창 틀 유지(이어 읽기)', await shellKept());
+} else {
+  check('이어 읽기: 장이 둘 이상인 글', false);
 }
 
 // 읽기 기록: 글 끝까지 스크롤하면 읽은 글이 되어 탐색기에 `✓`가 붙고, 다음 방문(새로고침)에도 남으며,

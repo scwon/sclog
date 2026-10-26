@@ -29,6 +29,8 @@ import {
   summarizeHistory,
   type ReadingMark,
 } from '../../stores/readingHistory.logic';
+import { $resume, dismissResume } from '../../stores/resume';
+import { resumeLabel } from '../../stores/resume.logic';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon, ProfileIcon } from './icons';
@@ -390,6 +392,8 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * 창 틀은 페이지가 열릴 때마다(`astro:page-load`) 에디터 루트의 `data-file-*`를 읽어 탭을 열고
  * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다. 같은 자리에 창 틀 밖에서 띄운 상태줄 알림
  * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
+ * 글 화면 스크립트가 이어 읽기(`$resume`)를 권하면, 그 글의 열기 요약이 사라지는 순간 상태줄 오른쪽에
+ * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
  *
  * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
@@ -422,6 +426,9 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 기록 없이 그리고, 그 뒤 실제 기록으로 다시 그린다.
   const history = useStore($readingHistory, { ssr: emptyHistory });
   const notice = useStore($statusNotice);
+  const resume = useStore($resume);
+  // 열기 요약이 끝난 파일의 URL. 이어 읽기 버튼은 그 파일의 요약이 사라진 뒤에만 보인다.
+  const [settled, setSettled] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   // 마지막으로 읽은 에디터 루트. 화면을 옮기면 <body>가 바뀌어 새 요소가 된다.
@@ -484,9 +491,13 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
       const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;
       timers.current.forEach(clearTimeout);
       setLog(command);
+      setSettled(null);
       timers.current = [
         window.setTimeout(() => setLog(result), reduceMotion ? 0 : 450),
-        window.setTimeout(() => setLog(null), 2200),
+        window.setTimeout(() => {
+          setLog(null);
+          setSettled(next.url);
+        }, 2200),
       ];
     };
     const pending = timers;
@@ -623,6 +634,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
+  // 이어 읽기는 지금 글의 열기 요약이 사라진 뒤에만 보인다(앞 파일의 요약이 끝난 직후 새 글이 열려도 겹치지 않게).
+  const offer = resume && file?.url === resume.url && settled === resume.url ? resume : null;
 
   return (
     <>
@@ -864,17 +877,31 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
             {log}
           </span>
         ) : (
-          <span className="flex min-w-0 flex-1 items-center gap-4 pr-3 pl-3">
+          <span className="flex min-w-0 flex-1 items-center gap-4 self-stretch pr-3 pl-3">
             {file?.kind === 'post' ? (
-              <span className="min-w-0 truncate font-sans">
+              <span className={cn('min-w-0 truncate font-sans', offer && 'max-[759px]:hidden')}>
                 {readingSymbol(reading) || file.title}
               </span>
             ) : (
               <span className="truncate">{file?.summary ?? file?.path}</span>
             )}
             {reading.line !== null && <span className="max-[759px]:hidden">Ln {reading.line}</span>}
-            <span className="flex-1" />
-            {reading.percent !== null && <span>{reading.percent}%</span>}
+            <span className={cn('flex-1', offer && 'max-[759px]:hidden')} />
+            {/* 이어 읽기: 좁은 화면에서는 글 제목 자리를 대신하고 읽은 비율은 오른쪽 끝에 남는다. */}
+            {offer && (
+              <button
+                type="button"
+                onClick={() => {
+                  dismissResume();
+                  navigateLikeLink(`#${offer.chapter.id}`);
+                }}
+                className="flex min-w-0 cursor-pointer items-center gap-1 self-stretch bg-on-accent/14 px-3 hover:underline focus-visible:-outline-offset-2 max-[759px]:-ml-3 max-[759px]:flex-1"
+              >
+                <span aria-hidden="true">↳</span>
+                <span className="min-w-0 truncate">{resumeLabel(offer)}</span>
+              </button>
+            )}
+            {reading.percent !== null && <span className="flex-none">{reading.percent}%</span>}
           </span>
         )}
       </footer>
