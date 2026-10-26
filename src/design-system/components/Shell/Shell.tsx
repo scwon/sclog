@@ -354,14 +354,15 @@ const panelLink =
 /**
  * 탐색기 파일 줄 끝의 읽음 꼬리표. 읽은 글은 `✓`(흐린 글자), 읽는 중인 글은 `42%`(강조 글자)이고, 스크린 리더는
  * 기호 대신 "읽음"·"42% 읽는 중"을 읽는다. 줄지 않으므로 파일 이름이 먼저 말줄임된다.
+ * 지금 연 글의 줄(`selected`, 선택 바탕)에서는 흐린 글자·강조 글자 모두 명암비가 모자라 `text-soft`로 그린다.
  */
-function ReadMark({ mark }: { mark: ReadingMark }) {
+function ReadMark({ mark, selected }: { mark: ReadingMark; selected: boolean }) {
   const { text, label } = markText(mark, 'short');
   return (
     <span
       className={cn(
         'ml-auto flex-none pl-1 text-[11px]',
-        mark.kind === 'read' ? 'text-text-muted' : 'text-accent-text',
+        selected ? 'text-text-soft' : mark.kind === 'read' ? 'text-text-muted' : 'text-accent-text',
       )}
     >
       <span aria-hidden="true">{text}</span>
@@ -902,7 +903,7 @@ export function Shell({
                                 className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
                               />
                               <span className="min-w-0 truncate">{name}</span>
-                              {mark && <ReadMark mark={mark} />}
+                              {mark && <ReadMark mark={mark} selected={active} />}
                             </a>
                           </li>
                         );
@@ -935,7 +936,8 @@ export function Shell({
                               aria-hidden="true"
                               className={cn(
                                 'min-w-[18px] font-mono text-[11.5px] leading-[1.68] text-text-muted',
-                                inChapter && 'text-accent-text',
+                                // 지금 장의 줄은 선택 바탕이라 강조 글자의 명암비가 모자라 `text-soft`로 그린다.
+                                inChapter && (atChapter ? 'text-text-soft' : 'text-accent-text'),
                               )}
                             >
                               {chapterNo(index)}
