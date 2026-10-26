@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
@@ -16,6 +17,18 @@ import { useStore } from '@nanostores/react';
 import { $statusNotice, clearStatusNotice } from '../../stores/notice';
 import { $reading, emptyReading } from '../../stores/reading';
 import { chapterNo, readingSymbol } from '../../stores/reading.logic';
+import {
+  $readingHistory,
+  clearReadingHistory,
+  keepPublishedHistory,
+} from '../../stores/readingHistory';
+import {
+  emptyHistory,
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingMark,
+} from '../../stores/readingHistory.logic';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon, ProfileIcon } from './icons';
@@ -270,8 +283,60 @@ function RailButton({
 const panelLink =
   'flex h-7.5 items-center gap-1 pr-3 pl-6.5 font-mono text-xs text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2';
 
-/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처. */
-function ProfileView({ profile }: { profile: Profile }) {
+/**
+ * 탐색기 파일 줄 끝의 읽음 꼬리표. 읽은 글은 `✓`(흐린 글자), 읽는 중인 글은 `42%`(강조 글자)이고, 스크린 리더는
+ * 기호 대신 "읽음"·"42% 읽는 중"을 읽는다. 줄지 않으므로 파일 이름이 먼저 말줄임된다.
+ */
+function ReadMark({ mark }: { mark: ReadingMark }) {
+  const { text, label } = markText(mark, 'short');
+  return (
+    <span
+      className={cn(
+        'ml-auto flex-none pl-1 text-[11px]',
+        mark.kind === 'read' ? 'text-text-muted' : 'text-accent-text',
+      )}
+    >
+      <span aria-hidden="true">{text}</span>
+      <span className="sr-only"> {label}</span>
+    </span>
+  );
+}
+
+/**
+ * 프로필 화면 맨 아래의 읽기 기록 칸. `이 브라우저에 N편 읽음 · M편 읽는 중`과 `기록 지우기`를 보이고, 기록이 없으면
+ * 안내 한 줄만 보인다. 지우면 버튼이 사라지므로 포커스를 안내 줄로 옮긴다.
+ */
+function HistorySection({ summary }: { summary: string | null }) {
+  const status = useRef<HTMLParagraphElement>(null);
+  return (
+    <section aria-labelledby="profile-history" className="border-t border-border pb-2">
+      <SectionHead id="profile-history">읽기 기록</SectionHead>
+      <p
+        ref={status}
+        tabIndex={-1}
+        className="m-0 py-1 pr-3 pl-6.5 font-mono text-xs leading-[1.6] text-text-soft outline-none"
+      >
+        {summary ? `이 브라우저에 ${summary}` : '이 브라우저에 남은 읽기 기록이 없습니다'}
+      </p>
+      {summary && (
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => {
+            clearReadingHistory();
+            status.current?.focus();
+          }}
+          className="mt-1 ml-6.5 font-mono text-xs"
+        >
+          기록 지우기
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처, 읽기 기록. */
+function ProfileView({ profile, history }: { profile: Profile; history: string | null }) {
   return (
     <div className="pb-2">
       <div className="px-4.5 pt-3 pb-4">
@@ -314,6 +379,7 @@ function ProfileView({ profile }: { profile: Profile }) {
           ))}
         </ul>
       </section>
+      <HistorySection summary={history} />
     </div>
   );
 }
@@ -328,6 +394,7 @@ function ProfileView({ profile }: { profile: Profile }) {
  * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
+ * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
  *
  * 단축키는 `document`의 keydown 리스너 하나가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
  * ⌘B(Ctrl+B) 패널 열고 닫기, Esc 맨 위 층(팔레트, 그다음 좁은 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는
@@ -352,6 +419,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   );
   const [log, setLog] = useState<string | null>(null);
   const reading = useStore($reading, { ssr: emptyReading });
+  // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 기록 없이 그리고, 그 뒤 실제 기록으로 다시 그린다.
+  const history = useStore($readingHistory, { ssr: emptyHistory });
   const notice = useStore($statusNotice);
   const timers = useRef<number[]>([]);
   const panelRef = useRef<HTMLElement>(null);
@@ -382,6 +451,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
     const saved = readPanelView();
     if (saved) updatePanel((state) => ({ ...state, view: startView(saved, firstKind.current) }));
   }, [updatePanel]);
+
+  // 읽기 기록에서 발행된 글 목록(트리)에 없는 글을 버린다.
+  useEffect(() => {
+    keepPublishedHistory(tree.flatMap((year) => year.files.map((entry) => entry.url)));
+  }, [tree]);
 
   // 패널 화면이 바뀔 때마다 세션 동안 남긴다. 열림·닫힘은 저장하지 않는다.
   useEffect(() => writePanelView(panel.view), [panel.view]);
@@ -643,7 +717,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
           ))}
         </fieldset>
         {panel.view === 'profile' ? (
-          <ProfileView profile={profile} />
+          <ProfileView profile={profile} history={summarizeHistory(history)} />
         ) : (
           <>
             <section aria-labelledby="explorer-posts" className="pb-2">
@@ -660,6 +734,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                       {files.map((entry) => {
                         const active = shown?.url === entry.url;
                         const name = entry.path.split('/').pop();
+                        const mark = readingMark(history, entry.url);
                         return (
                           <li key={entry.url}>
                             <a
@@ -667,7 +742,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                               title={name}
                               aria-current={active ? 'page' : undefined}
                               className={cn(
-                                'relative flex h-7.5 items-center gap-2 truncate pr-3 pl-10 font-mono text-xs leading-7.5 text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                mark?.kind === 'read' && 'text-text-muted',
                                 active &&
                                   'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
                               )}
@@ -676,7 +752,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                                 aria-hidden="true"
                                 className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
                               />
-                              {name}
+                              <span className="min-w-0 truncate">{name}</span>
+                              {mark && <ReadMark mark={mark} />}
                             </a>
                           </li>
                         );

@@ -33,6 +33,21 @@ export {
   type ReadingPlace,
 } from './stores/reading.logic';
 export {
+  $readingHistory,
+  clearReadingHistory,
+  flushReadingHistory,
+  keepPublishedHistory,
+  recordReading,
+} from './stores/readingHistory';
+export {
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingHistory,
+  type ReadingMark,
+  type ReadingPosition,
+} from './stores/readingHistory.logic';
+export {
   $statusNotice,
   clearStatusNotice,
   showStatusNotice,
