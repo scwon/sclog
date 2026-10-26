@@ -56,6 +56,14 @@ export function record(
   };
 }
 
+/** 글 하나의 마지막 읽은 위치를 버린다. 이어 읽기가 저장된 장이 개요에 없을 때 부른다. 없으면 받은 객체를 돌려준다. */
+export function forgetPosition(history: ReadingHistory, url: string): ReadingHistory {
+  const positions = history.positions.filter((position) => position.url !== url);
+  return positions.length === history.positions.length
+    ? history
+    : { read: history.read, positions };
+}
+
 /** 글 하나의 꼬리표: 읽은 글이거나 읽는 중인 글(읽은 비율). */
 export type ReadingMark = { kind: 'read' } | { kind: 'reading'; percent: number };
 

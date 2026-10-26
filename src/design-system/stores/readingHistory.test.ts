@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   emptyHistory,
+  forgetPosition,
   keepPublished,
   markText,
   readingMark,
@@ -269,6 +270,27 @@ describe('$readingHistory', () => {
     const { $readingHistory, keepPublishedHistory } = await loadStore(storage);
     keepPublishedHistory([B]);
     expect($readingHistory.get().read).toEqual([B]);
+  });
+});
+
+describe('forgetPosition', () => {
+  it('drops the position of one post and keeps the rest', () => {
+    const history = {
+      read: [A],
+      positions: [
+        { url: B, chapter: 'two', percent: 30 },
+        { url: '/blog/c/', chapter: 'one', percent: 10 },
+      ],
+    };
+    expect(forgetPosition(history, B)).toEqual({
+      read: [A],
+      positions: [{ url: '/blog/c/', chapter: 'one', percent: 10 }],
+    });
+  });
+
+  it('returns the same history when the post has no position', () => {
+    const history = { read: [A], positions: [] };
+    expect(forgetPosition(history, B)).toBe(history);
   });
 });
 

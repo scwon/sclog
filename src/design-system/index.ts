@@ -39,6 +39,8 @@ export {
   keepPublishedHistory,
   recordReading,
 } from './stores/readingHistory';
+export { $resume, dismissResume, followResume, openResume } from './stores/resume';
+export type { Resume } from './stores/resume.logic';
 export {
   markText,
   readingMark,
