@@ -55,4 +55,4 @@
 **남은 것**
 
 - main 병합, push(Vercel 배포), 배포된 사이트 확인은 되돌리기 어려운 외부 작업이라 사용자 확인 뒤에 한다.
-- `astro.config.mjs`의 `site`는 `https://sclog.dev`다. 사이트맵·canonical URL이 이 주소로 나간다. 배포 주소가 scwon.me라면 바꿀지 정해야 한다(이번 범위 밖이라 손대지 않음).
+- `astro.config.mjs`의 `site`가 `https://sclog.dev`여서 사이트맵·canonical URL이 그 주소로 나갔다. 사용자 결정에 따라 배포 주소인 `https://scwon.me`로 바꿨다. 글·태그 경로는 그대로다.
