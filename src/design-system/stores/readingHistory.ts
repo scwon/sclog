@@ -1,9 +1,9 @@
 import { atom } from 'nanostores';
 import {
+  applyReading,
   emptyHistory,
   forgetPosition,
   keepPublished,
-  record,
   restoreHistory,
   storedHistory,
   type ReadingHistory,
@@ -56,7 +56,7 @@ function commit(next: ReadingHistory): void {
  * 비율을 마지막 읽은 위치로 남긴다.
  */
 export function recordReading(url: string, chapter: string | null, percent: number): void {
-  commit(record($readingHistory.get(), { url, chapter, percent }));
+  commit(applyReading($readingHistory.get(), { url, chapter, percent }));
 }
 
 /** 발행된 글(탐색기 트리의 URL)에 없는 글의 기록을 버린다. 창 틀이 트리를 받았을 때 한 번 부른다. */

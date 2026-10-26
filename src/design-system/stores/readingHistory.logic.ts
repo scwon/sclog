@@ -37,7 +37,7 @@ export function emptyHistory(): ReadingHistory {
  * 위치를 갱신해 맨 앞으로 올리고, 20편을 넘으면 가장 오래 갱신하지 않은 것부터 버린다. 이미 읽은 글은 위치를 남기지
  * 않는다. 바뀐 것이 없으면 받은 객체를 그대로 돌려준다.
  */
-export function record(
+export function applyReading(
   history: ReadingHistory,
   { url, chapter, percent }: { url: string; chapter: string | null; percent: number },
 ): ReadingHistory {
@@ -93,26 +93,29 @@ export function summarizeHistory(history: ReadingHistory): string | null {
   return `${history.read.length}편 읽음 · ${history.positions.length}편 읽는 중`;
 }
 
+/** 저장하는 읽기 기록 값(`read`·`position` 키)의 판 번호. 모양을 바꾸면 올리고, 다른 판의 값은 불러올 때 버린다(ADR 0004). */
+export const HISTORY_SAVE_VERSION = 1;
+
 /** `localStorage`에 두는 모양. 키 `read`와 `position`의 값이다. */
 export interface StoredHistory {
-  read: { v: 1; urls: string[] };
-  position: { v: 1; entries: ReadingPosition[] };
+  read: { v: typeof HISTORY_SAVE_VERSION; urls: string[] };
+  position: { v: typeof HISTORY_SAVE_VERSION; entries: ReadingPosition[] };
 }
 
 /** 기록을 저장할 모양으로 바꾼다. */
 export function storedHistory(history: ReadingHistory): StoredHistory {
   return {
-    read: { v: 1, urls: history.read },
-    position: { v: 1, entries: history.positions },
+    read: { v: HISTORY_SAVE_VERSION, urls: history.read },
+    position: { v: HISTORY_SAVE_VERSION, entries: history.positions },
   };
 }
 
-/** `{ v: 1, [field]: [...] }` 모양이면 그 배열, 아니면 빈 배열. */
+/** `{ v: HISTORY_SAVE_VERSION, [field]: [...] }` 모양이면 그 배열, 아니면 빈 배열. */
 function versionedList(value: unknown, field: string): unknown[] {
   if (typeof value !== 'object' || value === null) return [];
   const fields = value as Record<string, unknown>;
   const list = fields[field];
-  return fields.v === 1 && Array.isArray(list) ? list : [];
+  return fields.v === HISTORY_SAVE_VERSION && Array.isArray(list) ? list : [];
 }
 
 function isPosition(value: unknown): value is ReadingPosition {

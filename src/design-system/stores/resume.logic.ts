@@ -2,7 +2,7 @@
  * 이어 읽기의 순수 로직. 글을 열 때 상태줄에 이어 읽기 버튼을 띄울지, 읽어 내려가다 버튼을 거둘지 정한다.
  * DOM과 저장소는 모른다. 바인딩은 `resume.ts`가 맡는다.
  */
-import type { OutlineItem } from './file.logic';
+import type { NumberedChapter, OutlineItem } from './file.logic';
 import { chapterNo } from './reading.logic';
 import type { ReadingHistory } from './readingHistory.logic';
 
@@ -10,8 +10,8 @@ import type { ReadingHistory } from './readingHistory.logic';
 export interface Resume {
   /** 글 URL(`/blog/<slug>/`). */
   url: string;
-  /** 저장된 장의 id·번호(`04`)·제목. 번호와 제목은 지금 개요에서 찾는다. */
-  chapter: { id: string; no: string; text: string };
+  /** 저장된 장. 번호와 제목은 지금 개요에서 찾는다. */
+  chapter: NumberedChapter;
   /** 떠날 때 읽은 비율(0~89). */
   percent: number;
 }

@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyReading,
   emptyHistory,
   forgetPosition,
   keepPublished,
   markText,
   readingMark,
-  record,
   restoreHistory,
   storedHistory,
   summarizeHistory,
@@ -14,14 +14,14 @@ import {
 const A = '/blog/a/';
 const B = '/blog/b/';
 
-describe('record', () => {
+describe('applyReading', () => {
   it('makes a post read at 90% and not before', () => {
-    expect(record(emptyHistory(), { url: A, chapter: 'end', percent: 89 }).read).toEqual([]);
-    expect(record(emptyHistory(), { url: A, chapter: 'end', percent: 90 }).read).toEqual([A]);
+    expect(applyReading(emptyHistory(), { url: A, chapter: 'end', percent: 89 }).read).toEqual([]);
+    expect(applyReading(emptyHistory(), { url: A, chapter: 'end', percent: 90 }).read).toEqual([A]);
   });
 
   it('keeps the chapter and percent of a post read halfway', () => {
-    const history = record(emptyHistory(), { url: A, chapter: 'developer', percent: 42 });
+    const history = applyReading(emptyHistory(), { url: A, chapter: 'developer', percent: 42 });
     expect(history).toEqual({
       read: [],
       positions: [{ url: A, chapter: 'developer', percent: 42 }],
@@ -30,7 +30,7 @@ describe('record', () => {
 
   it('does not save a position before the first chapter', () => {
     const history = emptyHistory();
-    expect(record(history, { url: A, chapter: null, percent: 3 })).toBe(history);
+    expect(applyReading(history, { url: A, chapter: null, percent: 3 })).toBe(history);
   });
 
   it('moves the updated post to the front', () => {
@@ -38,7 +38,7 @@ describe('record', () => {
       { url: A, chapter: 'one', percent: 10 },
       { url: B, chapter: 'two', percent: 30 },
       { url: A, chapter: 'three', percent: 50 },
-    ].reduce(record, emptyHistory());
+    ].reduce(applyReading, emptyHistory());
     expect(history.positions).toEqual([
       { url: A, chapter: 'three', percent: 50 },
       { url: B, chapter: 'two', percent: 30 },
@@ -46,28 +46,28 @@ describe('record', () => {
   });
 
   it('drops the position when the post becomes read', () => {
-    const halfway = record(emptyHistory(), { url: A, chapter: 'one', percent: 42 });
-    expect(record(halfway, { url: A, chapter: 'end', percent: 95 })).toEqual({
+    const halfway = applyReading(emptyHistory(), { url: A, chapter: 'one', percent: 42 });
+    expect(applyReading(halfway, { url: A, chapter: 'end', percent: 95 })).toEqual({
       read: [A],
       positions: [],
     });
   });
 
   it('keeps no position for a post already read', () => {
-    const read = record(emptyHistory(), { url: A, chapter: 'end', percent: 100 });
-    expect(record(read, { url: A, chapter: 'one', percent: 20 })).toBe(read);
-    expect(record(read, { url: A, chapter: 'end', percent: 99 })).toBe(read);
+    const read = applyReading(emptyHistory(), { url: A, chapter: 'end', percent: 100 });
+    expect(applyReading(read, { url: A, chapter: 'one', percent: 20 })).toBe(read);
+    expect(applyReading(read, { url: A, chapter: 'end', percent: 99 })).toBe(read);
   });
 
   it('returns the same history when nothing changes', () => {
-    const history = record(emptyHistory(), { url: A, chapter: 'one', percent: 42 });
-    expect(record(history, { url: A, chapter: 'one', percent: 42 })).toBe(history);
+    const history = applyReading(emptyHistory(), { url: A, chapter: 'one', percent: 42 });
+    expect(applyReading(history, { url: A, chapter: 'one', percent: 42 })).toBe(history);
   });
 
   it('keeps the 20 most recently updated posts', () => {
     const urls = Array.from({ length: 21 }, (_, index) => `/blog/p${index}/`);
     const history = urls.reduce(
-      (state, url) => record(state, { url, chapter: 'one', percent: 10 }),
+      (state, url) => applyReading(state, { url, chapter: 'one', percent: 10 }),
       emptyHistory(),
     );
     expect(history.positions).toHaveLength(20);

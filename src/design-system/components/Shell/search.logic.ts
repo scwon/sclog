@@ -4,7 +4,7 @@
  */
 
 import { fileName } from '../../stores/file.logic';
-import type { SearchBlock, SearchIndex } from '../../stores/search-index';
+import type { SearchBlock, SearchIndex } from './search-index';
 import { matchRanges, normalizeForMatch, type MatchRange } from './match.logic';
 
 /** 이 글자 수(앞뒤 공백을 지운 원래 글자 기준)부터 찾는다. */

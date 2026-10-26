@@ -68,4 +68,9 @@ export {
 export { REDUCED_MOTION } from './media';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
-export type { SearchBlock, SearchIndex, SearchPost } from './stores/search-index';
+export {
+  SEARCH_INDEX_VERSION,
+  type SearchBlock,
+  type SearchIndex,
+  type SearchPost,
+} from './components/Shell/search-index';
