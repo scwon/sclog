@@ -11,7 +11,8 @@ export interface ThemeToggleProps {
 }
 
 /**
- * 어두운/밝은 테마 전환 버튼. 테마 스토어를 구독하고, 누르면 테마를 바꿔 저장한다.
+ * 어두운/밝은 테마 전환 버튼. 테마 스토어를 구독하고, 누르면 테마를 바꿔 저장한다. 새 테마는 이 버튼 가운데에서
+ * 원형으로 퍼진다(테마 퍼짐). `data-theme-toggle`은 퍼짐의 시작점 표지라서 다른 곳에서 테마를 바꿔도 여기서 퍼진다.
  * 이름은 "밝은 테마"로 두고 켜짐 여부는 `aria-pressed`로 알린다.
  *
  * 아이콘은 스토어 값이 아니라 `<html data-theme>`를 보는 CSS로 고른다(어두운 테마: 해, 밝은 테마: 달).
@@ -24,7 +25,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <IconButton
       label="밝은 테마"
       aria-pressed={theme === 'light'}
-      onClick={toggleTheme}
+      data-theme-toggle=""
+      onClick={() => toggleTheme()}
       className={className}
     >
       <svg className="in-data-[theme=light]:hidden" viewBox="0 0 24 24" aria-hidden="true">

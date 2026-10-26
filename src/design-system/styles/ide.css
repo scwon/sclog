@@ -757,7 +757,7 @@
     width: 0.6em;
     height: 1.15em;
     background-color: var(--accent);
-    animation: blink 1.1s steps(1) infinite;
+    animation: blink var(--motion-blink) steps(1) infinite;
 
     @media (prefers-reduced-motion: reduce) {
       animation: none;
@@ -1115,12 +1115,73 @@
     font-weight: 700;
   }
 
+  /* 글 끝 이동 줄: 흐름 로그의 링크 줄 모양. `newer-post.mdx → ---- 글 제목`, `posts.log`, `맨 위로` */
   .doc-end {
-    display: flex;
-    justify-content: space-between;
     margin-top: 28px;
-    font-size: 15px;
-    font-weight: 600;
+  }
+
+  .doc-end-lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .doc-end-line {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    height: 28px;
+  }
+
+  .doc-end-link {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+
+    &:hover .doc-end-label {
+      color: var(--text);
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 3px;
+    }
+  }
+
+  .doc-end-label {
+    flex: none;
+    color: var(--text-soft);
+    font: 500 12.5px/28px var(--family-mono);
+    white-space: nowrap;
+    transition: color var(--motion-fast) var(--motion-easing);
+  }
+
+  .doc-end-rule {
+    flex: 1 1 0;
+    min-width: 24px;
+    height: 1px;
+    margin: 0 14px;
+    background: repeating-linear-gradient(90deg, var(--border-subtle) 0 4px, transparent 4px 8px);
+  }
+
+  /* 메모(글 제목)는 한 줄에서 말줄임한다. 라벨과 점선은 줄지 않는다 */
+  .doc-end-note {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font: 400 12px/28px var(--family-mono);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .doc-end-mark {
+    flex: none;
+    font: 400 12px/28px var(--family-mono);
+
+    &:not(:empty) {
+      margin-left: 8px;
+    }
   }
 
   /* 경로 표시줄 끝: 현재 장·절과 읽은 만큼의 코랄 진행선 */
