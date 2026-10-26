@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 (홈 흐름 로그), 07 (글 파일 화면)
 
-**Status:** needs-info (main 병합·배포는 사용자 확인을 기다린다)
+**Status:** done
 
 참고: 스펙 "진행 방식"·"문서 갱신", 사용자 완료 기준(글 URL·원본 보존, ego-browser 확인, Orca 탭).
 
@@ -13,7 +13,7 @@
 - [x] 기존 글 URL·태그 URL·RSS·사이트맵 경로가 배포 전과 같다(빌드 결과물 테스트 + 수동 확인)
 - [x] DESIGN.md "미정 항목" 중 다크 팔레트·글꼴·반경·모션을 확정 절로 옮기고, 토큰 파일을 출처로 가리킨다. 시안 수치 표는 고치지 않는다
 - [x] CLAUDE.md Tech Stack에 nanostores와 디자인 시스템 폴더 포인터를 추가한다. 토큰 값은 적지 않는다
-- [ ] `design-system` 브랜치에서 `/code-review`를 돌리고 지적을 반영한 뒤, Conventional Commits로 정리해 main에 합친다. Vercel 배포 뒤 scwon.me를 ego-browser로 한 번 더 연다
+- [x] `design-system` 브랜치에서 `/code-review`를 돌리고 지적을 반영한 뒤, Conventional Commits로 정리해 main에 합친다. Vercel 배포 뒤 scwon.me를 ego-browser로 한 번 더 연다
 - [x] `CI=1`로 `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test`, `pnpm build-storybook` 통과
 
 ## Comments
@@ -56,3 +56,14 @@
 
 - main 병합, push(Vercel 배포), 배포된 사이트 확인은 되돌리기 어려운 외부 작업이라 사용자 확인 뒤에 한다.
 - `astro.config.mjs`의 `site`가 `https://sclog.dev`여서 사이트맵·canonical URL이 그 주소로 나갔다. 사용자 결정에 따라 배포 주소인 `https://scwon.me`로 바꿨다. 글·태그 경로는 그대로다.
+
+### 2026-10-26 병합·배포
+
+- 사용자 결정: `--no-ff`로 main에 병합하고 push한다. 사이트 주소는 scwon.me로 바꾼다(`12b86b2`).
+- main 병합 커밋 `2b712d4`를 push했다. 함께 올라간 것은 그전까지 push하지 않았던 main 커밋 2개(스펙·티켓 문서 `a0d3f6d`, MCP 설정 `5340b0a`)다.
+- GitHub CI(run 40269932088): lint·format:check·build·test·build-storybook 모두 성공. Vercel Production 배포 성공(`2b712d4`).
+- 배포 확인(ego-browser, 1440px): `https://scwon.me/`, 글, `/blog/tags/회고/`, 없는 주소(404)를 열었다.
+  - 모두 IDE 창 안에 열리고, 화면을 옮기면 탭이 쌓인다.
+  - 에디터 루트 `data-file-url`이 맞고, 글꼴 요청은 모두 같은 사이트(`www.scwon.me`)로 간다.
+  - 콘솔에는 404 페이지 응답 한 건만 있다(의도한 요청).
+- 확인할 것: `scwon.me`가 `www.scwon.me`로 넘어가는데 canonical·사이트맵은 `https://scwon.me/…`(apex)를 쓴다. 검색엔진에는 최종 주소를 canonical로 주는 편이 낫다. `site`를 `https://www.scwon.me`로 바꾸거나, Vercel에서 apex를 기본 도메인으로 두는 것 중 하나를 정하면 된다.
