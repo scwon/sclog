@@ -13,8 +13,8 @@ export const SITE = {
 /** 패널의 프로필 화면에 보이는 소개. 이름·GitHub 주소는 `SITE` 값을 가리킨다. */
 export const PROFILE: Profile = {
   name: SITE.author,
-  role: 'Frontend Developer',
-  bio: '2017년 특성화고 학생이던 때 WhaTapLabs에 입사해 프론트엔드 개발자가 됐습니다. 랜딩 페이지로 시작해 서비스 화면과 차트를 만들어 왔습니다. 이 블로그에는 일하며 배우고 느낀 것을 적습니다.',
+  role: '개발자',
+  bio: '관심 가는 건 다 해보고 다 만드는 개발자 원성철입니다.',
   photo: '/images/profile/photo.jpg',
   photoBack: '/images/profile/dot.png',
   career: ['WhaTapLabs · 2017.10~'],
