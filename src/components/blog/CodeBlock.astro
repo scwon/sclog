@@ -11,7 +11,7 @@
    * 코드 블록에 복사 버튼과 언어 라벨을 추가하는 스크립트
    */
   function initCodeBlocks() {
-    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.post-content pre');
+    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.doc-prose pre');
 
     codeBlocks.forEach((pre) => {
       // 이미 처리된 코드 블록은 건너뜀
@@ -101,7 +101,7 @@
   .code-block-wrapper {
     position: relative;
     margin-bottom: 1.25rem;
-    border-radius: var(--radius-card);
+    border-radius: var(--corner-md);
     overflow: hidden;
     max-width: 100%;
   }
@@ -118,7 +118,7 @@
   .code-language {
     color: #9ca3af;
     text-transform: lowercase;
-    font-family: var(--font-mono, 'Menlo', monospace);
+    font-family: var(--family-mono);
   }
 
   .code-copy-btn {
@@ -130,7 +130,7 @@
     color: #9ca3af;
     cursor: pointer;
     padding: 0.25rem;
-    border-radius: var(--radius-button, 4px);
+    border-radius: var(--corner-sm);
     transition:
       color 0.2s,
       background 0.2s;
@@ -147,7 +147,7 @@
 
   .code-block-wrapper pre {
     margin: 0 !important;
-    border-radius: 0 0 var(--radius-card) var(--radius-card) !important;
+    border-radius: 0 0 var(--corner-md) var(--corner-md) !important;
     overflow-x: auto;
     max-width: 100%;
   }

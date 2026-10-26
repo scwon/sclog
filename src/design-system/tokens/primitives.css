@@ -1,0 +1,101 @@
+/*
+ * 원시 토큰: 값 그 자체. 테마와 무관하고, 어디에 쓰는지는 말하지 않는다(ADR 0003).
+ * Tailwind 유틸리티로 노출하지 않으므로 소비자와 컴포넌트는 의미 토큰만 쓴다.
+ * 출처: specs/010-blog-renewal/prototype/blog-opus/ide.css, styles.css
+ *
+ * 이름은 값만 말하고 쓰임새는 말하지 않는다. 쓰임새 이름은 의미 토큰(semantic.css)이 붙인다.
+ * 팔레트 이름의 숫자는 (1 − OKLCH 명도) × 1000을 반올림한 값이다. 클수록 어둡다.
+ * 그 밖의 숫자는 값 그대로다(`--size-38` = 38px). 소수점은 `_`로 쓴다(`a3_5` = 3.5%, `--line-height-1_92` = 1.92).
+ * `-aN`은 같은 색의 N% 투명도다.
+ */
+:root {
+  /* 팔레트: 모래(따뜻한 무채색) */
+  --palette-sand-5: #fffdfa;
+  --palette-sand-20: #faf8f5;
+  --palette-sand-25: #faf6f1;
+  --palette-sand-43: #f4f0eb;
+  --palette-sand-49: #f3eee8;
+  --palette-sand-64: #eee9e3;
+  --palette-sand-105: #e2dbd3;
+  --palette-sand-123: #ddd5cc;
+  --palette-sand-166: #cfc7c0;
+  --palette-sand-299: #a69d95;
+  --palette-sand-309: #a29a92;
+  --palette-sand-478: #6f6862;
+  --palette-sand-504: #66615d;
+  --palette-sand-624: #46403b;
+  --palette-sand-668: #393532;
+  --palette-sand-708: #2f2b28;
+  --palette-sand-713: #2d2a27;
+  --palette-sand-740: #242424;
+  --palette-sand-741: #262321;
+  --palette-sand-755: #22201e;
+  --palette-sand-789: #1a1817;
+
+  --palette-sand-49-a4: rgb(243 238 232 / 0.04);
+  --palette-sand-49-a6: rgb(243 238 232 / 0.06);
+  --palette-sand-49-a10: rgb(243 238 232 / 0.1);
+  --palette-sand-49-a26: rgb(243 238 232 / 0.26);
+  --palette-sand-740-a3_5: rgb(36 36 36 / 0.035);
+  --palette-sand-740-a5: rgb(36 36 36 / 0.05);
+  --palette-sand-740-a10: rgb(36 36 36 / 0.1);
+  --palette-sand-740-a30: rgb(36 36 36 / 0.3);
+  --palette-sand-859-a55: rgb(10 9 8 / 0.55);
+
+  /* 팔레트: 코랄(강조) */
+  --palette-coral-202: #e9ac9f;
+  --palette-coral-468: #a4503f;
+
+  --palette-coral-202-a16: rgb(233 172 159 / 0.16);
+  --palette-coral-202-a30: rgb(233 172 159 / 0.3);
+  --palette-coral-202-a42: rgb(233 172 159 / 0.42);
+
+  /* 팔레트: 금빛(코드 문자열) */
+  --palette-gold-165: #d9c7a3;
+  --palette-gold-495: #7d5f28;
+
+  /* 시간 */
+  --duration-34: 34ms;
+  --duration-160: 160ms;
+  --duration-300: 300ms;
+  --duration-320: 320ms;
+  --duration-420: 420ms;
+  --duration-450: 450ms;
+
+  /* 이징: 빠르게 출발해 부드럽게 멈추는 곡선 */
+  --easing-decelerate: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* 길이 */
+  --size-6: 6px;
+  --size-8: 8px;
+  --size-12: 12px;
+  --size-14: 14px;
+  --size-24: 24px;
+  --size-28: 28px;
+  --size-32: 32px;
+  --size-34: 34px;
+  --size-38: 38px;
+  --size-48: 48px;
+  --size-56: 56px;
+  --size-76: 76px;
+  --size-272: 272px;
+
+  /* 글꼴 묶음(폴백 포함). 첫 이름은 @font-face의 font-family 이름이다 */
+  --font-family-bricolage:
+    'Bricolage Grotesque Variable', 'Pretendard Variable', -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-family-pretendard:
+    'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  --font-family-maruburi: 'MaruBuri', 'AppleMyungjo', 'Noto Serif KR', serif;
+  --font-family-jetbrains-mono:
+    'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* 글자 크기·행간 */
+  --font-size-17: 17px;
+  --font-size-18_5: 18.5px;
+  --font-size-34: 34px;
+  --font-size-54: 54px;
+  --font-size-116: 116px;
+  --line-height-1_9: 1.9;
+  --line-height-1_92: 1.92;
+}

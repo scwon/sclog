@@ -1,51 +1,34 @@
 ---
+/** 태그 목록 `tags/`: 태그마다 링크 줄 하나(`#태그 ---- 글 수`). */
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import Header from '../../../components/Header.astro';
-import TagList from '../../../components/TagList.astro';
+import FlowLog from '../../../components/flow/FlowLog.astro';
 import { getAllTags } from '../../../utils/blog';
+import { linkLines } from '../../../utils/flow';
 
-const tags = await getAllTags();
+const tags = [...(await getAllTags()).entries()].toSorted((a, b) => b[1] - a[1]);
 ---
 
-<BaseLayout title="태그" description="SCLOG 블로그의 모든 태그 목록입니다.">
-  <Header />
-  <main class="container">
-    <header class="page-header">
-      <h1>태그</h1>
-      <p class="subtitle">관심 있는 주제를 선택하세요.</p>
-    </header>
-
-    {tags.size === 0 ? <p class="no-tags">아직 태그가 없습니다.</p> : <TagList tags={tags} />}
-  </main>
+<BaseLayout
+  title="태그"
+  description="SCLOG 블로그의 모든 태그 목록입니다."
+  file={{
+    title: '태그',
+    path: 'tags/',
+    url: '/blog/tags/',
+    kind: 'page',
+    summary: `태그 ${tags.length}개`,
+  }}
+>
+  <FlowLog
+    lines={linkLines({
+      title: 'tags/',
+      comment: `태그 ${tags.length}개, 글이 많은 순`,
+      links: tags.map(([tag, count]) => ({
+        href: `/blog/tags/${tag}/`,
+        label: `#${tag}`,
+        note: `글 ${count}편`,
+      })),
+      end: `태그 ${tags.length}개`,
+    })}
+  />
 </BaseLayout>
-
-<style>
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  .page-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .page-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-  }
-
-  .subtitle {
-    color: var(--color-text-muted);
-    font-size: 1.1rem;
-    margin: 0;
-  }
-
-  .no-tags {
-    text-align: center;
-    color: var(--color-text-muted);
-    padding: 3rem;
-  }
-</style>

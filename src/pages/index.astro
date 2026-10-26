@@ -1,36 +1,27 @@
 ---
 /**
- * 홈페이지 (포트폴리오)
- * 프로필, 소셜 링크, 경력, 최근 글 섹션을 표시
+ * 홈: `posts.log` 흐름 로그. 줄 번호·장 흐름·첫 문장은 모두 글 파일에서 읽는다.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import ProfileSection from '../components/ProfileSection.astro';
-import CareerSection from '../components/CareerSection.astro';
-import RecentPosts from '../components/RecentPosts.astro';
+import FlowLog from '../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../utils/blog';
-import { profile, socialLinks, careers } from '../data/profile';
+import { homeLines, loadFlows } from '../utils/flow';
+import { SITE } from '../site';
 
 const posts = await getPublishedPosts();
-const recentPosts = posts.slice(0, 5);
+const flows = await loadFlows(posts);
 ---
 
 <BaseLayout
   title="SCLOG - 개발 블로그"
   description="프론트엔드 개발자의 기술 블로그. 개발 경험과 인사이트를 공유합니다."
+  file={{
+    title: 'posts.log',
+    path: 'posts.log',
+    url: '/',
+    kind: 'log',
+    summary: `글 ${posts.length}편`,
+  }}
 >
-  <Header />
-  <main class="container">
-    <ProfileSection profile={profile} socialLinks={socialLinks} />
-    <CareerSection careers={careers} />
-    <RecentPosts posts={recentPosts} totalCount={posts.length} />
-  </main>
+  <FlowLog lines={homeLines(flows, SITE)} />
 </BaseLayout>
-
-<style>
-  .container {
-    max-width: var(--max-width-wide);
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-</style>

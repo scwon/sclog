@@ -1,0 +1,38 @@
+/* 요소 기본 스타일. 값은 의미 토큰만 쓴다. */
+@layer base {
+  :root,
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    /* 한국어는 어절 단위로 줄을 바꾸고, 긴 영단어·URL만 중간에서 끊는다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  ::selection {
+    background-color: var(--marker);
+    color: inherit;
+  }
+
+  /* 테마를 바꾸는 순간에는 전환 효과를 꺼서, 호버 전환이 옛 테마 색을 거쳐 번지지 않게 한다. */
+  [data-theme-switching],
+  [data-theme-switching] *,
+  [data-theme-switching] *::before,
+  [data-theme-switching] *::after {
+    transition: none !important;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+}

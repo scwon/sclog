@@ -1,0 +1,221 @@
+/*
+ * 글 본문 타이포그래피(`.doc-prose`). MDX가 그린 HTML에 그대로 입힌다.
+ * 출처: specs/010-blog-renewal/prototype/blog-opus/styles.css "prose", ide.css "article"
+ */
+@layer components {
+  .doc-prose {
+    color: var(--prose);
+    font: 400 var(--type-body) / var(--type-body-leading) var(--family-serif);
+    letter-spacing: -0.004em;
+    word-break: keep-all;
+    counter-reset: chapter;
+
+    @media (max-width: 759px) {
+      font-size: var(--type-body-sm);
+      line-height: var(--type-body-sm-leading);
+    }
+
+    & > :first-child {
+      margin-top: 0;
+    }
+
+    & p {
+      margin: 0 0 1.45em;
+    }
+
+    & :is(h2, h3, h4) {
+      color: var(--text);
+      font-family: var(--family-sans);
+      text-wrap: balance;
+    }
+
+    & :is(h2, h3, h4) + p {
+      margin-top: 0;
+    }
+
+    /* 장: 위에 코랄 장 번호(01, 02 …)와 짧은 선 */
+    & h2 {
+      margin: 3.3em 0 0.85em;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: -0.038em;
+      counter-increment: chapter;
+
+      &::before {
+        content: counter(chapter, decimal-leading-zero);
+        display: block;
+        width: fit-content;
+        margin-bottom: 16px;
+        padding-right: 40px;
+        background: linear-gradient(var(--accent), var(--accent)) right center / 28px 1.5px
+          no-repeat;
+        color: var(--accent-text);
+        font: 700 15px/1 var(--family-display);
+        letter-spacing: 0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      @media (max-width: 759px) {
+        font-size: 26px;
+      }
+    }
+
+    & h3 {
+      margin: 2.6em 0 0.7em;
+      font-size: 24px;
+      font-weight: 750;
+      line-height: 1.4;
+      letter-spacing: -0.03em;
+    }
+
+    & h4 {
+      margin: 2.2em 0 0.6em;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.45;
+      letter-spacing: -0.025em;
+    }
+
+    /* 강조: 형광 띠 */
+    & strong {
+      background: linear-gradient(
+        transparent 52%,
+        var(--marker) 52%,
+        var(--marker) 90%,
+        transparent 90%
+      );
+      box-decoration-break: clone;
+      color: var(--prose-strong);
+      font-weight: 700;
+    }
+
+    & em {
+      color: var(--text-soft);
+      font-style: normal;
+    }
+
+    & a {
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+
+      &:hover {
+        background-color: var(--marker);
+      }
+    }
+
+    /* 인용: 줄 번호 열이 있으므로 코랄 따옴표는 본문 칸 안에 둔다 */
+    & blockquote {
+      position: relative;
+      margin: 0 0 1.7em;
+      padding-left: 1.4em;
+      color: var(--text-soft);
+      font-size: 1.02em;
+      line-height: 1.8;
+
+      &::before {
+        content: '“';
+        position: absolute;
+        top: -0.02em;
+        left: -0.04em;
+        color: var(--accent);
+        font: 800 2em/1 var(--family-display);
+      }
+
+      & p {
+        margin: 0;
+      }
+
+      & strong {
+        background: none;
+        color: inherit;
+      }
+    }
+
+    /* 본문 이미지: 매트 없이 얇은 테두리, 아래 기울임 글자는 설명으로 */
+    & p:has(> img) {
+      margin: 2.6em 0 2.4em;
+      text-align: center;
+
+      & img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin-inline: auto;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--corner-lg);
+      }
+
+      & br {
+        display: none;
+      }
+
+      & em {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 16px;
+        color: var(--text-muted);
+        font: 400 14px/1.6 var(--family-sans);
+
+        &::before {
+          content: '';
+          width: 16px;
+          height: 1.5px;
+          background-color: var(--accent);
+        }
+      }
+    }
+
+    /* 구분선: 코랄 점 셋, 뒤따르는 문단은 맺음말 */
+    & hr {
+      width: 66px;
+      height: 6px;
+      margin: 4em auto 2.4em;
+      border: 0;
+      background: radial-gradient(circle, var(--accent) 2.6px, transparent 3px) 0 0 / 24px 6px
+        repeat-x;
+    }
+
+    & hr + p {
+      color: var(--text-soft);
+      font-size: 16.5px;
+    }
+
+    & :is(ul, ol) {
+      margin: 0 0 1.45em;
+      padding-left: 1.4em;
+    }
+
+    & ul {
+      list-style: disc;
+    }
+
+    & ol {
+      list-style: decimal;
+    }
+
+    & li {
+      margin: 0.3em 0;
+    }
+
+    & :not(pre) > code {
+      padding: 0.1em 0.35em;
+      border-radius: var(--corner-sm);
+      background-color: var(--state-hover);
+      font: 0.88em var(--family-mono);
+    }
+
+    & pre {
+      margin: 0 0 1.45em;
+      padding: 16px 18px;
+      overflow: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--corner-md);
+      font: 13.5px/1.7 var(--family-mono);
+    }
+  }
+}

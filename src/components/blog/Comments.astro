@@ -5,7 +5,7 @@
  *
  * @description
  * - GitHub Discussions를 백엔드로 사용하는 Giscus 위젯 임베드
- * - 다크 모드 테마 자동 동기화 지원
+ * - 사이트 테마(<html data-theme>) 자동 동기화 지원
  * - 지연 로딩으로 초기 페이지 로딩 성능 최적화
  *
  * @see https://giscus.app
@@ -29,7 +29,7 @@
       data-reactions-enabled="1"
       data-emit-metadata="0"
       data-input-position="bottom"
-      data-theme="light"
+      data-theme="dark"
       data-lang="ko"
       data-loading="lazy"
       crossorigin="anonymous"
@@ -41,10 +41,10 @@
 <script>
   /**
    * Giscus 테마를 현재 사이트 테마와 동기화
-   * document.documentElement의 'dark' 클래스 유무로 테마 결정
+   * <html data-theme>이 light일 때만 밝은 테마, 그 밖에는 어두운 테마(사이트 기본값)
    */
   function updateGiscusTheme(): void {
-    const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
     const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
     if (!iframe?.contentWindow) return;
 
@@ -55,25 +55,33 @@
   const observer = new MutationObserver(updateGiscusTheme);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class'],
+    attributeFilter: ['data-theme'],
   });
 
-  // 초기 테마 설정 (iframe 로드 후)
-  window.addEventListener('load', updateGiscusTheme);
+  // 초기 테마: giscus iframe이 준비되면 보내는 메시지를 받은 뒤에 맞춘다. 그 전에 보내면 iframe이 아직
+  // giscus 출처가 아니라 메시지가 버려진다. 화면을 옮겨 새 iframe이 생겨도 같은 메시지가 온다.
+  // giscus는 크기 변경 알림 등 메시지를 계속 보내므로 iframe마다 처음 한 번만 맞춘다(이후는 위 관찰자가 맡는다).
+  const synced = new WeakSet<MessageEventSource>();
+  window.addEventListener('message', (event: MessageEvent) => {
+    if (event.origin !== 'https://giscus.app' || !event.data?.giscus || !event.source) return;
+    if (synced.has(event.source)) return;
+    synced.add(event.source);
+    updateGiscusTheme();
+  });
 </script>
 
 <style>
   .comments-section {
     margin-top: 3rem;
     padding-top: 2rem;
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--border);
   }
 
   .comments-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 1.5rem;
-    color: var(--color-text);
+    color: var(--text);
   }
 
   .giscus-container {

@@ -1,0 +1,50 @@
+/*
+ * 모션 유틸리티. 시간·이징은 의미 토큰(--motion-*)을 쓰고, 움직임 줄이기 설정에서는 바로 끝난다.
+ */
+
+/* 왼쪽에서 오른쪽으로 드러나며 등장한다. 새 탭 등. 에디터 줄의 '펼침'(GLOSSARY)과는 다른 움직임이다 */
+@keyframes unroll {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@utility animate-unroll {
+  animation: unroll var(--motion-enter) var(--motion-easing);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/*
+ * 펼침: 파일을 열 때 에디터 내용이 위에서부터 줄 단위로 나타난다(GLOSSARY "펼침").
+ * 에디터 루트에 `data-unfold`, 항목에 `data-unfold-item`과 순서 `--i`를 붙이면 `--motion-unfold-stagger` 간격으로
+ * `--motion-unfold` 동안 위→아래 잘라내기 + 6px 이동으로 나타난다. 왼쪽 줄 번호 열까지 보이도록 왼쪽은 넉넉히 연다.
+ */
+@keyframes unfold {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% -120px);
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 -120px);
+    transform: none;
+  }
+}
+
+@layer components {
+  [data-unfold] [data-unfold-item] {
+    animation: unfold var(--motion-unfold) var(--motion-easing) both;
+    animation-delay: calc(var(--i, 0) * var(--motion-unfold-stagger));
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}

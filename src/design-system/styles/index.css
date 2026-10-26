@@ -1,0 +1,65 @@
+/*
+ * 2층 진입점. 소비자(레이아웃·페이지·Storybook)와 shadcn 설정은 이 파일 하나만 가리킨다.
+ * 의미 토큰 중 색·글꼴·반경·이징만 Tailwind 유틸리티로 노출하고 원시 토큰은 노출하지 않는다(ADR 0003).
+ * 치수·모션 시간·타이포 스케일은 `h-(--bar-height)`, `duration-(--motion-fast)`처럼 변수 유틸리티로 쓴다.
+ * 클래스 스캔은 디자인 시스템을 담은 소스 폴더(src/)로 한정해 문서·시안·스킬 예제의 클래스가 섞이지 않게 한다.
+ */
+@import 'tailwindcss' source('../..');
+@import 'tw-animate-css';
+@import '../tokens/index.css';
+@import './fonts.css';
+@import './base.css';
+@import './motion.css';
+@import './ide.css';
+@import './prose.css';
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* inline: 유틸리티에 var()가 그대로 복사돼야 data-theme로 바뀐 값이 반영된다. */
+@theme inline {
+  --color-*: initial;
+
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-text: var(--text);
+  --color-text-soft: var(--text-soft);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+
+  --color-prose: var(--prose);
+  --color-prose-strong: var(--prose-strong);
+  --color-code-string: var(--code-string);
+
+  --color-state-hover: var(--state-hover);
+  --color-state-current: var(--state-current);
+  --color-state-selected: var(--state-selected);
+  --color-marker: var(--marker);
+  --color-scrim: var(--scrim);
+
+  /* currentColor·transparent 같은 키워드 색은 Tailwind가 따로 만들므로 다시 둘 필요가 없다. */
+
+  /* --font-*: initial은 --font-weight-*까지 지우므로 쓰지 않고 네 글꼴만 덮어쓴다. */
+  --font-display: var(--family-display);
+  --font-sans: var(--family-sans);
+  --font-serif: var(--family-serif);
+  --font-mono: var(--family-mono);
+
+  --radius-*: initial;
+  --radius-sm: var(--corner-sm);
+  --radius-md: var(--corner-md);
+  --radius-lg: var(--corner-lg);
+  --radius-xl: var(--corner-xl);
+
+  --ease-standard: var(--motion-easing);
+}

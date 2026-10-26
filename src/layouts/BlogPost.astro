@@ -1,14 +1,17 @@
 ---
+/**
+ * 글 화면: 에디터에 연 파일. frontmatter(코드 색) → 제목·작성 정보 → 대표 이미지(코랄 매트) → 본문 → 꼬리.
+ * 모든 블록에 줄 번호가 있고(2층 ide.css의 CSS 카운터), 아래 스크립트가 읽는 위치를 `reading` 스토어에 쓴다.
+ * MDX 원본과 글 URL은 바꾸지 않는다.
+ */
 import type { CollectionEntry } from 'astro:content';
 import type { MarkdownHeading } from 'astro';
 import BaseLayout from './BaseLayout.astro';
-import Header from '../components/Header.astro';
-import TableOfContents from '../components/blog/TableOfContents.astro';
 import CodeBlock from '../components/blog/CodeBlock.astro';
-import ProgressBar from '../components/blog/ProgressBar.astro';
-import ScrollToTop from '../components/blog/ScrollToTop.astro';
-import { getReadingTime } from '../utils/blog';
 import Comments from '../components/blog/Comments.astro';
+import { Badge } from '@/design-system';
+import { SITE } from '../site';
+import { buildOutline, postFile } from '../utils/ide';
 
 interface Props {
   post: CollectionEntry<'blog'>;
@@ -17,15 +20,9 @@ interface Props {
 
 const { post, headings = [] } = Astro.props;
 const { title, description, pubDate, updatedDate, heroImage, tags } = post.data;
-const readingTime = getReadingTime(post.body ?? '');
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
+const file = postFile(post);
+const isoDate = pubDate.toISOString().slice(0, 10);
+const quote = (value: string) => JSON.stringify(value);
 ---
 
 <BaseLayout
@@ -36,238 +33,207 @@ function formatDate(date: Date): string {
   publishedTime={pubDate}
   modifiedTime={updatedDate}
   tags={tags}
+  file={file}
+  outline={buildOutline(headings)}
 >
-  <ProgressBar />
-  <Header />
-  <main class="container">
-    <div class="content-grid">
-      <article class="blog-post">
-        <header class="post-header">
-          {heroImage && <img class="hero-image" src={heroImage} alt={title} />}
-          <h1 class="post-title">{title}</h1>
-          <div class="post-meta">
-            <time datetime={pubDate.toISOString()}>{formatDate(pubDate)}</time>
-            <span class="reading-time">{readingTime}분 읽기</span>
-            {updatedDate && (
-              <span class="updated">
-                (수정: <time datetime={updatedDate.toISOString()}>{formatDate(updatedDate)}</time>)
-              </span>
-            )}
-          </div>
-          {tags.length > 0 && (
-            <div class="post-tags">
-              {tags.map((tag) => (
-                <a href={`/blog/tags/${tag}`} class="tag">
-                  #{tag}
-                </a>
-              ))}
-            </div>
-          )}
-        </header>
+  <Fragment slot="crumbs-end">
+    <span class="ide-crumbs-symbol" data-reading-symbol></span>
+    <button
+      type="button"
+      class="ide-crumbs-outline"
+      data-explorer-toggle
+      aria-controls="explorer"
+      aria-expanded="false"
+    >
+      개요
+    </button>
+    <span class="ide-crumbs-progress" aria-hidden="true"></span>
+  </Fragment>
 
-        <div class="post-content">
-          <slot />
-        </div>
-
-        <Comments />
-      </article>
-      <aside class="toc-sidebar">
-        <TableOfContents headings={headings} />
-      </aside>
+  <article class="doc" data-doc>
+    <div class="doc-frontmatter" aria-hidden="true">
+      <span class="doc-fm-line">
+        <span class="doc-fm-punct">---</span>
+      </span>
+      <span class="doc-fm-line">
+        <span class="doc-fm-key">title</span>
+        <span class="doc-fm-punct">: </span>
+        <span class="doc-fm-str">{quote(title)}</span>
+      </span>
+      <span class="doc-fm-line">
+        <span class="doc-fm-key">pubDate</span>
+        <span class="doc-fm-punct">: </span>
+        <span class="doc-fm-num">{isoDate}</span>
+      </span>
+      {tags.length > 0 && (
+        <span class="doc-fm-line">
+          <span class="doc-fm-key">tags</span>
+          <span class="doc-fm-punct">: [</span>
+          {tags.map((tag, index) => (
+            <>
+              <span class="doc-fm-str">{quote(tag)}</span>
+              {index < tags.length - 1 && <span class="doc-fm-punct">, </span>}
+            </>
+          ))}
+          <span class="doc-fm-punct">]</span>
+        </span>
+      )}
+      {heroImage && (
+        <span class="doc-fm-line">
+          <span class="doc-fm-key">heroImage</span>
+          <span class="doc-fm-punct">: </span> <span class="doc-fm-str">{quote(heroImage)}</span>
+        </span>
+      )}
+      <span class="doc-fm-line">
+        <span class="doc-fm-punct">---</span>
+      </span>
     </div>
-  </main>
+
+    <header class="doc-head">
+      <h1 class="doc-title">{title}</h1>
+      <p class="doc-byline">
+        <span class="doc-sign" aria-hidden="true">
+          ’
+        </span>
+        <span class="doc-byline-author">{SITE.author}</span>
+        <span class="doc-byline-sep" aria-hidden="true"></span>
+        <time datetime={isoDate}>{isoDate.replaceAll('-', '.')}</time>
+        <span class="doc-byline-sep" aria-hidden="true"></span>
+        <span>읽는 시간 {file.reading}분</span>
+      </p>
+    </header>
+
+    {heroImage && (
+      <figure class="doc-hero">
+        <img src={heroImage} alt={`${title} 대표 이미지`} />
+      </figure>
+    )}
+
+    <div class="doc-prose" id="content">
+      <slot />
+    </div>
+
+    <footer class="doc-foot">
+      {tags.length > 0 && (
+        <ul class="doc-tags" aria-label="태그">
+          {tags.map((tag) => (
+            <li>
+              <Badge asChild>
+                <a href={`/blog/tags/${tag}/`}>{tag}</a>
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div class="doc-author">
+        <span class="doc-sign" aria-hidden="true">
+          ’
+        </span>
+        <div>
+          <p class="doc-author-name">{SITE.author}</p>
+          <a href={SITE.githubUrl}>{SITE.githubUrl.replace(/^https?:\/\//, '')}</a>
+        </div>
+      </div>
+      <nav class="doc-end" aria-label="글 끝 이동">
+        <a href="/">← posts.log</a>
+        <a href="#editor">맨 위로</a>
+      </nav>
+      <Comments />
+    </footer>
+  </article>
   <CodeBlock />
-  <ScrollToTop />
 </BaseLayout>
 
-<style>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+<script>
+  import {
+    currentBlock,
+    locateInOutline,
+    readingPercent,
+    readingSymbol,
+    setReading,
+    type OutlineItem,
+  } from '@/design-system';
+
+  /**
+   * 읽는 위치를 따라간다: 현재 블록(줄 번호 코랄), 현재 장·절, 읽은 비율.
+   * 블록이 읽는 선을 지날 때는 IntersectionObserver가, 비율은 스크롤이 알려 준다.
+   * 번들 스크립트는 한 번만 돌므로 페이지가 열릴 때마다 다시 붙이고, 떠날 때 뗀다.
+   */
+  let detach: (() => void) | null = null;
+
+  /**
+   * 읽는 선: 탭·경로 표시줄 바로 아래(html의 scroll-padding-top과 같은 값). 앵커로 이동하면 제목이 정확히 이 선에
+   * 맞춰지므로, 소수점 픽셀 차이로 아직 안 지난 것으로 보지 않게 몇 픽셀 여유를 둔다.
+   */
+  function readingLine() {
+    return (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 140) + 8;
   }
 
-  .content-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  @media (min-width: 1025px) {
-    .content-grid {
-      grid-template-columns: 1fr 220px;
+  function attach() {
+    detach?.();
+    detach = null;
+    const doc = document.querySelector<HTMLElement>('[data-doc]');
+    if (!doc) return;
+    const blocks = [
+      ...doc.querySelectorAll<HTMLElement>('.doc-fm-line, .doc-title, .doc-byline, .doc-prose > *'),
+    ];
+    const symbol = document.querySelector<HTMLElement>('[data-reading-symbol]');
+    let outline: OutlineItem[] = [];
+    try {
+      outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');
+    } catch {
+      outline = [];
     }
+    const crumbs = document.querySelector<HTMLElement>('.ide-crumbs');
+    let current: HTMLElement | null = null;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const index = currentBlock(
+        blocks.map((block) => block.getBoundingClientRect().top),
+        readingLine(),
+      );
+      if (blocks[index] !== current) {
+        current?.classList.remove('is-current');
+        current = blocks[index] ?? null;
+        current?.classList.add('is-current');
+      }
+      // 장·절의 구분은 탐색기 개요(계약 JSON)를 따른다. 글의 최상위 제목 단계와 상관없다.
+      const passed = blocks.slice(0, index + 1).flatMap((block) => (block.id ? [block.id] : []));
+      const { chapter, section } = locateInOutline(outline, passed);
+      const percent = readingPercent({
+        scrollTop: window.scrollY,
+        scrollHeight: document.documentElement.scrollHeight,
+        clientHeight: window.innerHeight,
+      });
+      setReading({ line: index + 1, chapter, section, percent });
+      if (symbol) symbol.textContent = readingSymbol({ chapter, section });
+      crumbs?.style.setProperty('--progress', String(percent / 100));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    const observer = new IntersectionObserver(schedule, {
+      rootMargin: `-${readingLine()}px 0px -55% 0px`,
+    });
+    for (const block of blocks) observer.observe(block);
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    update();
+
+    detach = () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      cancelAnimationFrame(frame);
+      crumbs?.style.removeProperty('--progress');
+    };
   }
 
-  .toc-sidebar {
-    display: none;
-  }
-
-  @media (min-width: 1025px) {
-    .toc-sidebar {
-      display: block;
-    }
-  }
-
-  .blog-post {
-    background: var(--color-bg);
-    border-radius: var(--radius-card);
-    padding: 2rem;
-    overflow-x: hidden;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .post-header {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 1.5rem;
-  }
-
-  .hero-image {
-    width: 100%;
-    border-radius: var(--radius-card);
-    margin-bottom: 1.5rem;
-  }
-
-  .post-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 1rem;
-    line-height: 1.2;
-    color: var(--color-text);
-  }
-
-  .post-meta {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
-  }
-
-  .reading-time {
-    margin-left: 0.75rem;
-  }
-
-  .reading-time::before {
-    content: '·';
-    margin-right: 0.75rem;
-  }
-
-  .updated {
-    margin-left: 0.5rem;
-  }
-
-  .post-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
-  .tag {
-    background: var(--color-primary);
-    color: #fff;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-tag);
-    font-size: 0.875rem;
-    transition: opacity 0.2s;
-  }
-
-  :global(.dark) .tag {
-    color: #1a1a1a;
-  }
-
-  .tag:hover {
-    opacity: 0.9;
-    text-decoration: none;
-  }
-
-  .post-content {
-    line-height: 1.8;
-    color: var(--color-text);
-    overflow-x: hidden;
-    max-width: 100%;
-  }
-
-  .post-content :global(h1),
-  .post-content :global(h2),
-  .post-content :global(h3),
-  .post-content :global(h4) {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: var(--color-text);
-  }
-
-  .post-content :global(h2) {
-    font-size: 1.75rem;
-  }
-
-  .post-content :global(h3) {
-    font-size: 1.4rem;
-  }
-
-  .post-content :global(p) {
-    margin-bottom: 1.25rem;
-  }
-
-  .post-content :global(ul),
-  .post-content :global(ol) {
-    margin-bottom: 1.25rem;
-    padding-left: 1.5rem;
-  }
-
-  .post-content :global(li) {
-    margin-bottom: 0.5rem;
-  }
-
-  .post-content :global(pre) {
-    background: #1e1e1e;
-    border-radius: var(--radius-card);
-    padding: 1rem;
-    overflow-x: auto;
-    margin-bottom: 1.25rem;
-    max-width: 100%;
-    word-wrap: break-word;
-  }
-
-  /* 코드 블럭 반응형 */
-  .post-content :global(.code-block-wrapper) {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .post-content :global(pre code) {
-    display: block;
-    overflow-x: auto;
-    white-space: pre;
-  }
-
-  .post-content :global(code) {
-    font-size: 0.9em;
-  }
-
-  .post-content :global(:not(pre) > code) {
-    background: var(--color-border);
-    padding: 0.2em 0.4em;
-    border-radius: var(--radius-button);
-  }
-
-  .post-content :global(blockquote) {
-    border-left: 4px solid var(--color-primary);
-    padding-left: 1rem;
-    margin: 1.5rem 0;
-    color: var(--color-text-muted);
-  }
-
-  @media (max-width: 640px) {
-    .post-title {
-      font-size: 1.75rem;
-    }
-
-    .blog-post {
-      padding: 1rem;
-    }
-  }
-</style>
+  document.addEventListener('astro:page-load', attach);
+  document.addEventListener('astro:before-swap', () => {
+    detach?.();
+    detach = null;
+  });
+</script>

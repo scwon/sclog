@@ -70,7 +70,7 @@ scwon.me는 옛 Astro 템플릿 스타일 위에 세 가지 토큰 체계(레이
   - 본문 `prose`, `prose-strong`; 코드 `code-string`
   - 상태 `state-hover`, `state-current`, `state-selected`; 형광 띠 `marker`; 가림막 `scrim`
 - 글꼴 토큰 `font-display`(Bricolage Grotesque), `font-sans`(Pretendard Variable), `font-serif`(마루 부리), `font-mono`(JetBrains Mono). 폴백은 시안 `styles.css`를 따른다.
-- 반경 6·8·12·14px, 모션 이징 `cubic-bezier(.2,.7,.2,1)`과 지속 시간 160·300·320·420·450ms, 펼침 간격 34ms, 창 치수(제목 38·상태줄 24·활동 48·탐색기 272·탭 38·경로 32·미니맵 76·줄 번호 열 56/38/34·레일 28), 타이포 스케일(본문 18.5/17, 제목 68/38, 블로그 이름 최대 116, 행간 1.92/1.9)을 모두 토큰으로 둔다. 창 치수와 타이포 스케일은 "구현 중 조정 가능"으로 주석한다.
+- 반경 6·8·12·14px, 모션 이징 `cubic-bezier(.2,.7,.2,1)`과 지속 시간 160·300·320·420·450ms, 펼침 간격 34ms, 창 치수(제목 38·상태줄 24·활동 48·탐색기 272·탭 38·경로 32·미니맵 76·줄 번호 열 56/38/34·레일 28), 타이포 스케일(본문 18.5/17, 제목 54/34, 블로그 이름 최대 116, 행간 1.92/1.9. 제목은 구현 중 시안 IDE 글 화면 값으로 조정, 티켓 07)을 모두 토큰으로 둔다. 창 치수와 타이포 스케일은 "구현 중 조정 가능"으로 주석한다.
 - 값 표기는 색 HEX, 투명도 `rgb(r g b / a)`, 길이 px. 두 테마 값은 시안 `ide.css`의 `:root`와 `[data-theme="light"]` 블록이 출처다.
 - 테마는 `<html data-theme="dark|light">`로만 바꾼다. 속성이 없으면 어두운 테마. 첫 페인트 전 인라인 스크립트가 `localStorage` `theme` 키를 읽고, 없으면 `prefers-color-scheme`을 따라 속성을 붙인다. 속성은 Radix Portal 때문에 반드시 `html`에 둔다(ADR 0002).
 
@@ -107,7 +107,7 @@ scwon.me는 옛 Astro 템플릿 스타일 위에 세 가지 토큰 체계(레이
 ```
 src/design-system/
   tokens/      primitives.css · semantic.css(두 테마) · index.css        1층: 값만, 다른 층 import 금지
-  styles/      fonts.css · base.css · prose.css · ide.css · index.css      2층: @theme inline·@custom-variant·@layer components, 1층만 import
+  styles/      fonts.css · base.css · motion.css · prose.css · ide.css · index.css   2층: @theme inline·@custom-variant·@layer components·@utility, 1층만 import
   stores/      theme.ts · tabs.ts · reading.ts (+ *.logic.ts, *.test.ts)   3층 공용 상태
   components/  <Name>/…                                                    3층: 2층 유틸리티만 사용
   docs/        Tokens.mdx 등                                               4층

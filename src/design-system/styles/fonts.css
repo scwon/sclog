@@ -1,0 +1,27 @@
+/*
+ * 글꼴 파일. 모두 사이트가 직접 제공하고 외부 글꼴 서비스에 요청하지 않는다(스펙 "2층: CSS").
+ * - Pretendard: 패키지의 동적 서브셋(글자 묶음별 woff2, 쓰인 묶음만 내려받는다)
+ * - Bricolage Grotesque: 굵기·광학 크기(opsz) 가변. 큰 글자에서 모양이 바뀌는 opsz 축 때문에 wght 단독판 대신 쓴다
+ * - JetBrains Mono: 굵기 가변
+ *   fontsource는 라틴·라틴 확장 등을 unicode-range로 나눠 두어, 실제로 쓴 범위의 파일만 내려받는다
+ * - 마루 부리: KS X 1001 한글 2,350자 + 라틴·문장부호 서브셋(scripts/subset-maruburi.py, public/fonts/)
+ */
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+
+@font-face {
+  font-family: 'MaruBuri';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/maruburi-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'MaruBuri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/maruburi-bold.woff2') format('woff2');
+}

@@ -1,5 +1,16 @@
 ---
+/**
+ * 모든 화면의 레이아웃: 전체 화면 IDE 창.
+ * 창 틀(`Shell`)은 화면을 옮겨도 남는 아일랜드 하나이고(ADR 0001), 에디터 내용은 아래 `<main id="editor">` 안의
+ * 정적 HTML이다. 에디터 루트의 `data-file-*`와 개요 JSON이 페이지 ↔ 창 틀 계약이다.
+ */
+import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
+import { Shell } from '@/design-system';
+import { SITE } from '../site';
+import { getPublishedPosts } from '../utils/blog';
+import { buildTree, type IdeFile, type IdeOutlineItem } from '../utils/ide';
+import '../styles/global.css';
 
 interface Props {
   title: string;
@@ -9,6 +20,10 @@ interface Props {
   publishedTime?: Date;
   modifiedTime?: Date;
   tags?: string[];
+  /** 에디터에 열린 파일. 탭·창 제목·상태줄·경로 표시줄이 이 값을 쓴다. */
+  file: IdeFile;
+  /** 글의 개요(탐색기 아래). */
+  outline?: IdeOutlineItem[];
 }
 
 const {
@@ -19,39 +34,55 @@ const {
   publishedTime,
   modifiedTime,
   tags,
+  file,
+  outline,
 } = Astro.props;
+
+const tree = buildTree(await getPublishedPosts());
+
+// 경로 표시줄: posts › 2023 › <파일>.mdx, posts › posts.log, tags › <태그>
+const segments = file.kind === 'log' ? ['posts', file.path] : file.path.split('/').filter(Boolean);
+const sectionHref: Record<string, string> = { posts: '/', tags: '/blog/tags/' };
+const crumbs = segments.map((label, index) => ({
+  label,
+  href: index < segments.length - 1 ? sectionHref[label] : undefined,
+  current: index === segments.length - 1,
+}));
+
+// `</script>`로 JSON이 끊기지 않게 `<`를 이스케이프한다.
+const outlineJson =
+  outline && outline.length > 0 ? JSON.stringify(outline).replaceAll('<', '\\u003c') : undefined;
 ---
 
 <!doctype html>
-<html lang="ko">
+<html lang="ko" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Google Fonts: Roboto (영문), Noto Sans KR (한글) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&family=Roboto:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Preload profile hover alternate image -->
-    <link rel="preload" href="/images/scwon_dot.png" as="image" />
-    <!-- FOUC Prevention: Apply theme before first paint -->
+    <!-- 첫 페인트 전에 테마를 정한다: 저장값 → 시스템 설정 → 어두운 테마.
+         화면을 옮길 때는 <html> 속성이 새 문서 것으로 바뀌므로 바꾸기 직전에 지금 테마를 옮겨 붙인다. -->
     <script is:inline>
       (function () {
-        var stored = null;
+        var theme = null;
         try {
-          stored = localStorage.getItem('theme');
-        } catch (e) {
-          try {
-            stored = sessionStorage.getItem('theme');
-          } catch (e2) {}
+          theme = localStorage.getItem('theme');
+        } catch (e) {}
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         }
-        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var theme = stored || (prefersDark ? 'dark' : 'light');
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', theme);
+        if (!window.sclogThemeCarry) {
+          window.sclogThemeCarry = true;
+          document.addEventListener('astro:before-swap', function (event) {
+            var root = document.documentElement;
+            var next = event.newDocument.documentElement;
+            next.setAttribute('data-theme', root.getAttribute('data-theme') || 'dark');
+            // 창 틀의 탐색기 상태(열기·닫기)도 이어 붙인다.
+            var explorer = root.getAttribute('data-explorer');
+            if (explorer) next.setAttribute('data-explorer', explorer);
+          });
         }
       })();
     </script>
@@ -65,95 +96,89 @@ const {
       modifiedTime={modifiedTime}
       tags={tags}
     />
+    <ClientRouter />
   </head>
   <body>
-    <slot />
+    <a class="ide-skip" href="#editor">
+      본문으로 건너뛰기
+    </a>
+    <Shell
+      client:load
+      transition:persist="shell"
+      brand={SITE.brand}
+      author={SITE.author}
+      githubUrl={SITE.githubUrl}
+      sourceUrl={SITE.sourceUrl}
+      tree={tree}
+      current={{ title: file.title, path: file.path, url: file.url }}
+    />
+    <main
+      id="editor"
+      class="ide-editor"
+      tabindex="-1"
+      data-file-title={file.title}
+      data-file-path={file.path}
+      data-file-url={file.url}
+      data-file-kind={file.kind}
+      data-file-size={file.size}
+      data-file-reading={file.reading}
+      data-file-summary={file.summary}
+    >
+      <div class="ide-crumbs">
+        <ol class="ide-crumbs-path" aria-label="위치">
+          {crumbs.map((crumb) => (
+            <li aria-current={crumb.current ? 'page' : undefined}>
+              {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : crumb.label}
+            </li>
+          ))}
+        </ol>
+        <slot name="crumbs-end" />
+      </div>
+      <slot />
+    </main>
+    {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
+    <script>
+      import { resetReading } from '@/design-system';
+
+      /**
+       * 펼침: 파일을 열 때 첫 1.4화면 안의 줄·블록을 위에서부터 차례로 보인다(2층 motion.css의 `[data-unfold]`).
+       * 움직임 줄이기 설정에서는 아무것도 하지 않는다. 마지막 항목의 애니메이션이 끝나면 표시를 걷어 낸다.
+       */
+      const TARGETS = [
+        '.flow > .flow-line:not([hidden])',
+        '[data-doc] .doc-frontmatter',
+        '[data-doc] .doc-head > *',
+        '[data-doc] .doc-hero',
+        '[data-doc] .doc-prose > *',
+      ].join(', ');
+
+      function unfold() {
+        const editor = document.getElementById('editor');
+        if (!editor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter((item) => {
+          const { top, bottom } = item.getBoundingClientRect();
+          return bottom > 0 && top < window.innerHeight * 1.4;
+        });
+        if (items.length === 0) return;
+        items.forEach((item, index) => {
+          item.dataset.unfoldItem = '';
+          item.style.setProperty('--i', String(index));
+        });
+        editor.dataset.unfold = '';
+        const finish = () => {
+          delete editor.dataset.unfold;
+          for (const item of items) {
+            delete item.dataset.unfoldItem;
+            item.style.removeProperty('--i');
+          }
+        };
+        items.at(-1)?.addEventListener('animationend', finish, { once: true });
+        window.setTimeout(finish, 3000);
+      }
+
+      document.addEventListener('astro:page-load', unfold);
+      // 새 페이지로 바뀌면 읽기 위치를 비운다. 새 페이지의 스크립트가 page-load에서 다시 채운다.
+      document.addEventListener('astro:after-swap', resetReading);
+    </script>
   </body>
 </html>
-
-<style is:global>
-  /* ========================================
-   * Design Tokens - Light Mode (Default)
-   * Constitution v1.2.0 Design System
-   * ======================================== */
-  :root {
-    /* Colors */
-    --color-primary: rgb(233, 172, 159);
-    --color-bg: #ffffff;
-    --color-text: #1a1a1a;
-    --color-text-muted: #6b7280;
-    --color-border: #e5e7eb;
-
-    /* Typography */
-    --font-sans: 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-logo: 'Roboto', sans-serif;
-    --font-mono: Menlo, Monaco, 'Courier New', monospace;
-
-    /* Layout */
-    --max-width-content: 800px;
-    --max-width-wide: 1000px;
-    --radius-card: 8px;
-    --radius-button: 4px;
-    --radius-tag: 9999px;
-  }
-
-  /* ========================================
-   * Dark Mode Override
-   * ======================================== */
-  .dark {
-    --color-bg: #13151a;
-    --color-text: #e0e0e0;
-    --color-text-muted: #9ca3af;
-    --color-border: #2d2d2d;
-  }
-
-  /* ========================================
-   * Base Styles
-   * ======================================== */
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  html {
-    font-family: var(--font-sans);
-    background: var(--color-bg);
-    color: var(--color-text);
-    line-height: 1.6;
-    /* Theme transition (150ms per spec) */
-    transition:
-      background-color 0.15s ease,
-      color 0.15s ease;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-  }
-
-  a {
-    color: var(--color-primary);
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  /* Keyboard accessibility - focus styles */
-  :focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
-
-  code {
-    font-family: var(--font-mono);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-</style>

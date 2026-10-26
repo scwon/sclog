@@ -3,7 +3,7 @@
   "singleQuote": true,
   "astro": true,
   "sortTailwindcss": {
-    "stylesheet": "./src/styles/global.css",
+    "stylesheet": "./src/design-system/styles/index.css",
     "functions": ["cn", "cva"]
   },
   "ignorePatterns": [

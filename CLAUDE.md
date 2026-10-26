@@ -12,6 +12,7 @@ pnpm storybook        # Storybook (localhost:6006)
 pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
 pnpm lint             # Oxlint
 pnpm format           # Oxfmt로 포맷 적용 (검사만: pnpm format:check)
+uv run scripts/subset-maruburi.py  # 마루 부리 서브셋 재생성 (빌드에 포함 안 함, 글꼴을 바꿀 때만)
 ```
 
 ## Project Context
@@ -24,6 +25,8 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **Language**: TypeScript (strict mode)
 - **Content**: MDX via @astrojs/mdx
 - **UI Components**: React + shadcn/ui (Radix + Tailwind)
+- **Design System**: `src/design-system/` (토큰 → CSS → React 컴포넌트 → Storybook). 소비자(`src/layouts`·`src/components`·`src/pages`)는 `src/design-system/index.ts`와 CSS 진입점만 쓴다. 토큰 값은 `tokens/`의 파일이 원본이고 여기에 적지 않는다. 구조는 ADR 0002·0003, 용어는 `GLOSSARY.md`
+- **State**: nanostores(`nanostores`, `@nanostores/react`). 아일랜드 사이 공유 상태(테마·탭·읽기 위치)는 디자인 시스템 `stores/`에 둔다
 - **Styling**: Tailwind CSS (utility-first)
 - **Component Dev**: Storybook (`src/**/*.stories.tsx`)
 - **Testing**: Vitest (node 환경)

@@ -1,0 +1,213 @@
+---
+/**
+ * 흐름 로그. 줄마다 줄 번호와 레일을 두고 글 로그 줄 → 카드 → 장 노드 → 절 노드를 잇는다.
+ * 홈 `posts.log`와 글 목록·태그·404가 같은 줄 구조를 쓴다(줄 모델은 `src/utils/flow.ts`).
+ * 스타일은 디자인 시스템 2층(`ide.css`의 `.flow*`)만 쓰고 React는 쓰지 않는다(분류 꼬리표 `Badge`는 정적 HTML).
+ * 접기와 현재 줄(상태줄 `Ln N`)은 아래 스크립트가 맡고, JS가 없으면 모두 펼친 채 보인다.
+ */
+import { Badge } from '@/design-system';
+import type { FlowLine } from '../../utils/flow';
+
+interface Props {
+  lines: FlowLine[];
+}
+
+const { lines } = Astro.props;
+const stepsId = (postId: string, index: number) => `post-${postId}-step-${index + 1}`;
+---
+
+<ol class="flow">
+  {lines.map((line) => {
+    if (line.kind === 'banner')
+      return (
+        <li class="flow-line flow-banner" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <h1 class="flow-brand">
+            {line.text.split('’').map((part, index) => (
+              <>
+                {index > 0 && <span class="flow-apos">’</span>}
+                {part}
+              </>
+            ))}
+          </h1>
+        </li>
+      );
+    if (line.kind === 'comment')
+      return (
+        <li class="flow-line flow-comment" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <p class="flow-comment-text">
+            <span class="flow-comment-mark" aria-hidden="true">
+              //
+            </span>{' '}
+            {line.text}
+            {line.link && (
+              <>
+                {' '}
+                <a href={line.link.href}>{line.link.label}</a>
+              </>
+            )}
+          </p>
+        </li>
+      );
+    if (line.kind === 'blank')
+      return (
+        <li class="flow-line flow-blank" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+        </li>
+      );
+    if (line.kind === 'entry')
+      return (
+        <li class="flow-line flow-dir flow-entry" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <a class="flow-dir-label flow-entry-link" href={line.href}>
+            {line.label}
+          </a>
+          <span class="flow-dir-rule" aria-hidden="true" />
+          {line.note && <span class="flow-dir-count">{line.note}</span>}
+        </li>
+      );
+    if (line.kind === 'dir')
+      return (
+        <li class="flow-line flow-dir" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <h2 class="flow-dir-label">
+            <span aria-hidden="true">{line.year}/</span>
+            <span class="sr-only">{line.year}년 글</span>
+          </h2>
+          <span class="flow-dir-rule" aria-hidden="true" />
+          <span class="flow-dir-count">{line.count}</span>
+        </li>
+      );
+    if (line.kind === 'log') {
+      const { post } = line;
+      return (
+        <li class="flow-line flow-log" data-line={line.no} id={`post-${post.id}`}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          {line.foldable && (
+            <button
+              class="flow-fold"
+              type="button"
+              aria-expanded="true"
+              aria-controls={post.steps.map((_, index) => stepsId(post.id, index)).join(' ')}
+              aria-label={`${post.title} 장 흐름 접기`}
+              data-fold={post.id}
+            />
+          )}
+          <p class="flow-log-head">
+            <time datetime={post.date}>{post.date}</time>
+            {post.category && <Badge variant="category">{post.category}</Badge>}
+            <span class="flow-log-file">{post.file}</span>
+          </p>
+          <article class="flow-card">
+            {post.heroImage && (
+              <div class="flow-thumb">
+                <img src={post.heroImage} alt="" loading="lazy" decoding="async" />
+              </div>
+            )}
+            <div class="flow-card-body">
+              <h3 class="flow-title">
+                <a class="flow-link" href={post.url}>
+                  {post.title}
+                </a>
+              </h3>
+              <p class="flow-excerpt">{post.excerpt}</p>
+              <p class="flow-meta">
+                {post.category && <span>[{post.category}]</span>}
+                {post.reading !== undefined && <span>읽는 시간 {post.reading}분</span>}
+                {post.steps.length > 0 && <span>{post.steps.length}개 장</span>}
+              </p>
+            </div>
+          </article>
+        </li>
+      );
+    }
+    if (line.kind === 'step')
+      return (
+        <li
+          class="flow-line flow-step"
+          data-line={line.no}
+          id={stepsId(line.post.id, line.index)}
+          data-group={line.post.id}
+        >
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <div class="flow-step-wrap">
+            <a class="flow-node" href={line.step.href}>
+              <span class="flow-node-no">{line.step.no}</span>
+              <span>{line.step.text}</span>
+            </a>
+            {line.step.subs.length > 0 && (
+              <ol class="flow-subflow" aria-label={`${line.step.no}장 세부 흐름`}>
+                {line.step.subs.map((sub) => (
+                  <li>
+                    <a href={sub.href}>{sub.text}</a>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </li>
+      );
+    if (line.kind === 'folded')
+      return (
+        <li class="flow-line flow-folded" data-folded={line.post.id} hidden>
+          <span class="flow-ln" aria-hidden="true" />
+          <button class="flow-folded-label" type="button" data-expand-post={line.post.id}>
+            ··· {line.post.steps.length}개 장 접힘
+          </button>
+        </li>
+      );
+    return (
+      <li class="flow-line flow-end" data-line={line.no}>
+        <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+        <span class="flow-end-label">(END)</span>
+        <span class="flow-end-count">{line.label}</span>
+        <span class="flow-cursor" aria-hidden="true" />
+      </li>
+    );
+  })}
+</ol>
+
+<script>
+  import { setReading } from '@/design-system';
+
+  /** 글의 장 흐름을 접거나 편다. 접으면 장 줄을 숨기고 `··· N개 장 접힘` 줄을 보인다. */
+  function setFolded(postId: string, folded: boolean) {
+    for (const line of document.querySelectorAll<HTMLElement>(`.flow [data-group="${postId}"]`)) {
+      line.hidden = folded;
+    }
+    const label = document.querySelector<HTMLElement>(`.flow [data-folded="${postId}"]`);
+    if (label) label.hidden = !folded;
+    const button = document.querySelector<HTMLButtonElement>(`.flow [data-fold="${postId}"]`);
+    if (button) {
+      button.setAttribute('aria-expanded', String(!folded));
+      button.setAttribute(
+        'aria-label',
+        button.getAttribute('aria-label')?.replace(/(접기|펴기)$/, folded ? '펴기' : '접기') ?? '',
+      );
+    }
+  }
+
+  /** 줄에 포커스나 마우스가 오면 그 줄 번호를 상태줄 `Ln N`으로 알린다. */
+  function reportLine(target: EventTarget | null) {
+    const line = (target as Element | null)?.closest?.<HTMLElement>('.flow [data-line]');
+    if (line?.dataset.line) setReading({ line: Number(line.dataset.line) });
+  }
+
+  // 번들 스크립트는 화면을 옮겨도 다시 돌지 않으므로 문서에 한 번만 건다.
+  document.addEventListener('click', (event) => {
+    const target = event.target as Element | null;
+    const fold = target?.closest<HTMLButtonElement>('.flow [data-fold]');
+    if (fold?.dataset.fold)
+      setFolded(fold.dataset.fold, fold.getAttribute('aria-expanded') === 'true');
+    const expand = target?.closest<HTMLButtonElement>('.flow [data-expand-post]');
+    if (expand?.dataset.expandPost) {
+      setFolded(expand.dataset.expandPost, false);
+      document
+        .querySelector<HTMLButtonElement>(`.flow [data-fold="${expand.dataset.expandPost}"]`)
+        ?.focus();
+    }
+  });
+  document.addEventListener('focusin', (event) => reportLine(event.target));
+  document.addEventListener('mouseover', (event) => reportLine(event.target));
+</script>

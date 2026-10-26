@@ -1,6 +1,9 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
+import Chapter from '../../components/blog/headings/Chapter.astro';
+import Section from '../../components/blog/headings/Section.astro';
+import Subsection from '../../components/blog/headings/Subsection.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -19,5 +22,5 @@ const { Content, headings } = await render(post);
 ---
 
 <BlogPost post={post} headings={headings}>
-  <Content />
+  <Content components={{ h1: Chapter, h2: Section, h3: Subsection }} />
 </BlogPost>

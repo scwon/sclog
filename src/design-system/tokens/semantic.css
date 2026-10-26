@@ -1,0 +1,123 @@
+/*
+ * 의미 토큰: 역할 이름. 값은 반드시 원시 토큰 참조이고, 테마는 이 값만 바꾼다(ADR 0003).
+ * 테마는 <html data-theme="dark|light">로 고르고, 속성이 없으면 어두운 테마다(ADR 0002).
+ * 이름은 범용 UI 역할로 짓고 IDE 용어(탐색기·상태줄 등)는 쓰지 않는다. IDE 용어는 컴포넌트 이름에만 쓴다.
+ */
+
+/* 테마와 무관한 의미 토큰. 치수·타이포 스케일은 구현 중 조정 가능 */
+:root {
+  /* 반경 */
+  --corner-sm: var(--size-6);
+  --corner-md: var(--size-8);
+  --corner-lg: var(--size-12);
+  --corner-xl: var(--size-14);
+
+  /* 모션 */
+  --motion-easing: var(--easing-decelerate);
+  --motion-fast: var(--duration-160); /* 색·배경 같은 상태 변화 */
+  --motion-base: var(--duration-300); /* 작은 이동·밑줄 */
+  --motion-enter: var(--duration-320); /* 새 요소 등장 */
+  --motion-unfold: var(--duration-420); /* 펼침의 줄 하나 */
+  --motion-unfold-stagger: var(--duration-34); /* 펼침의 줄 사이 지연 */
+  --motion-slow: var(--duration-450); /* 큰 이동·확대 */
+
+  /* 치수: 화면 가장자리의 막대(bar)·레일(rail)·패널(panel)과 줄 머리 열(gutter·track) */
+  --bar-height: var(--size-38); /* 맨 위 막대, 탭 막대 */
+  --bar-height-sm: var(--size-32); /* 경로 막대 */
+  --bar-height-xs: var(--size-24); /* 맨 아래 막대 */
+  --rail-width: var(--size-48); /* 아이콘 세로 막대 */
+  --panel-width: var(--size-272); /* 옆 패널 */
+  --panel-width-sm: var(--size-76); /* 좁은 개관 패널 */
+  --gutter-width: var(--size-56); /* 줄 번호 열 */
+  --gutter-width-md: var(--size-38); /* 중간 폭 화면의 줄 번호 열 */
+  --gutter-width-sm: var(--size-34); /* 좁은 화면의 줄 번호 열 */
+  --track-width: var(--size-28); /* 줄 번호 옆 세로선·마디 열 */
+
+  /* 글꼴 */
+  --family-display: var(--font-family-bricolage); /* 블로그 이름·큰 숫자 */
+  --family-sans: var(--font-family-pretendard); /* 제목·메뉴·메타 정보 */
+  --family-serif: var(--font-family-maruburi); /* 글 본문 */
+  --family-mono: var(--font-family-jetbrains-mono); /* 코드·줄 번호·경로 */
+
+  /* 타이포 스케일 */
+  --type-body: var(--font-size-18_5);
+  --type-body-sm: var(--font-size-17);
+  --type-body-leading: var(--line-height-1_92);
+  --type-body-sm-leading: var(--line-height-1_9);
+  --type-title: var(--font-size-54); /* 글 제목 */
+  --type-title-sm: var(--font-size-34); /* 좁은 화면의 글 제목 */
+  --type-display-max: var(--font-size-116); /* 블로그 이름처럼 화면 폭에 맞춰 커지는 글자의 상한 */
+}
+
+:root,
+[data-theme='dark'] {
+  /* 바탕 */
+  --surface: var(--palette-sand-755);
+  --surface-sunken: var(--palette-sand-789);
+  --surface-panel: var(--palette-sand-741);
+  --surface-raised: var(--palette-sand-713);
+
+  /* 글자 */
+  --text: var(--palette-sand-49);
+  --text-soft: var(--palette-sand-166);
+  --text-muted: var(--palette-sand-309);
+  --text-faint: var(--palette-sand-478);
+
+  /* 선 */
+  --border: var(--palette-sand-668);
+  --border-subtle: var(--palette-sand-49-a10);
+  --border-strong: var(--palette-sand-49-a26);
+
+  /* 강조 */
+  --accent: var(--palette-coral-202);
+  --accent-text: var(--palette-coral-202);
+  --on-accent: var(--palette-sand-740);
+
+  /* 본문·코드 */
+  --prose: var(--palette-sand-105);
+  --prose-strong: var(--palette-sand-25);
+  --code-string: var(--palette-gold-165);
+
+  /* 상태·형광 띠·가림막 */
+  --state-hover: var(--palette-sand-49-a6);
+  --state-current: var(--palette-sand-49-a4);
+  --state-selected: var(--palette-coral-202-a16);
+  --marker: var(--palette-coral-202-a30);
+  --scrim: var(--palette-sand-859-a55);
+}
+
+[data-theme='light'] {
+  /* 바탕 */
+  --surface: var(--palette-sand-20);
+  --surface-sunken: var(--palette-sand-64);
+  --surface-panel: var(--palette-sand-43);
+  --surface-raised: var(--palette-sand-5);
+
+  /* 글자 */
+  --text: var(--palette-sand-740);
+  --text-soft: var(--palette-sand-624);
+  --text-muted: var(--palette-sand-504);
+  --text-faint: var(--palette-sand-299);
+
+  /* 선 */
+  --border: var(--palette-sand-123);
+  --border-subtle: var(--palette-sand-740-a10);
+  --border-strong: var(--palette-sand-740-a30);
+
+  /* 강조 */
+  --accent: var(--palette-coral-202);
+  --accent-text: var(--palette-coral-468);
+  --on-accent: var(--palette-sand-740);
+
+  /* 본문·코드 */
+  --prose: var(--palette-sand-708);
+  --prose-strong: var(--palette-sand-740);
+  --code-string: var(--palette-gold-495);
+
+  /* 상태·형광 띠·가림막 */
+  --state-hover: var(--palette-sand-740-a5);
+  --state-current: var(--palette-sand-740-a3_5);
+  --state-selected: var(--palette-coral-202-a30);
+  --marker: var(--palette-coral-202-a42);
+  --scrim: var(--palette-sand-740-a30);
+}
