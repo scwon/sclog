@@ -20,7 +20,7 @@
 - [x] 단축키 기준(VS Code 대응 키, 브라우저 키 양보, 겹침 확인표)을 `docs/agents/`에 한 쪽으로 남긴다
 - [x] `pnpm qa`: ⌘P → 입력 → Enter로 글 열기 → 다시 열고 Esc로 닫으며 포커스 복귀, ⌘B로 패널 여닫기. 열린 팔레트를 세 폭 × 두 테마로 axe에 넣는다
 - [x] 빌드 결과물 테스트: 첫 화면 HTML이 팔레트 청크를 미리 불러오지 않는다
-- [ ] `pnpm verify`·`pnpm qa` 통과
+- [x] `pnpm verify`·`pnpm qa` 통과
 
 ## Comments
 

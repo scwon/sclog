@@ -14,7 +14,7 @@
 - [x] 탭 등장(`animate-unroll`)은 지금 그대로다. 탭 닫힘에는 움직임이 없다
 - [x] 활성 탭이 탭 줄 밖에 있으면 `scrollIntoView({ inline: 'nearest', block: 'nearest' })`로 들인다. 움직임 줄이기 설정에서는 `behavior: 'auto'`다
 - [x] `pnpm qa` 이동 시나리오에 위 다섯 단계 순서를 더하고 에디터 루트의 펼침 표시 유무로 확인한다
-- [ ] `pnpm verify`·`pnpm qa` 통과
+- [x] `pnpm verify`·`pnpm qa` 통과
 
 ## Comments
 

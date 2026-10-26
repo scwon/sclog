@@ -15,7 +15,7 @@
 - [x] 원시 토큰에 1100ms 시간 값이 더해지고 의미 토큰 `--motion-blink`가 그것을 가리킨다. 흐름 로그 커서의 하드코딩된 1.1초가 이 토큰으로 바뀐다. 토큰 테스트가 `--motion-blink`의 존재와 값을 본다
 - [x] 빌드 결과물 테스트: `<html>`이 루트 전환 이름을 가진다
 - [x] Storybook 토큰 문서에 `--motion-blink`가 보인다
-- [ ] `pnpm verify`·`pnpm qa` 통과. 화면 이동 시나리오의 테마 전환 단계에 콘솔 오류가 없다
+- [x] `pnpm verify`·`pnpm qa` 통과. 화면 이동 시나리오의 테마 전환 단계에 콘솔 오류가 없다
 
 ## Comments
 

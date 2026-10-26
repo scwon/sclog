@@ -18,7 +18,7 @@
 - [x] 빌드 결과물 테스트: 첫 화면 HTML이 검색 화면 청크를 미리 불러오지 않는다
 - [x] `pnpm qa`: 검색 → 결과 누르기 → 패널이 검색 화면에 남음 → 새로고침 뒤에도 검색 화면. 검색 화면을 열기 전에는 `/search-index.json` 요청이 없다. 결과가 있는 검색 화면을 세 폭 × 두 테마로 axe에 넣는다
 - [x] `Shell` Storybook에 검색 화면 스토리가 있다
-- [ ] `pnpm verify`·`pnpm qa` 통과
+- [x] `pnpm verify`·`pnpm qa` 통과
 
 ## Comments
 
