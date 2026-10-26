@@ -1,6 +1,6 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
- * 다시 글. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
+ * 다시 글 → 장 주소 복사(키보드) → 장 주소로 들어오기. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -119,6 +119,41 @@ check(
   '테마가 이동 뒤에도 유지',
   (await page.evaluate(() => document.documentElement.dataset.theme)) === themeAfter,
 );
+
+// 장 주소: 버튼을 키보드로 눌러 상태줄 알림·해시·강조를 보고, 그 주소로 들어와 강조를 본다.
+const chapters = await page.evaluate(() =>
+  JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]').map(({ id }) => id),
+);
+const copyId = chapters[1] ?? chapters[0];
+const arriveId = chapters[0];
+if (copyId) {
+  const button = `[data-chapter-link="${copyId}"]`;
+  await page.focus(button);
+  await page.press(button, 'Enter');
+  await page.waitForTimeout(300);
+  const copied = await page.evaluate(() => ({
+    hash: decodeURIComponent(location.hash.slice(1)),
+    linked: [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
+    notice: document.querySelector('footer [aria-live]')?.textContent ?? '',
+    routerState: typeof history.state?.index === 'number',
+  }));
+  check('장 주소 복사: 해시가 그 장', copied.hash === copyId, copied.hash);
+  check(
+    '장 주소 복사: 상태줄 알림',
+    copied.notice === `✓ 주소 복사됨 · #${copyId}` || copied.notice === '주소창에 넣었습니다',
+    copied.notice,
+  );
+  check('장 주소 복사: 그 장이 강조됨', copied.linked.join() === copyId, copied.linked.join());
+  check('장 주소 복사: 화면 이동 기록 유지', copied.routerState);
+
+  await page.goto(`${QA.base}/`);
+  await page.goto(`${QA.base}${post.url}#${encodeURIComponent(arriveId)}`);
+  await page.waitForTimeout(1500);
+  const arrived = await page.evaluate(() =>
+    [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
+  );
+  check('장 주소로 들어오면 그 장이 강조됨', arrived.join() === arriveId, arrived.join());
+}
 
 const events = await page.events();
 const errors = events

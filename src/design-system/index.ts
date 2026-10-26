@@ -31,6 +31,13 @@ export {
   readingSymbol,
   type ReadingPlace,
 } from './stores/reading.logic';
+export {
+  $statusNotice,
+  clearStatusNotice,
+  showStatusNotice,
+  STATUS_NOTICE_MS,
+  type StatusNotice,
+} from './stores/notice';
 export { $activeTab, $openTabs, closeTab, openTab } from './stores/tabs';
 export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
 export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
