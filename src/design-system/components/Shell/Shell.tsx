@@ -220,6 +220,7 @@ const NON_TEXT_INPUTS = new Set([
 function focusTarget(target: EventTarget | null): FocusTarget {
   if (!(target instanceof HTMLElement)) return 'other';
   if (target.matches('[data-palette-input]')) return 'palette-input';
+  if (target.matches('[data-search-input]')) return 'search-input';
   if (
     target.isContentEditable ||
     target instanceof HTMLTextAreaElement ||

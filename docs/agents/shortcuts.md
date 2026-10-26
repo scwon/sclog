@@ -21,7 +21,7 @@
 
 ## 끄는 때
 
-- 입력창·textarea·select·contenteditable에 포커스가 있을 때. 팔레트 입력창(`data-palette-input`)의 Esc·↑↓·Enter는 예외다.
+- 입력창·textarea·select·contenteditable에 포커스가 있을 때. 팔레트 입력창(`data-palette-input`)의 Esc·↑↓·Enter는 예외다. 검색 입력창(`data-search-input`)의 Esc도 예외라, ⌘⇧F로 좁은 화면의 겹침 패널과 함께 포커스를 받은 뒤 Esc로 겹침 패널을 닫는다. 겹침 패널이 없으면 Esc는 입력창이 받는다(글자 지우기). 댓글 같은 다른 입력창은 Esc도 받지 않는다.
 - 한글을 조합하는 중(`isComposing`).
 - 팔레트가 열려 있을 때는 팔레트 키만 받는다. Esc는 닫기, ↑↓·Enter는 줄 고르기다. ⌘P와 Tab은 기본 동작만 막는다. ⌘P는 인쇄 창을 막으려고, Tab은 포커스가 대화상자 밖으로 나가지 않게 하려고 막는다.
 

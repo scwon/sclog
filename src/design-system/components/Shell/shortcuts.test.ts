@@ -227,4 +227,27 @@ describe('shortcutFor: Esc는 맨 위 층 하나만 닫는다', () => {
   it('does nothing when nothing is layered', () => {
     expect(shortcutFor(key({ key: 'Escape' }), closed)).toBeNull();
   });
+
+  it('closes the overlay panel from the search input that ⌘⇧F focused', () => {
+    const overlay: ShortcutContext = { ...closed, overlayOpen: true };
+    expect(shortcutFor(key({ key: 'Escape', target: 'search-input' }), overlay)).toBe(
+      'close-overlay',
+    );
+  });
+
+  it('leaves Esc to the search input when no overlay is open (clearing the field)', () => {
+    expect(shortcutFor(key({ key: 'Escape', target: 'search-input' }), closed)).toBeNull();
+  });
+
+  it('takes no other shortcut from the search input', () => {
+    const overlay: ShortcutContext = { ...closed, overlayOpen: true };
+    for (const letter of ['p', 'b']) {
+      expect(
+        shortcutFor(key({ key: letter, metaKey: true, target: 'search-input' }), overlay),
+      ).toBeNull();
+    }
+    expect(
+      shortcutFor(key({ key: 'Escape', isComposing: true, target: 'search-input' }), overlay),
+    ).toBeNull();
+  });
 });

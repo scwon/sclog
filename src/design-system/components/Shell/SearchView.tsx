@@ -183,6 +183,7 @@ export default function SearchView({ indexUrl }: SearchViewProps) {
       <div className="px-3 pt-1 pb-2">
         <input
           ref={input}
+          data-search-input=""
           type="search"
           value={query}
           onChange={(event) => setSearchQuery(event.target.value)}

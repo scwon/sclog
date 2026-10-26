@@ -48,8 +48,11 @@ export const SHORTCUT_KEYS: ShortcutKeys = {
   search: { letter: 'f', shift: true },
 };
 
-/** 키를 받은 포커스 대상의 종류. `text`는 입력창·textarea·contenteditable, `palette-input`은 팔레트 입력창이다. */
-export type FocusTarget = 'palette-input' | 'text' | 'other';
+/**
+ * 키를 받은 포커스 대상의 종류. `text`는 입력창·textarea·contenteditable, `palette-input`은 팔레트 입력창,
+ * `search-input`은 패널 검색 화면의 입력창이다.
+ */
+export type FocusTarget = 'palette-input' | 'search-input' | 'text' | 'other';
 
 /** 판정에 쓰는 키 이벤트의 모양. `KeyboardEvent`에서 그대로 옮긴다. */
 export interface KeyShape {
@@ -134,8 +137,11 @@ export function shortcutFor(
     return null;
   }
 
+  // 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는 곳이라 Esc만 받는다. 겹침 패널이 없으면 Esc는 입력창이
+  // 받는다(글자 지우기). 다른 입력창은 모든 키를 입력창에 맡긴다.
+  if (event.key === 'Escape' && bare(event) && event.target !== 'text')
+    return context.overlayOpen ? 'close-overlay' : null;
   if (event.target !== 'other') return null;
-  if (event.key === 'Escape' && bare(event)) return context.overlayOpen ? 'close-overlay' : null;
   if (command(keys.palette)) return 'open-palette';
   if (command(keys.panel)) return 'toggle-panel';
   if (command(keys.search)) return 'open-search';
