@@ -6,6 +6,7 @@ import type { SearchIndex } from '@/design-system';
 import type { TreeYear } from '@/design-system/components/Shell/Shell';
 import { nextFile } from '@/design-system/components/Shell/tree.logic';
 import { resolveInitialTheme } from '@/design-system/stores/theme.logic';
+import { isExternalLink } from '@/utils/external-link';
 
 /**
  * `pnpm build`가 만든 `dist/`를 바깥에서 검사한다. `dist/`가 없으면 건너뛴다(CI는 build 뒤 test).
@@ -45,6 +46,20 @@ function urlOf(path: string): string {
 /** 에디터 루트(`<main>`)의 `data-file-url`. */
 function fileUrl(html: string): string | undefined {
   return /<main[^>]*\bdata-file-url="([^"]*)"/.exec(html)?.[1];
+}
+
+/** 글 본문(`.doc-prose`)의 HTML. 본문 바로 뒤에 글 꼬리(`.doc-foot`)가 온다. 글이 아니면 빈 문자열. */
+function postBody(html: string): string {
+  return /<div class="doc-prose[^"]*"[^>]*>([\s\S]*?)<footer class="doc-foot/.exec(html)?.[1] ?? '';
+}
+
+/** HTML 안의 `<a>`마다 `href`, 여는 태그의 속성 글자, 안쪽 HTML. */
+function anchors(html: string) {
+  return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map(([, attributes, inner]) => ({
+    href: /\bhref="([^"]*)"/.exec(attributes)?.[1] ?? '',
+    attributes,
+    inner,
+  }));
 }
 
 const VOID = new Set([
@@ -221,6 +236,48 @@ describe.skipIf(!built)('build output', () => {
         (slug) => !existsSync(resolve(dist, 'blog', slug, 'index.html')),
       );
       expect(missing).toEqual([]);
+    });
+  });
+
+  describe('external link mark', () => {
+    const SPOKEN = '(외부 링크)';
+    // 사이트 주소(astro.config의 `site`)는 사이트맵 주소에서 읽는다.
+    const sitemap = built ? readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8') : '';
+    const SITE = new URL(/<loc>([^<]+)<\/loc>/.exec(sitemap)?.[1] ?? 'https://invalid.example')
+      .origin;
+
+    // 지금 발행된 글 본문에는 링크가 없어 아래 두 검사는 링크가 생기면 그때부터 실제로 걸린다.
+    // 표시를 넣는 규칙 자체는 src/utils/external-link.test.ts가 시험용 글 조각으로 본다.
+    const posts = pages.filter(({ html }) => postBody(html) !== '');
+    const bodyLinks = posts.flatMap(({ path, html }) =>
+      anchors(postBody(html)).map((link) => ({ path, ...link })),
+    );
+
+    it('finds the post bodies', () => {
+      expect(posts.length).toBeGreaterThan(0);
+    });
+
+    it('gives every external body link the ↗ icon and the hidden "(외부 링크)", without target', () => {
+      const external = bodyLinks.filter(({ href }) => isExternalLink(href, SITE));
+      const unmarked = external.filter(
+        ({ inner, attributes }) =>
+          !/<svg\b[^>]*aria-hidden="true"/.test(inner) ||
+          !inner.includes(`<span class="sr-only"> ${SPOKEN}</span>`) ||
+          /\btarget=/.test(attributes),
+      );
+      expect(unmarked).toEqual([]);
+    });
+
+    it('leaves same-site body links unmarked', () => {
+      const marked = bodyLinks
+        .filter(({ href }) => !isExternalLink(href, SITE))
+        .filter(({ inner }) => inner.includes(SPOKEN) || inner.includes('<svg'));
+      expect(marked).toEqual([]);
+    });
+
+    it('marks nothing outside the post body, such as the shell links', () => {
+      const outside = pages.filter(({ html }) => html.replace(postBody(html), '').includes(SPOKEN));
+      expect(outside.map(({ path }) => path)).toEqual([]);
     });
   });
 
