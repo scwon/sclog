@@ -13,6 +13,7 @@ export {
   type TreeFile,
   type TreeYear,
 } from './components/Shell/Shell';
+export { nextFile } from './components/Shell/tree.logic';
 export { Tabs, type TabsProps } from './components/Tabs/Tabs';
 export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip/Tooltip';
@@ -36,3 +37,4 @@ export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
 export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
+export type { SearchBlock, SearchIndex, SearchPost } from './stores/search-index';
