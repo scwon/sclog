@@ -1,0 +1,21 @@
+/*
+ * 모션 유틸리티. 시간·이징은 의미 토큰(--motion-*)을 쓰고, 움직임 줄이기 설정에서는 바로 끝난다.
+ */
+
+/* 왼쪽에서 오른쪽으로 드러나며 등장한다. 새 탭 등. 에디터 줄의 '펼침'(GLOSSARY)과는 다른 움직임이다 */
+@keyframes unroll {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@utility animate-unroll {
+  animation: unroll var(--motion-enter) var(--motion-easing);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

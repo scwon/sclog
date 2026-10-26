@@ -107,7 +107,7 @@ scwon.me는 옛 Astro 템플릿 스타일 위에 세 가지 토큰 체계(레이
 ```
 src/design-system/
   tokens/      primitives.css · semantic.css(두 테마) · index.css        1층: 값만, 다른 층 import 금지
-  styles/      fonts.css · base.css · prose.css · ide.css · index.css      2층: @theme inline·@custom-variant·@layer components, 1층만 import
+  styles/      fonts.css · base.css · motion.css · prose.css · ide.css · index.css   2층: @theme inline·@custom-variant·@layer components·@utility, 1층만 import
   stores/      theme.ts · tabs.ts · reading.ts (+ *.logic.ts, *.test.ts)   3층 공용 상태
   components/  <Name>/…                                                    3층: 2층 유틸리티만 사용
   docs/        Tokens.mdx 등                                               4층
