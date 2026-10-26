@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SHORTCUT_KEYS,
   keyLabel,
   platformOf,
   shortcutFor,
@@ -79,6 +80,54 @@ describe('shortcutFor: 붙이는 키', () => {
     );
     expect(shortcutFor(key({ key: 'ㅠ', code: 'KeyB', metaKey: true }), closed)).toBe(
       'toggle-panel',
+    );
+  });
+});
+
+describe('shortcutFor: ⌘⇧F 본문에서 찾기', () => {
+  it('opens the search view with ⌘⇧F on a Mac and Ctrl+Shift+F elsewhere', () => {
+    expect(shortcutFor(key({ key: 'F', metaKey: true, shiftKey: true }), closed)).toBe(
+      'open-search',
+    );
+    const other: ShortcutContext = { ...closed, platform: 'other' };
+    expect(shortcutFor(key({ key: 'F', ctrlKey: true, shiftKey: true }), other)).toBe(
+      'open-search',
+    );
+    expect(shortcutFor(key({ key: 'F', metaKey: true, shiftKey: true }), other)).toBeNull();
+  });
+
+  it('reads the physical key when the layout is not Latin (한글 자판)', () => {
+    expect(
+      shortcutFor(key({ key: 'ㄹ', code: 'KeyF', metaKey: true, shiftKey: true }), closed),
+    ).toBe('open-search');
+  });
+
+  it('leaves ⌘F (find in page) and ⌘⌥F to the browser', () => {
+    expect(shortcutFor(key({ key: 'f', metaKey: true }), closed)).toBeNull();
+    expect(
+      shortcutFor(
+        key({ key: 'ƒ', code: 'KeyF', metaKey: true, altKey: true, shiftKey: true }),
+        closed,
+      ),
+    ).toBeNull();
+  });
+
+  it('stays off in a text field, while composing and while the palette is open', () => {
+    const find = { key: 'F', metaKey: true, shiftKey: true } as const;
+    expect(shortcutFor(key({ ...find, target: 'text' }), closed)).toBeNull();
+    expect(shortcutFor(key({ ...find, isComposing: true }), closed)).toBeNull();
+    expect(
+      shortcutFor(key({ ...find, target: 'palette-input' }), { ...closed, paletteOpen: true }),
+    ).toBeNull();
+  });
+
+  it('takes nothing once the key is dropped from the key table', () => {
+    const withoutSearch = { ...SHORTCUT_KEYS, search: null };
+    expect(
+      shortcutFor(key({ key: 'F', metaKey: true, shiftKey: true }), closed, withoutSearch),
+    ).toBeNull();
+    expect(shortcutFor(key({ key: 'p', metaKey: true }), closed, withoutSearch)).toBe(
+      'open-palette',
     );
   });
 });

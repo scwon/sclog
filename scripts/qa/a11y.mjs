@@ -1,7 +1,7 @@
 /**
  * 모든 페이지 × 두 테마 × 세 폭(1440·1024·390)에서 axe-core 검사를 돌린다. 홈은 패널이 프로필 화면이므로,
- * 패널이 숨는 폭(1100px 미만)에서는 패널을 열어 한 번 더 본다. 홈에서는 ⌘P(Ctrl+P)로 연 명령 팔레트도,
- * 폭·테마마다 결과가 있는 검색 화면도 본다.
+ * 패널이 숨는 폭(1100px 미만)에서는 패널을 열어 한 번 더 본다. 홈에서는 ⌘P(Ctrl+P)로 연 명령 팔레트(파일 모드와
+ * `>` 명령 모드)도, 폭·테마마다 결과가 있는 검색 화면도 본다.
  * 움직임 줄이기를 켜서 펼침 도중의 반투명 글자를 명암비 위반으로 잘못 잡지 않게 한다.
  * 읽기 기록을 미리 넣어 탐색기 꼬리표(`✓`·`42%`)와 프로필의 읽기 기록 칸도 함께 본다. 꼬리표 종류는 폭·테마마다
  * 번갈아 넣어 두 테마가 두 꼬리표를 모두 거친다. 읽는 중으로 넣은 글은 개요의 첫 장을 위치로 다시 넣고 열어,
@@ -94,6 +94,15 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
         runs++;
         if (paletteViolations.length)
           failures.push(`${width} ${theme} 팔레트: ${paletteViolations.join('; ')}`);
+        // `>` 명령 모드: 명령과 단축키 목록.
+        await page.keyboard.type('>');
+        await page.waitForSelector("loc=css:[role='listbox'][aria-label='명령']", {
+          state: 'visible',
+        });
+        const commandViolations = await axeViolations();
+        runs++;
+        if (commandViolations.length)
+          failures.push(`${width} ${theme} 명령 목록: ${commandViolations.join('; ')}`);
         await page.keyboard.press('Escape');
         await page.waitForTimeout(200);
       }

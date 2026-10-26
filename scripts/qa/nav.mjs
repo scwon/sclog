@@ -1,7 +1,8 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
  * 다시 글. 패널은 홈에서 프로필, 글에서 탐색기를 보인다. 이어서 홈에서 ⌘P(Ctrl+P) 팔레트로 글을 열고,
- * 다시 열어 Esc로 닫으며 포커스가 돌아오는지, ⌘B로 패널이 여닫히는지 본다. 그다음 태그 화면에서 고른 패널
+ * 다시 열어 Esc로 닫으며 포커스가 돌아오는지, ⌘⇧F로 검색 화면이 열려 입력창에 포커스가 가는지, ⌘B로 패널이
+ * 여닫히는지 본다. 그다음 태그 화면에서 고른 패널
  * 화면이 새로고침 뒤에도 남는지 본다. 이어서 펼침이 탭이 새로 생겨 처음 보일 때만 일어나는지(처음 열기 → 다른 탭 → 돌아오기 → 닫기 → 다시 열기)
  * 에디터 루트의 펼침 표시로 본다.
  * 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
@@ -127,7 +128,7 @@ check(
   (await page.evaluate(() => document.documentElement.dataset.theme)) === themeAfter,
 );
 
-// 단축키: ⌘P(Ctrl+P) 팔레트로 글 열기, 다시 열어 Esc로 닫고 포커스 복귀, ⌘B로 패널 여닫기.
+// 단축키: ⌘P(Ctrl+P) 팔레트로 글 열기, 다시 열어 Esc로 닫고 포커스 복귀, ⌘⇧F로 검색 화면, ⌘B로 패널 여닫기.
 const palette = () =>
   page.evaluate(() => {
     const dialog = document.querySelector("[role='dialog'][aria-label='명령 팔레트']");
@@ -172,6 +173,18 @@ check(
   '닫으면 연 자리로 포커스',
   await page.evaluate(() => document.activeElement?.id === 'editor'),
 );
+
+// ⌘⇧F(Ctrl+Shift+F): 검색 화면을 열고 입력창에 포커스(검색 화면은 처음 쓸 때 불러오는 청크라 조금 기다린다).
+await page.keyboard.press('ControlOrMeta+Shift+F');
+await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
+await page.waitForTimeout(300);
+check('⌘⇧F로 검색 화면이 열림', (await panelView()) === '검색');
+check(
+  '⌘⇧F로 검색 입력창에 포커스',
+  await page.evaluate(() => document.activeElement?.matches('#panel input[type=search]') === true),
+);
+// 입력창에 포커스가 있으면 단축키가 꺼지므로 ⌘B 전에 에디터로 옮긴다.
+check('에디터에 포커스(⌘B 전)', await focusEditor());
 
 const panelShown = () =>
   page.evaluate(() => {
