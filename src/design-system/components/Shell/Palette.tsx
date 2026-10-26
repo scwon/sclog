@@ -15,6 +15,7 @@ import {
   type Ref,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { FileGlyph } from './icons';
 import {
   isCommandQuery,
   paletteCommands,
@@ -47,16 +48,6 @@ export interface PaletteProps {
   /** 바깥을 눌렀다. 창 틀이 팔레트를 닫고 포커스를 연 자리로 돌려준다. */
   onDismiss: () => void;
   ref?: Ref<PaletteHandle>;
-}
-
-/** 파일 아이콘(장식). 탐색기의 파일 줄과 같은 모양이다. */
-function FileGlyph() {
-  return (
-    <span
-      aria-hidden="true"
-      className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-    />
-  );
 }
 
 /** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 키 표기와 안내의 키 부분을 숨긴다. */

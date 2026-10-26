@@ -3,6 +3,7 @@ import { atom } from 'nanostores';
 import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
 import { Button } from '../Button/Button';
+import { FileGlyph } from './icons';
 import { $searchFocus, $searchQuery, setSearchQuery } from '../../stores/search';
 import type { SearchIndex } from '../../stores/search-index';
 import { capHits, excerpt, searchPosts, type SearchFile, type SearchHit } from './search.logic';
@@ -110,10 +111,7 @@ function FileGroup({ file }: { file: SearchFile }) {
         className="flex h-7 w-full cursor-pointer items-center gap-1.5 pr-3 pl-3 font-mono text-xs text-text transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover focus-visible:-outline-offset-2"
       >
         <Twisty folded={folded} />
-        <span
-          aria-hidden="true"
-          className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-        />
+        <FileGlyph />
         <span className="truncate">{file.name}</span>
         <span className="ml-auto rounded-full bg-state-selected px-1.5 text-[11px] leading-[1.5] text-text-soft">
           <span className="sr-only">일치 </span>

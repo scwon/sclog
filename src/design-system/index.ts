@@ -58,7 +58,14 @@ export {
 } from './stores/notice';
 export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
 export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
-export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
+export {
+  fileName,
+  type EditorFile,
+  type FileKind,
+  type NumberedChapter,
+  type OutlineItem,
+} from './stores/file.logic';
+export { REDUCED_MOTION } from './media';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
 export type { SearchBlock, SearchIndex, SearchPost } from './stores/search-index';

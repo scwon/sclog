@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { REDUCED_MOTION } from '../../media';
 import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
@@ -34,13 +35,14 @@ import { resumeLabel } from '../../stores/resume.logic';
 import { showStatusNotice } from '../../stores/notice';
 import { openTab } from '../../stores/tabs';
 import { toggleTheme } from '../../stores/theme';
-import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
+import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
 import {
   BranchIcon,
   CodeIcon,
   ExplorerIcon,
   ExternalIcon,
+  FileGlyph,
   MenuIcon,
   ProfileIcon,
   SearchIcon,
@@ -132,7 +134,6 @@ export interface ShellProps {
 }
 
 const DESKTOP = '(min-width: 1100px)';
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const EDITOR_ID = 'editor';
 const OUTLINE_ID = 'editor-outline';
 const PANEL_ID = 'panel';
@@ -897,7 +898,7 @@ export function Shell({
                     <ul className="m-0 list-none p-0">
                       {files.map((entry) => {
                         const active = shown?.url === entry.url;
-                        const name = entry.path.split('/').pop();
+                        const name = fileName(entry.path);
                         const mark = readingMark(history, entry.url);
                         return (
                           <li key={entry.url}>
@@ -912,10 +913,7 @@ export function Shell({
                                   'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
                               )}
                             >
-                              <span
-                                aria-hidden="true"
-                                className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-                              />
+                              <FileGlyph />
                               <span className="min-w-0 truncate">{name}</span>
                               {mark && <ReadMark mark={mark} selected={active} />}
                             </a>

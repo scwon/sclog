@@ -13,6 +13,22 @@ export interface OutlineItem {
   children: { id: string; text: string }[];
 }
 
+/** 번호가 붙은 장: 개요의 장 id·번호(`04`)·제목. 이어 읽기 버튼과 검색 결과의 위치가 쓴다. */
+export interface NumberedChapter {
+  id: string;
+  /** 개요 순서의 두 자리 번호(`chapterNo`). */
+  no: string;
+  text: string;
+}
+
+/**
+ * 경로의 파일 이름(마지막 `/` 뒤). `posts/2023/<slug>.mdx` → `<slug>.mdx`. `/`가 없으면(`posts.log`, `404`) 경로
+ * 그대로다.
+ */
+export function fileName(path: string): string {
+  return path.slice(path.lastIndexOf('/') + 1);
+}
+
 /** 에디터에 열린 파일. */
 export interface EditorFile {
   title: string;

@@ -5,6 +5,7 @@
  * "개발"에 부분 일치한다.
  */
 
+import { fileName } from '../../stores/file.logic';
 import { normalizeForMatch } from './match.logic';
 import { SHORTCUT_KEYS, keyLabel, type Platform, type ShortcutKeys } from './shortcuts.logic';
 
@@ -28,8 +29,13 @@ export interface PaletteFile {
 function rows(tree: PaletteTree[]): PaletteFile[] {
   return tree.flatMap(({ files }) =>
     files.map(({ url, title, path }) => {
-      const cut = path.lastIndexOf('/');
-      return { url, title, name: path.slice(cut + 1), folder: path.slice(0, Math.max(cut, 0)) };
+      const name = fileName(path);
+      return {
+        url,
+        title,
+        name,
+        folder: path.slice(0, Math.max(path.length - name.length - 1, 0)),
+      };
     }),
   );
 }
