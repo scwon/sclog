@@ -12,6 +12,7 @@ import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
+import { $statusNotice, clearStatusNotice } from '../../stores/notice';
 import { $reading, emptyReading } from '../../stores/reading';
 import { chapterNo, readingSymbol } from '../../stores/reading.logic';
 import {
@@ -347,7 +348,8 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(탐색기 또는 프로필)·탭·상태줄을 모두
  * `position: fixed`로 그리는 아일랜드 하나다(ADR 0001). 에디터 내용은 아일랜드 밖 정적 HTML이고,
  * 창 틀은 페이지가 열릴 때마다(`astro:page-load`) 에디터 루트의 `data-file-*`를 읽어 탭을 열고
- * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다.
+ * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다. 같은 자리에 창 틀 밖에서 띄운 상태줄 알림
+ * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
  *
  * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
@@ -375,6 +377,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   const reading = useStore($reading, { ssr: emptyReading });
   // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 기록 없이 그리고, 그 뒤 실제 기록으로 다시 그린다.
   const history = useStore($readingHistory, { ssr: emptyHistory });
+  const notice = useStore($statusNotice);
   const timers = useRef<number[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   // 마지막으로 읽은 에디터 루트. 화면을 옮기면 <body>가 바뀌어 새 요소가 된다.
@@ -431,6 +434,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         return wide ? moved : dismissPanel(moved, wide);
       });
 
+      // 새 파일의 열기 요약이 앞 파일에서 띄운 알림을 바로 바꾼다.
+      clearStatusNotice();
       const { command, result } = openLog(next);
       const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;
       timers.current.forEach(clearTimeout);
@@ -728,7 +733,14 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
           <BranchIcon className="size-3.5" />
           main
         </span>
-        {log ? (
+        {/* 상태줄 알림: 늘 있는 live 영역이라 글자가 바뀔 때 읽힌다. 떠 있는 동안 열기 요약 자리를 쓴다. */}
+        <span
+          aria-live="polite"
+          className={notice ? 'min-w-0 flex-1 truncate pr-3 pl-3' : 'sr-only'}
+        >
+          {notice && <span key={notice.id}>{notice.text}</span>}
+        </span>
+        {notice ? null : log ? (
           <span aria-hidden="true" className="min-w-0 flex-1 truncate pr-3 pl-3">
             {log}
           </span>

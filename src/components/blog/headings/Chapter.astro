@@ -1,8 +1,10 @@
 ---
 /** MDX 본문의 h1(장) 제목을 <h2>로 그린다. 글 화면은 frontmatter 제목이 <h1>이라 본문 제목을 한 단계씩 내린다(원본 MDX는 그대로). */
+import Heading from './Heading.astro';
+
 const props = Astro.props;
 ---
 
-<h2 {...props}>
+<Heading level={2} {...props}>
   <slot />
-</h2>
+</Heading>

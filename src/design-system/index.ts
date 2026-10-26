@@ -47,8 +47,16 @@ export {
   type ReadingMark,
   type ReadingPosition,
 } from './stores/readingHistory.logic';
-export { $activeTab, $openTabs, closeTab, openTab } from './stores/tabs';
-export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
+export {
+  $statusNotice,
+  clearStatusNotice,
+  showStatusNotice,
+  STATUS_NOTICE_MS,
+  type StatusNotice,
+} from './stores/notice';
+export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
+export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
 export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
+export type { SearchBlock, SearchIndex, SearchPost } from './stores/search-index';
