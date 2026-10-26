@@ -1,6 +1,7 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
- * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
+ * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지 → 글 끝까지 읽으면 탐색기에 `✓`가 붙고
+ * 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -47,7 +48,7 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {
 });
 await page.goto(`${QA.base}/`);
 await page.evaluate(() => {
-  localStorage.removeItem('theme');
+  for (const key of ['theme', 'read', 'position']) localStorage.removeItem(key);
   sessionStorage.clear();
 });
 await page.reload();
@@ -150,6 +151,60 @@ if (tagUrl) {
   check('태그 화면에서 고른 프로필이 새로고침 뒤 남음', (await panelView()) === '프로필');
 }
 
+// 읽기 기록: 글 끝까지 스크롤하면 읽은 글이 되어 탐색기에 `✓`가 붙고, 다음 방문(새로고침)에도 남으며,
+// 프로필의 `기록 지우기`를 누르면 꼬리표와 저장값이 바로 사라진다.
+/** 탐색기에서 그 글 줄의 꼬리표(스크린 리더 글자). 없으면 빈 문자열. */
+const explorerMark = (url) =>
+  page.evaluate(
+    (href) =>
+      document.querySelector(`#panel a[href="${href}"] .sr-only`)?.textContent?.trim() ?? '',
+    url,
+  );
+/** 패널이 탐색기가 아니면 활동 막대에서 탐색기를 고른다. */
+const showExplorer = async () => {
+  if ((await panelView()) !== '탐색기')
+    await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='탐색기']", {
+      label: '탐색기 고르기',
+    });
+  await page.waitForTimeout(300);
+};
+await page.goto(QA.base + post.url);
+await page.waitForTimeout(1500);
+await page.evaluate(() => {
+  window.scrollTo(0, document.documentElement.scrollHeight);
+  return true;
+});
+await page.waitForTimeout(800);
+await showExplorer();
+check('글 끝까지 읽으면 탐색기에 ✓', (await explorerMark(post.url)) === '읽음');
+await page.reload();
+await page.waitForTimeout(1500);
+await showExplorer();
+check('읽은 글 표시가 새로고침 뒤에도 남음', (await explorerMark(post.url)) === '읽음');
+await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
+  label: '프로필 열기',
+});
+await page.waitForTimeout(300);
+await page.click("loc=css:section[aria-labelledby='profile-history'] button", {
+  label: '기록 지우기',
+});
+await page.waitForTimeout(300);
+const historyText = await page.evaluate(
+  () => document.querySelector("section[aria-labelledby='profile-history'] p")?.textContent ?? '',
+);
+check('지우면 기록 없음 안내', historyText.includes('남은 읽기 기록이 없습니다'), historyText);
+const stored = await page.evaluate(() => [
+  localStorage.getItem('read'),
+  localStorage.getItem('position'),
+]);
+check(
+  '지우면 두 키가 모두 사라짐',
+  stored.every((value) => value === null),
+  stored.join(', '),
+);
+await showExplorer();
+check('지우면 탐색기 꼬리표가 사라짐', (await explorerMark(post.url)) === '');
+
 const events = await page.events();
 const errors = events
   .filter(
@@ -167,7 +222,7 @@ const errors = events
 check('콘솔 오류 없음', errors.length === 0, errors.join(' | '));
 
 await page.evaluate(() => {
-  localStorage.removeItem('theme');
+  for (const key of ['theme', 'read', 'position']) localStorage.removeItem(key);
   sessionStorage.clear();
 });
 await task.finish({ keep: [] });

@@ -405,6 +405,11 @@
     }
   }
 
+  /* 글 로그 줄 머리 끝의 읽음 꼬리표(`✓ 읽음`·`71% 읽는 중`). 파일 이름이 먼저 말줄임된다 */
+  .flow-log-mark {
+    flex: none;
+  }
+
   /* 글 카드: 코랄 매트 썸네일 + 제목·첫 문장·메타 */
   .flow-card {
     position: relative;
@@ -1095,6 +1100,17 @@
 
     &:not(:empty) {
       margin-left: 8px;
+    }
+  }
+
+  /* 읽음 꼬리표(페이지 스크립트가 채움): 읽은 글은 흐린 글자, 읽는 중인 글은 강조 글자 */
+  :is(.doc-end-mark, .flow-log-mark) {
+    &[data-mark='read'] {
+      color: var(--text-muted);
+    }
+
+    &[data-mark='reading'] {
+      color: var(--accent-text);
     }
   }
 
