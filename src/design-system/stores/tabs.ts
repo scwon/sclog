@@ -2,36 +2,30 @@ import { atom, map } from 'nanostores';
 import {
   addOrActivate,
   close,
-  initialTabs,
   restoreTabs,
   show,
   type TabEntry,
   type TabFile,
   type TabsState,
 } from './tabs.logic';
+import { visitorStorage } from './storage';
 
 /**
  * 탭 스토어의 바인딩. 열린 탭은 nanostores `map`(키 = 글 URL, 넣은 순서 = 탭 순서)에, 활성 탭은
- * `atom`에 두고, 바뀔 때마다 `sessionStorage`에 거울처럼 저장해 같은 브라우저 세션 동안 남긴다(ADR 0001).
+ * `atom`에 두고, 바뀔 때마다 `sessionStorage`에 거울처럼 저장해 같은 브라우저 세션 동안 남긴다(ADR 0001). 저장소를
+ * 쓸 수 없으면 `storage.ts`가 메모리에 둔다.
  */
 
 const STORAGE_KEY = 'tabs';
 
-function readSaved(): TabsState {
-  if (typeof sessionStorage === 'undefined') return initialTabs();
-  try {
-    return restoreTabs(JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null'));
-  } catch {
-    return initialTabs();
-  }
-}
+const storage = visitorStorage('session');
 
 /** 탭 목록을 `$openTabs`의 모양(키 = 글 URL, 넣은 순서 = 탭 순서)으로 바꾼다. */
 export function toTabRecord(files: TabEntry[]): Record<string, TabEntry> {
   return Object.fromEntries(files.map((file) => [file.url, file]));
 }
 
-const saved = readSaved();
+const saved = restoreTabs(storage.read(STORAGE_KEY));
 
 /** 열린 탭. 키는 글 URL이고 첫 키는 언제나 `posts.log`의 `/`다. */
 export const $openTabs = map<Record<string, TabEntry>>(toTabRecord(saved.files));
@@ -46,11 +40,7 @@ function current(): TabsState {
 function commit(state: TabsState): void {
   $openTabs.set(toTabRecord(state.files));
   $activeTab.set(state.active);
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // 저장소를 쓸 수 없으면 이번 페이지에서만 남는다.
-  }
+  storage.write(STORAGE_KEY, state);
 }
 
 /** 파일을 탭으로 연다. 이미 열려 있으면 활성 탭으로만 바꾼다. */

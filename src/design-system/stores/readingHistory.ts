@@ -8,12 +8,13 @@ import {
   storedHistory,
   type ReadingHistory,
 } from './readingHistory.logic';
+import { visitorStorage } from './storage';
 
 /**
  * 읽기 기록 스토어의 저장 바인딩. `localStorage`의 `read`·`position` 키에 두어 다음 방문까지 남긴다(ADR 0004).
  * 창 틀(탐색기·프로필)과 페이지 스크립트(흐름 로그·다음 파일 줄)가 같이 구독하고, 글 화면 스크립트가 읽는 위치를
  * 기록한다. 저장소에는 초당 한 번 이하로 묶어 쓰고, 화면을 떠날 때(`astro:before-swap`, `pagehide`) 마지막 값을
- * 쓴다. 저장소를 쓸 수 없으면 안내 없이 메모리(스토어)에만 둔다. 불러오기는 처음 한 번이고 `storage` 이벤트는
+ * 쓴다. 저장소 접근은 `storage.ts`를 거치므로 저장소를 쓸 수 없으면 안내 없이 메모리에만 둔다. 불러오기는 처음 한 번이고 `storage` 이벤트는
  * 듣지 않는다.
  */
 
@@ -22,21 +23,12 @@ const POSITION_KEY = 'position';
 /** 저장소에 쓰는 최소 간격(ms). */
 const WRITE_INTERVAL = 1000;
 
-function parse(key: string): unknown {
-  return JSON.parse(localStorage.getItem(key) ?? 'null');
-}
-
-function readSaved(): ReadingHistory {
-  if (typeof localStorage === 'undefined') return emptyHistory();
-  try {
-    return restoreHistory({ read: parse(READ_KEY), position: parse(POSITION_KEY) });
-  } catch {
-    return emptyHistory();
-  }
-}
+const storage = visitorStorage('local');
 
 /** 이 브라우저의 읽기 기록. 컴포넌트는 `useStore($readingHistory)`로, 페이지 스크립트는 `subscribe`로 구독한다. */
-export const $readingHistory = atom<ReadingHistory>(readSaved());
+export const $readingHistory = atom<ReadingHistory>(
+  restoreHistory({ read: storage.read(READ_KEY), position: storage.read(POSITION_KEY) }),
+);
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let dirty = false;
@@ -48,12 +40,8 @@ export function flushReadingHistory(): void {
   if (!dirty) return;
   dirty = false;
   const { read, position } = storedHistory($readingHistory.get());
-  try {
-    localStorage.setItem(READ_KEY, JSON.stringify(read));
-    localStorage.setItem(POSITION_KEY, JSON.stringify(position));
-  } catch {
-    // 저장소를 쓸 수 없으면 메모리에만 둔다.
-  }
+  storage.write(READ_KEY, read);
+  storage.write(POSITION_KEY, position);
 }
 
 function commit(next: ReadingHistory): void {
@@ -87,12 +75,8 @@ export function clearReadingHistory(): void {
   timer = null;
   dirty = false;
   $readingHistory.set(emptyHistory());
-  try {
-    localStorage.removeItem(READ_KEY);
-    localStorage.removeItem(POSITION_KEY);
-  } catch {
-    // 저장소를 쓸 수 없으면 메모리만 비운다.
-  }
+  storage.remove(READ_KEY);
+  storage.remove(POSITION_KEY);
 }
 
 if (typeof window !== 'undefined') {
