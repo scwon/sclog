@@ -22,7 +22,7 @@ import {
   paletteFiles,
   type PaletteCommandId,
 } from './palette.logic';
-import { SHORTCUT_KEYS, keyLabel, type Platform } from './shortcuts.logic';
+import { SHORTCUT_KEYS, keyLabel, type Platform, type ShellCommand } from './shortcuts.logic';
 import type { TreeYear } from './Shell';
 
 /** 창 틀이 팔레트에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 팔레트는 그 결과만 받는다. */
@@ -44,7 +44,7 @@ export interface PaletteProps {
   /** 글 줄을 골랐다. 창 틀이 팔레트를 닫고 그 글로 옮긴다. */
   onPick: (url: string) => void;
   /** 명령을 골랐다. 창 틀이 팔레트를 닫고 실행한다. `파일 열기`는 팔레트가 스스로 파일 모드로 돌아간다. */
-  onCommand: (id: Exclude<PaletteCommandId, 'open-file'>) => void;
+  onCommand: (command: ShellCommand) => void;
   /** 바깥을 눌렀다. 창 틀이 팔레트를 닫고 포커스를 연 자리로 돌려준다. */
   onDismiss: () => void;
   ref?: Ref<PaletteHandle>;

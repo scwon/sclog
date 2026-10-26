@@ -7,7 +7,13 @@
 
 import { fileName } from '../../stores/file.logic';
 import { normalizeForMatch } from './match.logic';
-import { SHORTCUT_KEYS, keyLabel, type Platform, type ShortcutKeys } from './shortcuts.logic';
+import {
+  SHORTCUT_KEYS,
+  keyLabel,
+  type Platform,
+  type ShellCommand,
+  type ShortcutKeys,
+} from './shortcuts.logic';
 import type { TreeYear } from './Shell';
 
 /** 팔레트 목록의 글 한 줄. */
@@ -64,16 +70,11 @@ export function isCommandQuery(query: string): boolean {
   return query.startsWith('>');
 }
 
-/** 명령 팔레트의 명령. `open-file`은 팔레트가 스스로 파일 모드로 돌아가고, 나머지는 창 틀이 실행한다. */
-export type PaletteCommandId =
-  | 'open-file'
-  | 'find-in-posts'
-  | 'toggle-panel'
-  | 'show-explorer'
-  | 'show-profile'
-  | 'toggle-theme'
-  | 'open-next-file'
-  | 'clear-history';
+/**
+ * 명령 팔레트의 명령. `open-file`은 팔레트가 스스로 파일 모드로 돌아가고, 나머지는 단축키와 같은 이름의 창 틀
+ * 명령(`ShellCommand`)이라 창 틀이 실행한다.
+ */
+export type PaletteCommandId = 'open-file' | ShellCommand;
 
 /** 명령 목록의 한 줄. */
 export interface PaletteCommand {
@@ -93,7 +94,7 @@ export interface PaletteCommandContext {
 /** 명령 순서와 이름, 붙은 키. 이 순서가 단축키 도움말의 순서다. */
 const COMMANDS: { id: PaletteCommandId; label: string; key?: keyof ShortcutKeys }[] = [
   { id: 'open-file', label: '파일 열기', key: 'palette' },
-  { id: 'find-in-posts', label: '본문에서 찾기', key: 'search' },
+  { id: 'open-search', label: '본문에서 찾기', key: 'search' },
   { id: 'toggle-panel', label: '패널 열고 닫기', key: 'panel' },
   { id: 'show-explorer', label: '탐색기 보기' },
   { id: 'show-profile', label: '프로필 보기' },

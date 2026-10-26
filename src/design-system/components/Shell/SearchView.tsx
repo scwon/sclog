@@ -4,7 +4,12 @@ import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
 import { Button } from '../Button/Button';
 import { FileGlyph } from './icons';
-import { $searchFocus, $searchQuery, setSearchQuery } from '../../stores/search';
+import {
+  $searchFocus,
+  $searchQuery,
+  clearSearchFocusRequest,
+  setSearchQuery,
+} from '../../stores/search';
 import { SEARCH_INDEX_VERSION, type SearchIndex } from './search-index';
 import { capHits, excerpt, searchPosts, type SearchFile, type SearchHit } from './search.logic';
 
@@ -168,7 +173,7 @@ export default function SearchView({ indexUrl }: SearchViewProps) {
   useEffect(() => {
     if (!focusRequested) return;
     input.current?.focus();
-    $searchFocus.set(false);
+    clearSearchFocusRequest();
   }, [focusRequested]);
 
   const results = useMemo(

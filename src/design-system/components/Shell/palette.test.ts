@@ -96,7 +96,7 @@ describe('paletteCommands', () => {
   it('lists every command in order with its key for a bare >', () => {
     expect(paletteCommands('>', withNext)).toEqual([
       { id: 'open-file', label: '파일 열기', keys: '⌘P' },
-      { id: 'find-in-posts', label: '본문에서 찾기', keys: '⌘⇧F' },
+      { id: 'open-search', label: '본문에서 찾기', keys: '⌘⇧F' },
       { id: 'toggle-panel', label: '패널 열고 닫기', keys: '⌘B' },
       { id: 'show-explorer', label: '탐색기 보기', keys: null },
       { id: 'show-profile', label: '프로필 보기', keys: null },
@@ -135,6 +135,6 @@ describe('paletteCommands', () => {
 
   it('leaves the key cell empty once ⌘⇧F is dropped from the key table', () => {
     const [, find] = paletteCommands('>', withNext, { ...SHORTCUT_KEYS, search: null });
-    expect(find).toEqual({ id: 'find-in-posts', label: '본문에서 찾기', keys: null });
+    expect(find).toEqual({ id: 'open-search', label: '본문에서 찾기', keys: null });
   });
 });

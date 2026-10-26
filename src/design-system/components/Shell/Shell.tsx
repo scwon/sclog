@@ -63,15 +63,14 @@ import {
 } from './panel.logic';
 import { readPanelView, writePanelView } from './panel';
 import type { PaletteHandle } from './Palette';
-import type { PaletteCommandId } from './palette.logic';
+import { usePlatform, useShortcuts } from './shortcuts';
 import {
   SHORTCUT_KEYS,
   keyLabel,
-  platformOf,
-  shortcutFor,
-  type FocusTarget,
   type KeyCombo,
   type Platform,
+  type ShellCommand,
+  type ShortcutAction,
 } from './shortcuts.logic';
 import { nextFile } from './tree.logic';
 
@@ -138,18 +137,14 @@ const EDITOR_ID = 'editor';
 const OUTLINE_ID = 'editor-outline';
 const PANEL_ID = 'panel';
 
-/** 패널 화면 이름. 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에 쓴다. */
-const VIEW_LABEL: Record<PanelView, string> = {
-  explorer: '탐색기',
-  profile: '프로필',
-  search: '검색',
-};
-
-/** 활동 막대 툴팁에 붙이는 키. 프로필 화면에는 키가 없다. */
-const VIEW_KEYS: Record<PanelView, KeyCombo | null> = {
-  explorer: SHORTCUT_KEYS.panel,
-  profile: null,
-  search: SHORTCUT_KEYS.search,
+/**
+ * 패널 화면마다의 이름·키·아이콘. 이름은 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에, 키는 활동 막대 툴팁에,
+ * 아이콘은 활동 막대에 쓴다. 프로필 화면에는 키가 없다.
+ */
+const VIEWS: Record<PanelView, { label: string; keys: KeyCombo | null; icon: ReactNode }> = {
+  explorer: { label: '탐색기', keys: SHORTCUT_KEYS.panel, icon: <ExplorerIcon /> },
+  profile: { label: '프로필', keys: null, icon: <ProfileIcon /> },
+  search: { label: '검색', keys: SHORTCUT_KEYS.search, icon: <SearchIcon /> },
 };
 
 /**
@@ -157,18 +152,9 @@ const VIEW_KEYS: Record<PanelView, KeyCombo | null> = {
  * 화면 이름만 쓴다.
  */
 function railTitle(view: PanelView, platform: Platform | null): string {
-  const combo = VIEW_KEYS[view];
-  return combo && platform
-    ? `${VIEW_LABEL[view]} (${keyLabel(combo, platform)})`
-    : VIEW_LABEL[view];
+  const { label, keys } = VIEWS[view];
+  return keys && platform ? `${label} (${keyLabel(keys, platform)})` : label;
 }
-
-/** 활동 막대에서 패널 화면을 고르는 아이콘. */
-const VIEW_ICON: Record<PanelView, ReactNode> = {
-  explorer: <ExplorerIcon />,
-  profile: <ProfileIcon />,
-  search: <SearchIcon />,
-};
 
 /** 1100px 이상인가. 서버는 화면 폭을 모르므로 넓은 화면으로 그린다. */
 function useDesktop(): boolean {
@@ -204,40 +190,6 @@ function navigateLikeLink(url: string): void {
   link.remove();
 }
 
-/** 글자를 치는 입력창이 아닌 `<input>` 종류. 여기에 포커스가 있어도 단축키는 동작한다. */
-const NON_TEXT_INPUTS = new Set([
-  'button',
-  'checkbox',
-  'color',
-  'file',
-  'image',
-  'radio',
-  'range',
-  'reset',
-  'submit',
-]);
-
-/** 키를 받은 요소의 종류(단축키 판정용). */
-function focusTarget(target: EventTarget | null): FocusTarget {
-  if (!(target instanceof HTMLElement)) return 'other';
-  if (target.matches('[data-palette-input]')) return 'palette-input';
-  if (target.matches('[data-search-input]')) return 'search-input';
-  if (
-    target.isContentEditable ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    (target instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(target.type))
-  )
-    return 'text';
-  return 'other';
-}
-
-/** 브라우저의 플랫폼. 서버 HTML에는 넣지 않고, 키를 처음 받거나 키 표기를 처음 그릴 때 읽는다. */
-function browserPlatform(): Platform {
-  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
-  return platformOf(nav.userAgentData?.platform || nav.platform || '');
-}
-
 /**
  * 검색 입력창 포커스를 다음 프레임에 요청한다. 패널을 검색 화면으로 여는 누름(활동 막대, ⌘⇧F, 팔레트 명령)이 같이
  * 쓴다. 바로 요청하면 좁은 화면에서 숨은 입력창에 포커스를 주거나, 겹침 패널이 열리며 패널로 옮기는 포커스가
@@ -245,17 +197,6 @@ function browserPlatform(): Platform {
  */
 function focusSearchSoon(): void {
   requestAnimationFrame(requestSearchFocus);
-}
-
-/** 바뀌지 않는 값의 구독. */
-const noSubscribe = () => () => {};
-
-/**
- * 키 표기에 쓰는 플랫폼. 서버 HTML과 첫 하이드레이션은 `null`(키 표기 없음)이고, 하이드레이션 뒤 키 표기
- * (활동 막대 툴팁)를 처음 그릴 때 브라우저에서 읽는다.
- */
-function usePlatform(): Platform | null {
-  return useSyncExternalStore(noSubscribe, browserPlatform, () => null);
 }
 
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
@@ -340,7 +281,7 @@ function RailButton({
   return (
     <button
       type="button"
-      aria-label={VIEW_LABEL[view]}
+      aria-label={VIEWS[view].label}
       title={title}
       aria-controls={PANEL_ID}
       aria-pressed={current}
@@ -480,10 +421,10 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
  * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
  *
- * 단축키는 `document`의 keydown 리스너 하나가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
+ * 단축키는 `document`의 keydown 리스너 하나(`shortcuts.ts`)가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
  * ⌘B(Ctrl+B) 패널 열고 닫기, ⌘⇧F(Ctrl+Shift+F) 검색 화면을 열고 입력창에 포커스, Esc 맨 위 층(팔레트, 그다음 좁은
- * 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는 처음 열 때 불러오는 청크이고, `>` 명령 모드의 명령도 창 틀이
- * 실행한다. 붙은 키는 `SHORTCUT_KEYS` 하나가 정하고, 활동 막대 툴팁(`검색 (⌘⇧F)`)도 그 값을 읽는다.
+ * 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는 처음 열 때 불러오는 청크이고, `>` 명령 모드의 명령은 단축키와
+ * 같은 이름의 창 틀 명령(`ShellCommand`)이라 실행 함수 하나(`runCommand`)가 실행한다. 붙은 키는 `SHORTCUT_KEYS` 하나가 정하고, 활동 막대 툴팁(`검색 (⌘⇧F)`)도 그 값을 읽는다.
  */
 export function Shell({
   brand,
@@ -676,11 +617,11 @@ export function Shell({
   );
   // 다음 파일이 없으면(글이 아니거나 폴더의 가장 새 글) 팔레트가 `다음 파일 열기`를 보이지 않는다.
   const next = shown ? nextFile(tree, shown.url) : null;
+  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F)와 팔레트 명령 목록이 같이 쓴다. */
   const runCommand = useCallback(
-    (id: Exclude<PaletteCommandId, 'open-file'>) => {
-      closePalette();
-      switch (id) {
-        case 'find-in-posts':
+    (command: ShellCommand) => {
+      switch (command) {
+        case 'open-search':
           openSearch();
           break;
         case 'toggle-panel':
@@ -705,70 +646,47 @@ export function Shell({
           break;
       }
     },
-    [closePalette, next, openSearch, updatePanel],
+    [next, openSearch, updatePanel],
+  );
+  /** 팔레트에서 명령을 골랐다. 팔레트를 닫고 실행한다. */
+  const runFromPalette = useCallback(
+    (command: ShellCommand) => {
+      closePalette();
+      runCommand(command);
+    },
+    [closePalette, runCommand],
   );
 
-  // 단축키: `document`에 리스너 하나를 걸고 판정(`shortcuts.logic.ts`) 결과만 실행한다.
-  // 맥락은 그릴 때마다 ref에 옮겨 리스너를 다시 걸지 않는다.
-  const shortcutContext = useRef({ paletteOpen, overlay });
-  useEffect(() => {
-    shortcutContext.current = { paletteOpen, overlay };
-  }, [paletteOpen, overlay]);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const action = shortcutFor(
-        {
-          key: event.key,
-          code: event.code,
-          metaKey: event.metaKey,
-          ctrlKey: event.ctrlKey,
-          shiftKey: event.shiftKey,
-          altKey: event.altKey,
-          isComposing: event.isComposing,
-          target: focusTarget(event.target),
-        },
-        {
-          paletteOpen: shortcutContext.current.paletteOpen,
-          overlayOpen: shortcutContext.current.overlay,
-          platform: browserPlatform(),
-        },
-      );
-      if (!action) return;
-      event.preventDefault();
-      switch (action) {
-        case 'open-palette':
-          paletteOpener.current =
-            document.activeElement instanceof HTMLElement ? document.activeElement : null;
-          setPaletteOpen(true);
-          break;
-        case 'toggle-panel':
-          updatePanel(togglePanel);
-          break;
-        case 'open-search':
-          openSearch();
-          break;
-        case 'close-palette':
-          closePalette();
-          break;
-        case 'close-overlay':
-          updatePanel(dismissPanel);
-          break;
-        case 'palette-prev':
-          paletteRef.current?.move(-1);
-          break;
-        case 'palette-next':
-          paletteRef.current?.move(1);
-          break;
-        case 'palette-pick':
-          paletteRef.current?.pick();
-          break;
-        case 'swallow':
-          break;
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [closePalette, openSearch, updatePanel]);
+  // 단축키: 판정은 `shortcuts.logic.ts`, `document` 리스너는 `shortcuts.ts`가 맡고 여기서는 동작만 실행한다.
+  const onShortcut = (action: ShortcutAction) => {
+    switch (action) {
+      case 'open-palette':
+        paletteOpener.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setPaletteOpen(true);
+        break;
+      case 'close-palette':
+        closePalette();
+        break;
+      case 'close-overlay':
+        updatePanel(dismissPanel);
+        break;
+      case 'palette-prev':
+        paletteRef.current?.move(-1);
+        break;
+      case 'palette-next':
+        paletteRef.current?.move(1);
+        break;
+      case 'palette-pick':
+        paletteRef.current?.pick();
+        break;
+      case 'swallow':
+        break;
+      default:
+        runCommand(action);
+    }
+  };
+  useShortcuts({ paletteOpen, overlayOpen: overlay }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
@@ -827,7 +745,7 @@ export function Shell({
             title={railTitle(view, platform)}
             onPick={pick}
           >
-            {VIEW_ICON[view]}
+            {VIEWS[view].icon}
           </RailButton>
         ))}
         <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
@@ -839,7 +757,7 @@ export function Shell({
         id={PANEL_ID}
         ref={panelRef}
         tabIndex={-1}
-        aria-label={VIEW_LABEL[panel.view]}
+        aria-label={VIEWS[panel.view].label}
         className={cn(
           'fixed top-(--bar-height) bottom-(--bar-height-xs) left-(--rail-width) z-35 w-(--panel-width) [scrollbar-width:thin] overflow-y-auto border-r border-border bg-surface-panel pb-7 outline-none',
           'max-[759px]:left-0 max-[759px]:z-46 max-[759px]:w-[min(86vw,320px)]',
@@ -849,7 +767,7 @@ export function Shell({
         )}
       >
         <p className={cn(panelTitle, 'm-0 flex h-9 items-center px-4.5 max-[759px]:hidden')}>
-          {VIEW_LABEL[panel.view]}
+          {VIEWS[panel.view].label}
         </p>
         {/* 좁은 화면에는 활동 막대가 없으므로, 제목 줄이 화면 전환 버튼이 된다. */}
         <fieldset
@@ -869,7 +787,7 @@ export function Shell({
                   'text-text after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-accent',
               )}
             >
-              {VIEW_LABEL[view]}
+              {VIEWS[view].label}
             </button>
           ))}
         </fieldset>
@@ -1064,7 +982,7 @@ export function Shell({
             platform={platform}
             hasNextFile={next !== null}
             onPick={pickFromPalette}
-            onCommand={runCommand}
+            onCommand={runFromPalette}
             onDismiss={closePalette}
           />
         </Suspense>

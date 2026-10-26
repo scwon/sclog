@@ -1,6 +1,6 @@
 /**
  * 단축키 판정. DOM을 모르고, 키 이벤트의 모양과 지금 맥락만 받아 창 틀이 할 동작 하나(또는 `null`)를 정한다.
- * 바인딩(`document` 리스너 하나와 동작 실행)은 `Shell.tsx`가 맡는다. 기준은 `docs/agents/shortcuts.md`.
+ * 바인딩(`document` 리스너 하나)은 `shortcuts.ts`, 동작 실행은 `Shell.tsx`가 맡는다. 기준은 `docs/agents/shortcuts.md`.
  */
 
 /** 수정 키를 고르는 플랫폼. 맥(iPad 포함)은 ⌘, 그 밖은 Ctrl이다. */
@@ -76,13 +76,26 @@ export interface ShortcutContext {
 }
 
 /**
- * 창 틀이 할 동작. `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P, Tab).
+ * 창 틀 명령. 단축키와 팔레트 명령 목록이 같은 이름으로 부르고, 창 틀의 실행 함수 하나가 실행한다.
+ * `open-search`는 패널을 검색 화면으로 열고 입력창에 포커스를 준다.
+ */
+export type ShellCommand =
+  | 'open-search'
+  | 'toggle-panel'
+  | 'show-explorer'
+  | 'show-profile'
+  | 'toggle-theme'
+  | 'open-next-file'
+  | 'clear-history';
+
+/**
+ * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`)과 팔레트·겹침 패널을 다루는 동작이다.
+ * `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P, Tab).
  * `null`이 아닌 동작은 모두 기본 동작을 막는다.
  */
 export type ShortcutAction =
+  | Extract<ShellCommand, 'toggle-panel' | 'open-search'>
   | 'open-palette'
-  | 'toggle-panel'
-  | 'open-search'
   | 'close-palette'
   | 'close-overlay'
   | 'palette-prev'
