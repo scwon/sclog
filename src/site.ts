@@ -14,7 +14,7 @@ export const SITE = {
 export const PROFILE: Profile = {
   name: SITE.author,
   role: 'Frontend Developer',
-  bio: '프론트엔드 개발자 원성철입니다.',
+  bio: '2017년 특성화고 학생이던 때 WhaTapLabs에 입사해 프론트엔드 개발자가 됐습니다. 랜딩 페이지로 시작해 서비스 화면과 차트를 만들어 왔습니다. 이 블로그에는 일하며 배우고 느낀 것을 적습니다.',
   photo: '/images/profile/photo.jpg',
   photoBack: '/images/profile/dot.png',
   career: ['WhaTapLabs · 2017.10~'],
