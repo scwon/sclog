@@ -16,6 +16,46 @@
       "rules": {
         "typescript/triple-slash-reference": "off"
       }
+    },
+    {
+      "files": ["src/layouts/**", "src/components/**", "src/pages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/design-system/**", "!**/design-system/styles/index.css"],
+                "message": "소비자는 디자인 시스템을 '@/design-system'(index.ts)과 CSS 진입점(styles/index.css)으로만 가져온다. 필요한 것이 없으면 index.ts에서 export한다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/design-system/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^astro(:|/|$)",
+                "message": "디자인 시스템은 Astro에 의존하지 않는다(ADR 0001·0002). Astro 쪽 일은 소비자(레이아웃·페이지)가 맡는다."
+              },
+              {
+                "regex": "\\.astro$",
+                "message": "디자인 시스템은 Astro 컴포넌트를 가져오지 않는다(ADR 0001·0002)."
+              },
+              {
+                "regex": "^@/(components|layouts|pages|utils|content|site)(/|$)",
+                "message": "디자인 시스템은 소비자 코드를 가져오지 않는다. 값은 props로 받는다."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

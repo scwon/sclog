@@ -12,12 +12,14 @@ pnpm storybook        # Storybook (localhost:6006)
 pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
 pnpm lint             # Oxlint
 pnpm format           # Oxfmt로 포맷 적용 (검사만: pnpm format:check)
+pnpm verify           # CI와 같은 다섯 검사(lint·format:check·build·test·build-storybook). 커밋 전 훅은 lint·format:check만 돈다
+pnpm qa               # 빌드 뒤 ego-browser로 접근성(모든 페이지×두 테마×세 폭)과 화면 이동 시나리오 확인. 화면·이동을 바꿨으면 돌린다
 uv run scripts/subset-maruburi.py  # 마루 부리 서브셋 재생성 (빌드에 포함 안 함, 글꼴을 바꿀 때만)
 ```
 
 ## Project Context
 
-Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이 기준이다. Features are developed using Speckit workflow (`specs/` directory).
+Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이 기준이다. 기능 작업은 `.scratch/<feature>/`의 스펙·티켓으로 진행한다(아래 Issue tracker). `specs/`는 이전 Speckit 산출물과 디자인 시안(`specs/010-blog-renewal/prototype/`)이다.
 
 ## Tech Stack
 
@@ -29,9 +31,9 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **State**: nanostores(`nanostores`, `@nanostores/react`). 아일랜드 사이 공유 상태(테마·탭·읽기 위치)는 디자인 시스템 `stores/`에 둔다
 - **Styling**: Tailwind CSS (utility-first)
 - **Component Dev**: Storybook (`src/**/*.stories.tsx`)
-- **Testing**: Vitest (node 환경)
+- **Testing**: Vitest (node 환경). 화면 확인은 `scripts/qa/`(ego-browser + axe-core)
 - **Lint/Format**: Oxlint + Oxfmt (`.astro` 포맷, Tailwind 클래스 정렬 포함)
-- **Package Manager**: pnpm 12. 로컬 Node·pnpm 버전은 mise가 `package.json`의 `devEngines.runtime`과 `packageManager`를 읽어 맞춘다
+- **Package Manager**: pnpm 12. 로컬 Node·pnpm 버전은 mise가 `package.json` 기준으로 맞춘다
 - **Deployment**: Vercel (Edge Runtime compatible)
 
 ## Coding Conventions
@@ -39,9 +41,9 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - `any` 타입 사용 금지
 - 모든 export 함수/컴포넌트에 JSDoc 작성
 - Conventional Commits 형식 사용 (`feat:`, `fix:`, `chore:`)
-- 빌드 전 `pnpm astro check` 통과 필수
-- 커밋 전 `pnpm lint`, `pnpm format:check` 통과 필수 (CI도 같은 검사를 돈다)
 - 클래스 합치기는 `@/lib/utils`의 `cn`(shadcn `cn` 패키지)을 쓴다
+- 리뷰가 적용하는 판단 규칙은 `CODING_STANDARDS.md`
+- 화면 이동(`ClientRouter`)·아일랜드·페이지 스크립트를 고칠 때는 `docs/agents/astro-client-router.md`를 먼저 읽는다
 
 ## Library Selection
 
