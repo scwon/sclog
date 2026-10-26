@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 참고: 스펙 [블로그 디테일 1차](../spec.md) "검색 색인(빌드)", 결정 [검색 방법](01-search-options.md). 측정과 근거는 브랜치 `research/blog-search`의 `docs/research/blog-search.md`.
 
-- [ ] 블로그 쪽 엔드포인트가 아래 모양의 JSON을 만든다(스펙의 type shape). 초안·예약 글은 넣지 않는다
+- [x] 블로그 쪽 엔드포인트가 아래 모양의 JSON을 만든다(스펙의 type shape). 초안·예약 글은 넣지 않는다
 
 ```ts
 interface SearchIndex {
@@ -27,10 +27,29 @@ interface SearchIndex {
 }
 ```
 
-- [ ] 블록 나누기와 줄 번호 규칙은 글 화면의 줄 번호 카운터와 같다. frontmatter 줄(태그·대표 이미지 유무에 따라 달라짐), 제목, 작성 정보, 본문 블록 순서로 세고 대표 이미지는 세지 않는다
-- [ ] 장·절 배정은 탐색기 개요와 같은 id·번호·제목을 쓴다. 본문 글자는 MDX 문법과 HTML을 걷어 낸 순수 텍스트이고 코드 블록 글자도 넣는다
-- [ ] 단위 테스트: frontmatter 줄 수 경우별 줄 번호, 블록별 장·절 배정, MDX 벗기기
-- [ ] 빌드 결과물 테스트: 색인이 있고 `v: 1`이며 발행된 글이 모두 있다. 글마다 마지막 블록의 줄 번호가 그 글 HTML의 줄 번호 블록 수와 같다
-- [ ] 빌드 결과물 테스트: gzip 크기가 100KB 미만이다. 실패 메시지가 티켓 01의 재검토 조건을 가리킨다
-- [ ] 연구 문서 `docs/research/blog-search.md`를 main으로 가져온다
-- [ ] `pnpm verify` 통과
+- [x] 블록 나누기와 줄 번호 규칙은 글 화면의 줄 번호 카운터와 같다. frontmatter 줄(태그·대표 이미지 유무에 따라 달라짐), 제목, 작성 정보, 본문 블록 순서로 세고 대표 이미지는 세지 않는다
+- [x] 장·절 배정은 탐색기 개요와 같은 id·번호·제목을 쓴다. 본문 글자는 MDX 문법과 HTML을 걷어 낸 순수 텍스트이고 코드 블록 글자도 넣는다
+- [x] 단위 테스트: frontmatter 줄 수 경우별 줄 번호, 블록별 장·절 배정, MDX 벗기기
+- [x] 빌드 결과물 테스트: 색인이 있고 `v: 1`이며 발행된 글이 모두 있다. 글마다 마지막 블록의 줄 번호가 그 글 HTML의 줄 번호 블록 수와 같다
+- [x] 빌드 결과물 테스트: gzip 크기가 100KB 미만이다. 실패 메시지가 티켓 01의 재검토 조건을 가리킨다
+- [x] 연구 문서 `docs/research/blog-search.md`를 main으로 가져온다
+- [x] `pnpm verify` 통과
+
+## Comments
+
+### 2026-10-27 구현 (브랜치 `blog-details/17-search-index`)
+
+**결정**
+
+- 색인 모양(`SearchIndex`·`SearchPost`·`SearchBlock`)은 소비자인 검색 화면 쪽, 곧 디자인 시스템의 `stores/search-index.ts`에 두고 `@/design-system`으로 내보낸다. 블로그 쪽 엔드포인트 `src/pages/search-index.json.ts`가 이 타입으로 `/search-index.json`을 만든다. `posts`는 `getPublishedPosts()` 순서라 최신 글이 먼저다. 검색 화면의 "최신 글 순" 순위는 이 순서를 쓰면 된다.
+- 블록 나누기는 MDX 원문을 줄 단위로 읽는 순수 함수 `searchPost`(`src/utils/search-index.ts`)가 맡는다. Astro 7의 MDX 파서(satteri)는 직접 의존성이 아니어서 들이지 않았고, 렌더된 HTML을 쓰는 Container API는 실험 단계라 피했다(연구 문서와 같은 판단). 문단·ATX/setext 제목·코드 울타리·인용·목록(빈 줄을 낀 느슨한 목록 포함)·표·가로줄·여러 줄 JSX 요소를 하나씩 세고, import·export와 줄 전체가 표현식(`{/* */}`)인 것은 그려지지 않으므로 뺀다.
+- 글자가 없는 블록(가로줄, 그림만 있는 문단)도 빈 `text`로 넣어 줄 번호가 끊기지 않게 했다. `line`은 1부터 빈틈없이 이어지고, frontmatter 줄과 제목·작성 정보 줄도 화면에 보이는 글자 그대로 들어간다. 작성 정보는 `원성철 · 2023.04.30 · 읽는 시간 7분` 모양이다.
+- 장·절은 Astro가 준 `headings`를 제목 블록과 문서 순서대로 짝지은 뒤 `buildOutline`과 `locateInOutline`으로 정한다. 글 화면의 읽기 위치가 쓰는 함수와 같아서 id·번호·제목이 개요와 어긋나지 않는다. 장 머리 블록은 그 장에 속하고, 절보다 깊은 제목은 위 절에 남는다.
+- 순수 텍스트에서는 강조·링크(글자만 남김)·그림(지움)·인라인 코드(글자 남김)·JSX/HTML 태그·표현식·이스케이프·엔티티를 걷어 내고 공백을 하나로 줄인다. 코드 블록은 안의 글자를 그대로 두고 공백만 줄인다. `snake_case` 안의 `_`는 강조로 보지 않는다.
+- 빌드 결과물 테스트는 글 HTML에서 줄 번호가 붙는 블록(`.doc-fm-line`·`.doc-title`·`.doc-byline`·`.doc-prose`의 직계 자식)을 태그 깊이로 센다. 색인의 줄 번호가 1부터 그 수까지 이어지는지, 장·절 제목 블록이 HTML에서 같은 id를 가진 블록과 같은 줄에 있는지를 본다. 발행된 글 목록은 원본 MDX의 frontmatter(`draft`, `pubDate`)에서 따로 구한다.
+- 크기는 연구 문서와 같은 gzip -9로 잰다. 100KB를 넘으면 실패 내용에 티켓 01의 "다시 볼 때"와 연구 문서의 "다시 검토할 조건"이 나온다.
+- 연구 문서 `docs/research/blog-search.md`는 `research/blog-search`의 마지막 판(`18748d8`)을 그대로 가져왔다.
+
+**측정값**
+
+- `/search-index.json`(글 1편, 55줄): 18,189B, gzip -9 5,480B. 연구 문서의 5.0KB보다 조금 큰 까닭은 블록마다 붙는 장·절 객체와 frontmatter·작성 정보 줄이다.

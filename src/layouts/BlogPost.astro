@@ -9,9 +9,10 @@ import type { MarkdownHeading } from 'astro';
 import BaseLayout from './BaseLayout.astro';
 import CodeBlock from '../components/blog/CodeBlock.astro';
 import Comments from '../components/blog/Comments.astro';
-import { Badge } from '@/design-system';
+import { Badge, nextFile } from '@/design-system';
 import { SITE } from '../site';
-import { buildOutline, postFile } from '../utils/ide';
+import { getPublishedPosts } from '../utils/blog';
+import { buildOutline, buildTree, docEndLinks, postFile } from '../utils/ide';
 
 interface Props {
   post: CollectionEntry<'blog'>;
@@ -23,6 +24,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags } = post.data;
 const file = postFile(post);
 const isoDate = pubDate.toISOString().slice(0, 10);
 const quote = (value: string) => JSON.stringify(value);
+const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file.url));
 ---
 
 <BaseLayout
@@ -135,8 +137,27 @@ const quote = (value: string) => JSON.stringify(value);
         </div>
       </div>
       <nav class="doc-end" aria-label="글 끝 이동">
-        <a href="/">← posts.log</a>
-        <a href="#editor">맨 위로</a>
+        <ul class="doc-end-lines">
+          {endLinks.map((link) =>
+            link.next ? (
+              <li class="doc-end-line doc-end-next" data-next-file>
+                <a class="doc-end-link" href={link.href} aria-label={link.name}>
+                  <span class="doc-end-label">{link.label}</span>
+                  <span class="doc-end-rule" aria-hidden="true" />
+                  <span class="doc-end-note">{link.note}</span>
+                </a>
+                {/* 읽음 꼬리표(✓·42%)를 페이지 스크립트가 채우는 자리 */}
+                <span class="doc-end-mark" data-next-file-mark />
+              </li>
+            ) : (
+              <li class="doc-end-line">
+                <a class="doc-end-link" href={link.href}>
+                  <span class="doc-end-label">{link.label}</span>
+                </a>
+              </li>
+            ),
+          )}
+        </ul>
       </nav>
       <Comments />
     </footer>

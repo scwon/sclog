@@ -61,6 +61,7 @@
   --duration-320: 320ms;
   --duration-420: 420ms;
   --duration-450: 450ms;
+  --duration-1100: 1100ms;
 
   /* 이징: 빠르게 출발해 부드럽게 멈추는 곡선 */
   --easing-decelerate: cubic-bezier(0.2, 0.7, 0.2, 1);

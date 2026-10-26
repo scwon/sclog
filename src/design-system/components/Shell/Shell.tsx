@@ -26,11 +26,13 @@ import {
   panelVisible,
   pickView,
   showView,
+  startView,
   togglePanel,
   viewForFile,
   type PanelState,
   type PanelView,
 } from './panel.logic';
+import { readPanelView, writePanelView } from './panel';
 import type { PaletteHandle } from './Palette';
 import { platformOf, shortcutFor, type FocusTarget, type Platform } from './shortcuts.logic';
 
@@ -95,6 +97,12 @@ const PANEL_ID = 'panel';
 
 /** 패널 화면 이름. 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에 쓴다. */
 const VIEW_LABEL: Record<PanelView, string> = { explorer: '탐색기', profile: '프로필' };
+
+/** 활동 막대에서 패널 화면을 고르는 아이콘. */
+const VIEW_ICON: Record<PanelView, ReactNode> = {
+  explorer: <ExplorerIcon />,
+  profile: <ProfileIcon />,
+};
 
 /** 1100px 이상인가. 서버는 화면 폭을 모르므로 넓은 화면으로 그린다. */
 function useDesktop(): boolean {
@@ -316,6 +324,7 @@ function ProfileView({ profile }: { profile: Profile }) {
  * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다.
  *
  * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
+ * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
  *
  * 단축키는 `document`의 keydown 리스너 하나가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
@@ -327,12 +336,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   // 하이드레이션 전에는 서버가 넘긴 현재 파일을 보인다.
   const shown: CurrentFile | null = file ?? current ?? null;
   const desktop = useDesktop();
-  // 첫 화면은 서버가 넘긴 현재 파일의 종류로 정한다(홈은 프로필, 글은 탐색기).
-  const [panel, setPanel] = useState<PanelState>(() =>
-    current
-      ? { ...initialPanel, view: viewForFile(initialPanel.view, current.kind) }
-      : initialPanel,
-  );
+  // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 현재 파일의 종류로만 정한다(홈은 프로필, 글은 탐색기).
+  const [panel, setPanel] = useState<PanelState>(() => ({
+    ...initialPanel,
+    view: startView(null, current?.kind),
+  }));
   const openMode = panelOpen(panel, desktop);
   /** 패널 상태를 바꾼다. 화면 폭은 누른 순간의 값을 읽는다. */
   const updatePanel = useCallback(
@@ -362,6 +370,18 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
       document.getElementById('explorer-outline')?.scrollIntoView({ block: 'nearest' }),
     );
   }, [updatePanel]);
+
+  // 하이드레이션 뒤 저장된 마지막 화면에 파일 종류 규칙을 적용한 화면으로 바꾼다. 아래 저장 효과보다
+  // 먼저 선언해야 저장값을 덮어쓰기 전에 읽는다.
+  // 처음 한 번만 읽는다(ADR 0004). 그 뒤 파일을 열 때의 규칙은 아래 열기 처리가 맡는다.
+  const firstKind = useRef(current?.kind);
+  useEffect(() => {
+    const saved = readPanelView();
+    if (saved) updatePanel((state) => ({ ...state, view: startView(saved, firstKind.current) }));
+  }, [updatePanel]);
+
+  // 패널 화면이 바뀔 때마다 세션 동안 남긴다. 열림·닫힘은 저장하지 않는다.
+  useEffect(() => writePanelView(panel.view), [panel.view]);
 
   // 페이지가 열리면 계약을 읽어 탭을 열고 열기 요약을 보인다. 첫 하이드레이션과 첫 page-load가
   // 겹쳐 두 번 불리면 한 번만 처리한다.
@@ -569,12 +589,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         aria-label="활동 막대"
         className="fixed top-(--bar-height) bottom-(--bar-height-xs) left-0 z-40 flex w-(--rail-width) flex-col items-center border-r border-border bg-surface-sunken py-1 max-[759px]:hidden"
       >
-        <RailButton view="profile" current={visible && panel.view === 'profile'} onPick={pick}>
-          <ProfileIcon />
-        </RailButton>
-        <RailButton view="explorer" current={explorerShown} onPick={pick}>
-          <ExplorerIcon />
-        </RailButton>
+        {PANEL_VIEWS.map((view) => (
+          <RailButton key={view} view={view} current={visible && panel.view === view} onPick={pick}>
+            {VIEW_ICON[view]}
+          </RailButton>
+        ))}
         <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
           <CodeIcon />
         </a>
