@@ -3,6 +3,7 @@
  * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
  * 이어서 펼침이 탭이 새로 생겨 처음 보일 때만 일어나는지(처음 열기 → 다른 탭 → 돌아오기 → 닫기 → 다시 열기)
  * 에디터 루트의 펼침 표시로 본다.
+ * 끝으로 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -214,6 +215,43 @@ if (first && second) {
     page.click(`loc=css:button[aria-label='${firstTitle} 닫기']`, { label: '탭 닫기' }),
   );
   await unfoldStep('다시 열기', () => openFromPost(first), first);
+}
+
+// 장 주소: 버튼을 키보드로 눌러 상태줄 알림·해시·강조를 보고, 그 주소로 들어와 강조를 본다.
+await page.goto(`${QA.base}${post.url}`);
+await page.waitForTimeout(1500);
+const chapters = await page.evaluate(() =>
+  JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]').map(({ id }) => id),
+);
+const copyId = chapters[1] ?? chapters[0];
+const arriveId = chapters[0];
+if (copyId) {
+  const button = `[data-chapter-link="${copyId}"]`;
+  await page.focus(button);
+  await page.press(button, 'Enter');
+  await page.waitForTimeout(300);
+  const copied = await page.evaluate(() => ({
+    hash: decodeURIComponent(location.hash.slice(1)),
+    linked: [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
+    notice: document.querySelector('footer [aria-live]')?.textContent ?? '',
+    routerState: typeof history.state?.index === 'number',
+  }));
+  check('장 주소 복사: 해시가 그 장', copied.hash === copyId, copied.hash);
+  check(
+    '장 주소 복사: 상태줄 알림',
+    copied.notice === `✓ 주소 복사됨 · #${copyId}` || copied.notice === '주소창에 넣었습니다',
+    copied.notice,
+  );
+  check('장 주소 복사: 그 장이 강조됨', copied.linked.join() === copyId, copied.linked.join());
+  check('장 주소 복사: 화면 이동 기록 유지', copied.routerState);
+
+  await page.goto(`${QA.base}/`);
+  await page.goto(`${QA.base}${post.url}#${encodeURIComponent(arriveId)}`);
+  await page.waitForTimeout(1500);
+  const arrived = await page.evaluate(() =>
+    [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
+  );
+  check('장 주소로 들어오면 그 장이 강조됨', arrived.join() === arriveId, arrived.join());
 }
 
 const events = await page.events();
