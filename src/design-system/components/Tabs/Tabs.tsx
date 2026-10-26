@@ -2,13 +2,15 @@ import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
 import { $activeTab, $openTabs, closeTab, toTabRecord } from '../../stores/tabs';
-import { POSTS_LOG, initialTabs } from '../../stores/tabs.logic';
+import { POSTS_LOG, addOrActivate, initialTabs, type TabFile } from '../../stores/tabs.logic';
 
 const TAB_ITEM = 'li[data-url]';
 const TAB_LINK = 'a[data-tab-link]';
 
-const serverTabs = () => toTabRecord(initialTabs().files);
-const serverActive = () => initialTabs().active;
+/** 서버 렌더링 스냅샷: `posts.log`와, 지금 화면의 파일이 있으면 그 탭(활성). 세션 탭은 하이드레이션 뒤에 그린다. */
+function serverState(current?: TabFile) {
+  return current ? addOrActivate(initialTabs(), current) : initialTabs();
+}
 
 /** 글 파일(`.mdx`)은 파일 이름만, 나머지(`posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
 const tabLabel = (path: string) => (path.endsWith('.mdx') ? path.split('/').pop() : path);
@@ -22,6 +24,8 @@ export interface TabsProps {
   onNavigate?: (url: string) => void;
   /** 탭 목록의 접근 가능한 이름. */
   label?: string;
+  /** 지금 화면의 파일. 서버 HTML(그리고 JS가 없을 때)에도 그 탭이 활성으로 보이게 한다. */
+  current?: TabFile;
   className?: string;
 }
 
@@ -90,15 +94,19 @@ function useNewTabEntrance(list: RefObject<HTMLUListElement | null>, tabKey: str
  * `posts.log`는 항상 첫 탭이며 닫기 버튼이 없다. 활성 탭은 코랄 윗선, 새로 열린 탭은 왼쪽에서 드러난다
  * (움직임 줄이기 설정에서는 바로 나타남). 닫으면 키보드 포커스는 닫은 뒤의 활성 탭 링크로 간다.
  *
- * 서버는 세션에 저장된 탭을 모르므로 서버 스냅샷은 `posts.log`만으로 두고, 하이드레이션 뒤 저장된 탭을 그린다.
+ * 서버는 세션에 저장된 탭을 모르므로 서버 스냅샷은 `posts.log`와 지금 화면의 파일(`current`)로 두고,
+ * 하이드레이션 뒤 저장된 탭을 그린다.
  */
 export function Tabs({
   onNavigate = (url) => window.location.assign(url),
   label = '열린 파일',
+  current,
   className,
 }: TabsProps) {
-  const files = Object.values(useStore($openTabs, { ssr: serverTabs }));
-  const active = useStore($activeTab, { ssr: serverActive });
+  const files = Object.values(
+    useStore($openTabs, { ssr: () => toTabRecord(serverState(current).files) }),
+  );
+  const active = useStore($activeTab, { ssr: () => serverState(current).active });
   const listRef = useRef<HTMLUListElement>(null);
   useNewTabEntrance(listRef, files.map((file) => file.url).join('\n'));
 

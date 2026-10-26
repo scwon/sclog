@@ -1,5 +1,8 @@
 ---
+/** 404: 열 수 없는 파일. 갈 곳을 링크 줄로 보인다. */
 import BaseLayout from '../layouts/BaseLayout.astro';
+import FlowLog from '../components/flow/FlowLog.astro';
+import { linkLines } from '../utils/flow';
 ---
 
 <BaseLayout
@@ -7,100 +10,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   description="요청하신 페이지가 존재하지 않습니다."
   file={{ title: '페이지를 찾을 수 없습니다', path: '404', url: '/404', kind: 'page' }}
 >
-  <div class="container">
-    <div class="error-page">
-      <h1 class="error-code">404</h1>
-      <h2 class="error-title">페이지를 찾을 수 없습니다</h2>
-      <p class="error-message">요청하신 페이지가 존재하지 않거나 이동되었습니다.</p>
-      <div class="error-actions">
-        <a href="/" class="btn btn-primary">
-          홈으로 돌아가기
-        </a>
-        <a href="/blog" class="btn btn-secondary">
-          블로그 보기
-        </a>
-      </div>
-    </div>
-  </div>
+  <FlowLog
+    lines={linkLines({
+      title: '404',
+      comment: '요청한 파일을 찾을 수 없다. 주소가 바뀌었거나 없는 파일이다.',
+      links: [
+        { href: '/', label: 'posts.log', note: '홈 흐름 로그' },
+        { href: '/blog/', label: 'posts/', note: '모든 글' },
+        { href: '/blog/tags/', label: 'tags/', note: '태그 목록' },
+      ],
+    })}
+  />
 </BaseLayout>
-
-<style>
-  .container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 4rem 1rem;
-    min-height: 60vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .error-page {
-    text-align: center;
-  }
-
-  .error-code {
-    font-size: 8rem;
-    font-weight: 700;
-    margin: 0;
-    line-height: 1;
-    color: var(--accent-text);
-  }
-
-  .error-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 1rem 0;
-    color: var(--text);
-  }
-
-  .error-message {
-    color: var(--text-muted);
-    margin-bottom: 2rem;
-  }
-
-  .error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--corner-md);
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-
-  .btn-primary:hover {
-    opacity: 0.9;
-    text-decoration: none;
-  }
-
-  .btn-secondary {
-    background: var(--border);
-    color: var(--text);
-  }
-
-  .btn-secondary:hover {
-    opacity: 0.8;
-    text-decoration: none;
-  }
-
-  @media (max-width: 480px) {
-    .error-code {
-      font-size: 5rem;
-    }
-
-    .error-actions {
-      flex-direction: column;
-    }
-  }
-</style>

@@ -31,6 +31,9 @@ export interface TreeYear {
   files: TreeFile[];
 }
 
+/** 지금 화면의 파일. 경로는 `posts/<연도>/<slug>.mdx`, `posts.log`, `tags/<태그>`, `404` 등이다. */
+export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url'>;
+
 /** `Shell`의 props. 모두 빌드 시 정해지는 직렬화 가능한 값이라 Astro 아일랜드로 넘길 수 있다. */
 export interface ShellProps {
   /** 블로그 이름. `’`(아포스트로피)는 강조색으로 그린다. */
@@ -40,6 +43,12 @@ export interface ShellProps {
   /** 활동 막대의 "이 블로그의 소스" 링크. */
   sourceUrl: string;
   tree: TreeYear[];
+  /**
+   * 지금 화면의 파일(제목·경로·URL). 서버 HTML에 탭·창 제목·탐색기 강조를 미리 그려, JS가 없거나
+   * 하이드레이션 전에도 맞게 보인다. 하이드레이션 뒤에는 에디터 루트의 계약(`data-file-*`)을 읽어 바꾼다.
+   * 계약의 원본은 에디터 루트이고, 이 값은 서버 HTML을 위한 같은 값의 사본이다.
+   */
+  current?: CurrentFile;
 }
 
 /** 탐색기 상태. `auto`는 화면 폭이 정한다(1100px 이상이면 보이고, 그보다 좁으면 숨김). */
@@ -146,8 +155,10 @@ function SectionHead({ id, children }: { id: string; children: ReactNode }) {
  *
  * 탐색기 상태는 `<html data-explorer>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
  */
-export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps) {
+export function Shell({ brand, author, githubUrl, sourceUrl, tree, current }: ShellProps) {
   const [file, setFile] = useState<EditorFile | null>(null);
+  // 하이드레이션 전에는 서버가 넘긴 현재 파일을 보인다.
+  const shown: CurrentFile | null = file ?? current ?? null;
   // 탐색기 상태는 그 상태를 정한 화면 폭과 함께 둔다. 1100px 경계를 넘으면 다시 화면 폭에 맡긴다(auto).
   const desktop = useDesktop();
   const [explorerChoice, setExplorerChoice] = useState<{ state: ExplorerState; desktop: boolean }>({
@@ -172,9 +183,9 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
   const overlay = !desktop && explorer === 'open';
 
   const toggleExplorer = useCallback(() => {
-    setExplorerChoice((current) => {
+    setExplorerChoice((previous) => {
       const wide = window.matchMedia(DESKTOP).matches;
-      const state = current.desktop === wide ? current.state : 'auto';
+      const state = previous.desktop === wide ? previous.state : 'auto';
       if (wide) return { state: state === 'closed' ? 'auto' : 'closed', desktop: wide };
       return { state: state === 'open' ? 'auto' : 'open', desktop: wide };
     });
@@ -296,7 +307,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
           aria-hidden="true"
           className="absolute left-1/2 m-0 max-w-[40vw] -translate-x-1/2 truncate font-mono text-xs leading-none text-text-muted max-[759px]:hidden"
         >
-          {file ? `${file.path} — ${brand}` : brand}
+          {shown ? `${shown.path} — ${brand}` : brand}
         </p>
         <div className="ml-auto flex items-center gap-3.5">
           <span className="flex items-center gap-2 text-text-soft max-[759px]:hidden">
@@ -369,7 +380,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
                 </p>
                 <ul className="m-0 list-none p-0">
                   {files.map((entry) => {
-                    const active = file?.url === entry.url;
+                    const active = shown?.url === entry.url;
                     const name = entry.path.split('/').pop();
                     return (
                       <li key={entry.url}>
@@ -404,16 +415,16 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
               <ol className="relative m-0 list-none p-0 before:absolute before:inset-y-0 before:left-[21px] before:w-px before:bg-border-subtle">
                 {outline.map((chapter, index) => {
                   const inChapter = reading.chapter?.id === chapter.id;
-                  const current = inChapter && !reading.section;
+                  const atChapter = inChapter && !reading.section;
                   return (
                     <li key={chapter.id}>
                       <a
                         href={`#${chapter.id}`}
-                        aria-current={current ? 'location' : undefined}
+                        aria-current={atChapter ? 'location' : undefined}
                         className={cn(
                           'relative flex gap-2 py-[5px] pr-3.5 pl-8 text-[13px] leading-[1.45] text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
                           inChapter && 'text-text',
-                          current && outlineCurrent,
+                          atChapter && outlineCurrent,
                         )}
                       >
                         <span
@@ -471,6 +482,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
       />
 
       <Tabs
+        current={current}
         onNavigate={navigateLikeLink}
         className="fixed top-(--bar-height) right-0 left-(--editor-left) z-30"
       />

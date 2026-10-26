@@ -2,17 +2,14 @@
 /**
  * 홈: `posts.log` 흐름 로그. 줄 번호·장 흐름·첫 문장은 모두 글 파일에서 읽는다.
  */
-import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import FlowLog from '../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../utils/blog';
-import { flowLines, flowPost } from '../utils/flow';
+import { homeLines, loadFlows } from '../utils/flow';
 import { SITE } from '../site';
 
 const posts = await getPublishedPosts();
-const flows = await Promise.all(
-  posts.map(async (post) => ({ post, flow: flowPost(post, (await render(post)).headings) })),
-);
+const flows = await loadFlows(posts);
 ---
 
 <BaseLayout
@@ -26,10 +23,5 @@ const flows = await Promise.all(
     summary: `글 ${posts.length}편`,
   }}
 >
-  <FlowLog
-    lines={flowLines(flows)}
-    brand={SITE.brand}
-    author={SITE.author}
-    githubUrl={SITE.githubUrl}
-  />
+  <FlowLog lines={homeLines(flows, SITE)} />
 </BaseLayout>

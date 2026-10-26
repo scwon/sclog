@@ -1065,3 +1065,17 @@
     }
   }
 }
+
+/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수` */
+@layer components {
+  .flow-entry-link {
+    transition: color var(--motion-fast) var(--motion-easing);
+
+    &:hover {
+      color: var(--text);
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 3px;
+    }
+  }
+}

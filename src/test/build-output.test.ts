@@ -149,6 +149,18 @@ describe.skipIf(!built)('build output', () => {
     });
   });
 
+  it('lists every page except 404 in the sitemap, with the same URLs', () => {
+    expect(existsSync(resolve(dist, 'sitemap-index.xml'))).toBe(true);
+    const sitemap = readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8');
+    const listed = new Set(
+      [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) =>
+        decodeURI(new URL(loc).pathname),
+      ),
+    );
+    const expected = pages.map(({ path }) => urlOf(path)).filter((url) => url !== '/404');
+    expect([...listed].toSorted()).toEqual(expected.toSorted());
+  });
+
   it('has no dark class or Google Fonts in any page', () => {
     // `dark:hidden` 같은 변형 유틸리티는 허용하고, 단독 `dark` 클래스만 막는다.
     const darkClass = /class="(?:[^"]*\s)?dark(?:\s[^"]*)?"/;

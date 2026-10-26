@@ -5,7 +5,13 @@
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export { Button, type ButtonProps } from './components/Button/Button';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
-export { Shell, type ShellProps, type TreeFile, type TreeYear } from './components/Shell/Shell';
+export {
+  Shell,
+  type CurrentFile,
+  type ShellProps,
+  type TreeFile,
+  type TreeYear,
+} from './components/Shell/Shell';
 export { Tabs, type TabsProps } from './components/Tabs/Tabs';
 export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip/Tooltip';

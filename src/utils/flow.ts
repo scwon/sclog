@@ -1,3 +1,4 @@
+import { render } from 'astro:content';
 import type { MarkdownHeading } from 'astro';
 import type { BlogPost } from './blog';
 import { chapterNo } from '@/design-system';
@@ -25,16 +26,27 @@ export interface FlowPost {
   steps: FlowStep[];
 }
 
+/** 글과 그 흐름 로그 모양. */
+export type FlowEntry = { post: BlogPost; flow: FlowPost };
+
+/** 글마다 본문 제목을 읽어 흐름 로그의 글을 만든다(빌드 시). */
+export async function loadFlows(posts: BlogPost[]): Promise<FlowEntry[]> {
+  return Promise.all(
+    posts.map(async (post) => ({ post, flow: flowPost(post, (await render(post)).headings) })),
+  );
+}
+
 /** 흐름 로그의 줄. 접힘 줄(`folded`)만 줄 번호가 없다. */
 export type FlowLine =
-  | { kind: 'banner'; no: number }
-  | { kind: 'comment'; no: number }
+  | { kind: 'banner'; no: number; text: string }
+  | { kind: 'comment'; no: number; text: string; link?: { href: string; label: string } }
   | { kind: 'blank'; no: number }
+  | { kind: 'entry'; no: number; href: string; label: string; note?: string }
   | { kind: 'dir'; no: number; year: string; count: number }
-  | { kind: 'log'; no: number; post: FlowPost }
+  | { kind: 'log'; no: number; post: FlowPost; foldable: boolean }
   | { kind: 'step'; no: number; post: FlowPost; step: FlowStep; index: number }
   | { kind: 'folded'; post: FlowPost }
-  | { kind: 'end'; no: number; count: number };
+  | { kind: 'end'; no: number; label: string };
 
 /**
  * 본문의 첫 문장. 제목·인용·HTML·빈 줄을 건너뛴 첫 문단에서 마크다운 강조를 걷어 내고,
@@ -79,28 +91,88 @@ export function flowPost(post: BlogPost, headings: MarkdownHeading[]): FlowPost 
   };
 }
 
-/** 흐름 로그의 줄 목록. 이름·주석·빈 줄 → 연도마다(연도 줄 → 글마다 로그 줄·장 줄·접힘 줄) → 끝 줄. */
-export function flowLines(posts: { post: BlogPost; flow: FlowPost }[]): FlowLine[] {
+/** 줄 번호를 차례로 붙이며 줄을 쌓는다. 접힘 줄은 번호 없이 끼운다. */
+function lineWriter() {
+  const lines: FlowLine[] = [];
   let no = 0;
-  const next = () => (no += 1);
-  const lines: FlowLine[] = [
-    { kind: 'banner', no: next() },
-    { kind: 'comment', no: next() },
-    { kind: 'blank', no: next() },
-  ];
+  return {
+    lines,
+    /** 번호가 붙는 줄을 더한다. */
+    add: (line: DistributiveOmit<FlowLine, 'no'>) => {
+      if (line.kind === 'folded') lines.push(line);
+      else lines.push({ ...line, no: (no += 1) } as FlowLine);
+    },
+  };
+}
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+/** 연도마다 연도 줄 → 글마다 로그 줄(카드)과, `steps`면 장 줄·접힘 줄. */
+function addPosts(write: ReturnType<typeof lineWriter>, posts: FlowEntry[], steps: boolean) {
   const years = new Map<string, FlowPost[]>();
   for (const { post, flow } of posts)
     years.set(postYear(post), [...(years.get(postYear(post)) ?? []), flow]);
   for (const [year, list] of years) {
-    lines.push({ kind: 'dir', no: next(), year, count: list.length });
+    write.add({ kind: 'dir', year, count: list.length });
     for (const post of list) {
-      lines.push({ kind: 'log', no: next(), post });
-      post.steps.forEach((step, index) =>
-        lines.push({ kind: 'step', no: next(), post, step, index }),
-      );
-      if (post.steps.length > 0) lines.push({ kind: 'folded', post });
+      write.add({ kind: 'log', post, foldable: steps && post.steps.length > 0 });
+      if (!steps) continue;
+      post.steps.forEach((step, index) => write.add({ kind: 'step', post, step, index }));
+      if (post.steps.length > 0) write.add({ kind: 'folded', post });
     }
   }
-  lines.push({ kind: 'end', no: next(), count: posts.length });
-  return lines;
+}
+
+/** 홈 `posts.log`: 블로그 이름·주석·빈 줄 → 연도별 글(장 흐름 포함) → 끝 줄. */
+export function homeLines(
+  posts: FlowEntry[],
+  site: { brand: string; author: string; githubUrl: string },
+): FlowLine[] {
+  const write = lineWriter();
+  write.add({ kind: 'banner', text: site.brand });
+  write.add({
+    kind: 'comment',
+    text: `${site.author} ·`,
+    link: { href: site.githubUrl, label: site.githubUrl.replace(/^https?:\/\//, '') },
+  });
+  write.add({ kind: 'blank' });
+  addPosts(write, posts, true);
+  write.add({ kind: 'end', label: `글 ${posts.length}편` });
+  return write.lines;
+}
+
+/** 글 목록·태그별 글: 이름·주석·빈 줄 → 연도별 글 카드(장 흐름 없음) → 끝 줄. */
+export function listLines(
+  posts: FlowEntry[],
+  { title, comment }: { title: string; comment: string },
+): FlowLine[] {
+  const write = lineWriter();
+  write.add({ kind: 'banner', text: title });
+  write.add({ kind: 'comment', text: comment });
+  write.add({ kind: 'blank' });
+  addPosts(write, posts, false);
+  write.add({ kind: 'end', label: `글 ${posts.length}편` });
+  return write.lines;
+}
+
+/** 링크 목록(태그 목록, 404의 갈 곳): 이름·주석·빈 줄 → 링크 줄 → 끝 줄. */
+export function linkLines({
+  title,
+  comment,
+  links,
+  end,
+}: {
+  title: string;
+  comment: string;
+  links: { href: string; label: string; note?: string }[];
+  /** 끝 줄 글자. 없으면 `링크 N개`. */
+  end?: string;
+}): FlowLine[] {
+  const write = lineWriter();
+  write.add({ kind: 'banner', text: title });
+  write.add({ kind: 'comment', text: comment });
+  write.add({ kind: 'blank' });
+  for (const link of links) write.add({ kind: 'entry', ...link });
+  write.add({ kind: 'end', label: end ?? `링크 ${links.length}개` });
+  return write.lines;
 }

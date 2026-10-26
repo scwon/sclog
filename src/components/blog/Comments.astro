@@ -29,7 +29,7 @@
       data-reactions-enabled="1"
       data-emit-metadata="0"
       data-input-position="bottom"
-      data-theme="light"
+      data-theme="dark"
       data-lang="ko"
       data-loading="lazy"
       crossorigin="anonymous"
@@ -58,8 +58,16 @@
     attributeFilter: ['data-theme'],
   });
 
-  // 초기 테마 설정 (iframe 로드 후)
-  window.addEventListener('load', updateGiscusTheme);
+  // 초기 테마: giscus iframe이 준비되면 보내는 메시지를 받은 뒤에 맞춘다. 그 전에 보내면 iframe이 아직
+  // giscus 출처가 아니라 메시지가 버려진다. 화면을 옮겨 새 iframe이 생겨도 같은 메시지가 온다.
+  // giscus는 크기 변경 알림 등 메시지를 계속 보내므로 iframe마다 처음 한 번만 맞춘다(이후는 위 관찰자가 맡는다).
+  const synced = new WeakSet<MessageEventSource>();
+  window.addEventListener('message', (event: MessageEvent) => {
+    if (event.origin !== 'https://giscus.app' || !event.data?.giscus || !event.source) return;
+    if (synced.has(event.source)) return;
+    synced.add(event.source);
+    updateGiscusTheme();
+  });
 </script>
 
 <style>

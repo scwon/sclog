@@ -161,9 +161,12 @@ const quote = (value: string) => JSON.stringify(value);
    */
   let detach: (() => void) | null = null;
 
-  /** 읽는 선: 탭·경로 표시줄 바로 아래(html의 scroll-padding-top과 같은 값). */
+  /**
+   * 읽는 선: 탭·경로 표시줄 바로 아래(html의 scroll-padding-top과 같은 값). 앵커로 이동하면 제목이 정확히 이 선에
+   * 맞춰지므로, 소수점 픽셀 차이로 아직 안 지난 것으로 보지 않게 몇 픽셀 여유를 둔다.
+   */
   function readingLine() {
-    return parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 140;
+    return (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 140) + 8;
   }
 
   function attach() {
@@ -204,10 +207,7 @@ const quote = (value: string) => JSON.stringify(value);
         clientHeight: window.innerHeight,
       });
       setReading({ line: index + 1, chapter, section, percent });
-      if (symbol)
-        symbol.textContent = chapter
-          ? `${chapter.no} ${chapter.text}${section ? ` › ${section.text}` : ''}`
-          : '';
+      if (symbol) symbol.textContent = readingSymbol({ chapter, section });
       crumbs?.style.setProperty('--progress', String(percent / 100));
     };
     const schedule = () => {

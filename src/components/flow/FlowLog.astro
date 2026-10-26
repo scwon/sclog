@@ -1,6 +1,7 @@
 ---
 /**
- * 홈 `posts.log`의 흐름 로그. 줄마다 줄 번호와 레일을 두고 글 로그 줄 → 카드 → 장 노드 → 절 노드를 잇는다.
+ * 흐름 로그. 줄마다 줄 번호와 레일을 두고 글 로그 줄 → 카드 → 장 노드 → 절 노드를 잇는다.
+ * 홈 `posts.log`와 글 목록·태그·404가 같은 줄 구조를 쓴다(줄 모델은 `src/utils/flow.ts`).
  * 스타일은 디자인 시스템 2층(`ide.css`의 `.flow*`)만 쓰고 React는 쓰지 않는다(분류 꼬리표 `Badge`는 정적 HTML).
  * 접기와 현재 줄(상태줄 `Ln N`)은 아래 스크립트가 맡고, JS가 없으면 모두 펼친 채 보인다.
  */
@@ -9,13 +10,9 @@ import type { FlowLine } from '../../utils/flow';
 
 interface Props {
   lines: FlowLine[];
-  brand: string;
-  author: string;
-  githubUrl: string;
 }
 
-const { lines, brand, author, githubUrl } = Astro.props;
-const [brandHead, ...brandRest] = brand.split('’');
+const { lines } = Astro.props;
 const stepsId = (postId: string, index: number) => `post-${postId}-step-${index + 1}`;
 ---
 
@@ -26,9 +23,12 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
         <li class="flow-line flow-banner" data-line={line.no}>
           <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
           <h1 class="flow-brand">
-            {brandHead}
-            {brandRest.length > 0 && <span class="flow-apos">’</span>}
-            {brandRest.join('’')}
+            {line.text.split('’').map((part, index) => (
+              <>
+                {index > 0 && <span class="flow-apos">’</span>}
+                {part}
+              </>
+            ))}
           </h1>
         </li>
       );
@@ -40,7 +40,13 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
             <span class="flow-comment-mark" aria-hidden="true">
               //
             </span>{' '}
-            {author} · <a href={githubUrl}>{githubUrl.replace(/^https?:\/\//, '')}</a>
+            {line.text}
+            {line.link && (
+              <>
+                {' '}
+                <a href={line.link.href}>{line.link.label}</a>
+              </>
+            )}
           </p>
         </li>
       );
@@ -48,6 +54,17 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
       return (
         <li class="flow-line flow-blank" data-line={line.no}>
           <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+        </li>
+      );
+    if (line.kind === 'entry')
+      return (
+        <li class="flow-line flow-dir flow-entry" data-line={line.no}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <a class="flow-dir-label flow-entry-link" href={line.href}>
+            {line.label}
+          </a>
+          <span class="flow-dir-rule" aria-hidden="true" />
+          {line.note && <span class="flow-dir-count">{line.note}</span>}
         </li>
       );
     if (line.kind === 'dir')
@@ -67,7 +84,7 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
       return (
         <li class="flow-line flow-log" data-line={line.no} id={`post-${post.id}`}>
           <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
-          {post.steps.length > 0 && (
+          {line.foldable && (
             <button
               class="flow-fold"
               type="button"
@@ -144,7 +161,7 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
       <li class="flow-line flow-end" data-line={line.no}>
         <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
         <span class="flow-end-label">(END)</span>
-        <span class="flow-end-count">글 {line.count}편</span>
+        <span class="flow-end-count">{line.label}</span>
         <span class="flow-cursor" aria-hidden="true" />
       </li>
     );
