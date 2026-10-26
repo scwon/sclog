@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveInitialTheme } from '@/design-system/stores/theme.logic';
 
 /**
  * `pnpm build`가 만든 `dist/`를 바깥에서 검사한다. `dist/`가 없으면 건너뛴다(CI는 build 뒤 test).
@@ -83,21 +84,19 @@ describe.skipIf(!built)('build output', () => {
 
   describe('theme script', () => {
     const script = themeScript(pages[0]?.html ?? '') ?? '';
+    const cases = [null, 'dark', 'light', 'sepia'].flatMap((stored) =>
+      [true, false].flatMap((prefersLight) =>
+        [false, true].map((storageThrows) => ({ stored, prefersLight, storageThrows })),
+      ),
+    );
 
-    it('uses the stored theme first', () => {
-      expect(runThemeScript(script, { stored: 'light', prefersLight: false })).toBe('light');
-      expect(runThemeScript(script, { stored: 'dark', prefersLight: true })).toBe('dark');
-    });
-
-    it('follows the system setting when nothing valid is stored', () => {
-      expect(runThemeScript(script, { prefersLight: true })).toBe('light');
-      expect(runThemeScript(script, { stored: 'sepia', prefersLight: true })).toBe('light');
-      expect(runThemeScript(script, { storageThrows: true, prefersLight: true })).toBe('light');
-    });
-
-    it('falls back to the dark theme', () => {
-      expect(runThemeScript(script, {})).toBe('dark');
-      expect(runThemeScript(script, { storageThrows: true })).toBe('dark');
+    // 인라인 스크립트와 테마 스토어의 순수 로직이 같은 규칙(저장값 → 시스템 설정 → 어두운 테마)인지 맞대어 본다.
+    it.each(cases)('agrees with resolveInitialTheme for %o', (env) => {
+      const expected = resolveInitialTheme({
+        stored: env.storageThrows ? null : env.stored,
+        prefersLight: env.prefersLight,
+      });
+      expect(runThemeScript(script, env)).toBe(expected);
     });
   });
 

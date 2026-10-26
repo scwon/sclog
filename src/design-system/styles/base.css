@@ -23,6 +23,14 @@
     color: inherit;
   }
 
+  /* 테마를 바꾸는 순간에는 전환 효과를 꺼서, 호버 전환이 옛 테마 색을 거쳐 번지지 않게 한다. */
+  [data-theme-switching],
+  [data-theme-switching] *,
+  [data-theme-switching] *::before,
+  [data-theme-switching] *::after {
+    transition: none !important;
+  }
+
   :focus-visible {
     outline: 2px solid var(--text);
     outline-offset: 2px;

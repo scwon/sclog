@@ -3,7 +3,7 @@
  * Header component with SCLOG logo and navigation
  * Constitution VI. Design System: "SCLOG"는 반드시 대문자로 표기
  */
-import ThemeToggle from './ThemeToggle.astro';
+import { ThemeToggle } from '@/design-system';
 ---
 
 <header class="header">
@@ -16,7 +16,7 @@ import ThemeToggle from './ThemeToggle.astro';
         <a href="/blog">Blog</a>
         <a href="/blog/tags">Tags</a>
       </nav>
-      <ThemeToggle />
+      <ThemeToggle client:load />
     </div>
   </div>
 </header>
