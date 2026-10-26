@@ -57,3 +57,11 @@ interface SearchIndex {
 ### 2026-10-27 리뷰 수정 (브랜치 `blog-details/review-fixes`)
 
 - 판 번호 `v: 1`은 `SEARCH_INDEX_VERSION` 상수로 쓴다. 색인 페이지가 쓰고 검색 화면이 검사한다. 타입만 있던 `stores/search-index.ts`는 스토어가 아니어서 `components/Shell/search-index.ts`로 옮겼다. 장 타입은 이어 읽기와 같은 `NumberedChapter`이고, GLOSSARY에 **검색 색인**을 더했다.
+
+### 2026-10-27 satteri 유지 결정 (브랜치 `blog-details/satteri-search-index`)
+
+- satteri가 직접 의존성으로 남게 되어 위 "직접 의존성이 아니어서 들이지 않았다"는 이유가 사라졌다. 본문 블록 나누기와 순수 텍스트를 `satteri`의 `mdxToHast`로 바꿨다. hast 루트의 자식 중 요소와 JSX 흐름 요소가 블록이고, 글자는 text 노드만 모은다(엔티티·이스케이프는 파서가 푼다). 정규식 블록 나누기와 엔티티 표가 빠져 `search-index.ts`는 365줄에서 126줄이 됐다. frontmatter·제목·작성 정보 줄은 그대로다.
+- 파서 기능은 GFM만 켜고 둥근 따옴표(smart punctuation)는 끈다. 글 화면은 `’`·`…`로 그리지만 자판으로 친 검색어(`'`·`...`)와 맞추려고 원문 글자를 둔다. 본문에는 frontmatter가 없으므로 frontmatter 인식도 끈다.
+- 제목은 블록 안에 있는 Markdown 제목까지 문서 순서로 세어 `headings`와 짝짓는다. Astro가 JSX 요소 안의 Markdown 제목도 `headings`에 넣기 때문에, 전에는 그런 제목 뒤의 장·절이 한 칸씩 밀렸다.
+- 단위 테스트 입력 두 개를 MDX로 실제 그려지는 것으로 고쳤다. `<https://…>`는 MDX에서 문법 오류라(빌드도 실패) 맨 URL로 바꿨고, 정의 없는 `[참조][ref]`는 화면에 글자 그대로 보이므로 정의 줄을 더했다.
+- 바꾸기 전후 `dist/search-index.json`이 바이트 단위로 같다.
