@@ -38,6 +38,15 @@ export function ProfileIcon(props: IconProps) {
   );
 }
 
+/** 돋보기(활동 막대의 검색). */
+export function SearchIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeLinecap="round" {...props}>
+      <path d="M10.5 16.5a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z M15 15l5.5 5.5" />
+    </svg>
+  );
+}
+
 /** 꺾쇠 코드(이 블로그의 소스). */
 export function CodeIcon(props: IconProps) {
   return (

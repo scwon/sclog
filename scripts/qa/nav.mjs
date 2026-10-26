@@ -1,6 +1,7 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
- * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
+ * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지 → 검색 화면에서 결과 열기. 패널은 홈에서 프로필,
+ * 글에서 탐색기를 보이고, 검색 화면은 파일을 열어도 남는다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -148,6 +149,54 @@ if (tagUrl) {
   check('태그 화면에서 고른 탐색기가 새로고침 뒤 남음', (await panelView()) === '탐색기');
   await pickAndReload('프로필');
   check('태그 화면에서 고른 프로필이 새로고침 뒤 남음', (await panelView()) === '프로필');
+}
+
+// 검색 화면: 열기 전에는 색인을 받지 않는다. 결과를 누르면 글이 열리고 패널은 검색 화면에 남으며, 새로고침 뒤에도
+// 검색 화면이다(검색어는 메모리에만 있어 비워진다).
+const indexRequested = () =>
+  page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .some((entry) => entry.name.includes('/search-index.json')),
+  );
+const searchInput = () =>
+  page.evaluate(() => {
+    const input = document.querySelector('#panel input[type=search]');
+    return input ? { value: input.value, focused: document.activeElement === input } : null;
+  });
+check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
+// 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
+await page.evaluate(() => {
+  window.qaShell = document.getElementById('panel')?.closest('astro-island');
+});
+await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+  label: '검색 화면 열기',
+});
+await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
+check('패널이 검색 화면', (await panelView()) === '검색');
+check('검색 입력창에 포커스', (await searchInput())?.focused === true);
+await page.fill('loc=css:#panel input[type=search]', '개발');
+await page.waitForFunction(
+  () => /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
+  undefined,
+  { timeout: 5000 },
+);
+check('검색 화면을 열면 색인을 받음', await indexRequested());
+const hit = await page.evaluate(
+  () => document.querySelector("#panel ul[aria-label='검색 결과'] a")?.getAttribute('href') ?? null,
+);
+check('검색 결과 링크가 있음', hit !== null, hit ?? '');
+if (hit) {
+  await page.click("css=#panel ul[aria-label='검색 결과'] a >> nth=0", { label: '첫 결과 열기' });
+  await page.waitForTimeout(2000);
+  check('결과를 누르면 그 글이 열림', (await editor()).url === hit.split('#')[0], hit);
+  check('창 틀 유지(검색 결과)', await shellKept());
+  check('결과를 연 뒤에도 패널이 검색 화면', (await panelView()) === '검색');
+  check('결과를 연 뒤에도 검색어가 남음', (await searchInput())?.value === '개발');
+  await page.reload();
+  await page.waitForTimeout(1500);
+  check('새로고침 뒤에도 검색 화면', (await panelView()) === '검색');
+  check('새로고침하면 검색어가 비워짐', (await searchInput())?.value === '');
 }
 
 const events = await page.events();

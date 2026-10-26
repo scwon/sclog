@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { setReading } from '../../stores/reading';
 import type { OutlineItem } from '../../stores/file.logic';
+import { setSearchQuery } from '../../stores/search';
+import type { SearchBlock, SearchIndex } from '../../stores/search-index';
+import { writePanelView } from './panel';
 import { Shell, type ShellProps } from './Shell';
 
 const tree: ShellProps['tree'] = [
@@ -50,6 +53,64 @@ const outline: OutlineItem[] = [
   { id: 'end', text: '마치며', children: [{ id: 'say', text: '하고 싶은 말' }] },
 ];
 
+const developer = { id: 'developer', no: '04', text: '개발자란?' };
+
+/** 검색 화면 스토리의 색인 고정값. 결과가 여러 파일·여러 줄일 때의 모양을 보려고 글 셋을 만든다. */
+const searchIndex: SearchIndex = {
+  v: 1,
+  posts: [
+    {
+      url: '/blog/korean-search/',
+      title: '한국어 검색을 직접 만들기',
+      path: 'posts/2025/korean-search.mdx',
+      blocks: [
+        { line: 5, chapter: null, section: null, text: '한국어 검색을 직접 만들기' },
+        {
+          line: 9,
+          chapter: { id: 'jamo', no: '01', text: '자모로 나누기' },
+          section: null,
+          text: 'NFD로 바꾸면 입력 중인 음절도 찾을 수 있다. 개발자 블로그 정도 규모에서는 이걸로 충분하다.',
+        },
+      ],
+    },
+    {
+      url: '/blog/pro-developer-2023-days/',
+      title: '프로 개발자 2023일 후기',
+      path: 'posts/2023/pro-developer-2023-days.mdx',
+      blocks: [
+        { line: 5, chapter: null, section: null, text: '프로 개발자 2023일 후기' },
+        ...[
+          '개발자란 무엇인가를 다시 생각해 본다.',
+          '입사 직후에는 개발보다 회의가 많았다.',
+          '1~2년차에는 개발 속도를 올리는 데 힘을 썼다.',
+          '3~4년차가 되자 남이 쓴 코드를 읽는 시간이 개발하는 시간보다 길어졌다. 읽기 좋은 코드가 무엇인지 그때 처음 생각했다.',
+          '5~6년차에는 개발 문화를 만드는 일에 끼게 되었다.',
+          '좋은 개발자는 결국 좋은 동료라는 생각이 든다.',
+          '마지막으로, 개발을 계속하고 싶은 이유를 적어 둔다.',
+        ].map((text, index): SearchBlock => ({
+          line: 20 + index * 3,
+          chapter: developer,
+          section: index === 3 ? { id: 'y34', text: '3~4년차' } : null,
+          text,
+        })),
+      ],
+    },
+    {
+      url: '/blog/frontend-team/',
+      title: '프론트엔드 팀의 1년',
+      path: 'posts/2024/frontend-team.mdx',
+      blocks: [
+        {
+          line: 12,
+          chapter: { id: 'retro', no: '01', text: '회고' },
+          section: { id: 'good', text: '잘한 것' },
+          text: '프론트엔드 개발자 셋이 디자인 시스템을 처음 만들었다.',
+        },
+      ],
+    },
+  ],
+};
+
 /** 글을 3~4년차까지 읽은 상태. 창 틀이 파일을 열며 읽기 위치를 비운 뒤에 채운다(형제 effect는 순서대로 돈다). */
 function ReadTo34() {
   useEffect(() => {
@@ -83,6 +144,11 @@ const meta = {
   title: 'Design System/Shell',
   component: Shell,
   parameters: { layout: 'fullscreen' },
+  // 마지막 패널 화면은 sessionStorage에 남으므로 스토리마다 탐색기에서 시작하고 검색어를 비운다.
+  beforeEach: () => {
+    writePanelView('explorer');
+    setSearchQuery('');
+  },
   args: {
     brand: 'scwon’s blog',
     author: '원성철',
@@ -90,6 +156,8 @@ const meta = {
     sourceUrl: 'https://github.com/scwon/sclog',
     tree,
     profile,
+    // 실제 사이트는 `/search-index.json`. Storybook에는 그 주소가 없으므로 고정값을 data URL로 넘긴다.
+    searchIndexUrl: `data:application/json,${encodeURIComponent(JSON.stringify(searchIndex))}`,
   },
 } satisfies Meta<typeof Shell>;
 
@@ -154,4 +222,23 @@ export const ArticleOpen: Story = {
       />
     </>
   ),
+};
+
+/**
+ * 검색 화면: 활동 막대의 돋보기가 선택되고, `개바`로 찾은 결과가 `N개 파일, M줄` 요약 아래 파일별로 묶인다.
+ * 입력 중인 음절이라 `개발` 두 음절이 칠해지고, 제목에 검색어가 든 글이 위에 온다. 여덟 줄이 맞은 글은 다섯 줄만
+ * 보이고 `… 3줄 더`로 편다.
+ */
+export const Search: Story = {
+  beforeEach: () => {
+    writePanelView('search');
+    setSearchQuery('개바');
+  },
+  render: ArticleOpen.render,
+};
+
+/** 검색 색인을 받지 못했을 때: 안내 문구와 `다시 시도` 버튼. */
+export const SearchIndexError: Story = {
+  ...Search,
+  args: { searchIndexUrl: '/missing-search-index.json' },
 };

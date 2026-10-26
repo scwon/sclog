@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PANEL_VIEWS,
   dismissPanel,
   initialPanel,
   panelVisible,
@@ -93,12 +94,25 @@ describe('viewForFile (파일을 열었을 때의 패널 화면)', () => {
     expect(viewForFile('profile', 'page')).toBe('profile');
     expect(viewForFile('explorer', 'page')).toBe('explorer');
   });
+
+  it('keeps the search view whatever file opens', () => {
+    expect(viewForFile('search', 'log')).toBe('search');
+    expect(viewForFile('search', 'post')).toBe('search');
+    expect(viewForFile('search', 'page')).toBe('search');
+  });
+});
+
+describe('PANEL_VIEWS (활동 막대와 전환 버튼의 순서)', () => {
+  it('is profile → explorer → search', () => {
+    expect(PANEL_VIEWS).toEqual(['profile', 'explorer', 'search']);
+  });
 });
 
 describe('restorePanelView (저장해 둔 마지막 패널 화면)', () => {
   it('restores a saved view', () => {
     expect(restorePanelView({ v: 1, view: 'profile' })).toBe('profile');
     expect(restorePanelView({ v: 1, view: 'explorer' })).toBe('explorer');
+    expect(restorePanelView({ v: 1, view: 'search' })).toBe('search');
   });
 
   it('drops a value with another version', () => {
@@ -122,6 +136,11 @@ describe('startView (새로고침 뒤 처음 패널 화면)', () => {
   it('applies the file rule over the restored view', () => {
     expect(startView('explorer', 'log')).toBe('profile');
     expect(startView('profile', 'post')).toBe('explorer');
+  });
+
+  it('keeps a restored search view on any file', () => {
+    expect(startView('search', 'post')).toBe('search');
+    expect(startView('search', 'log')).toBe('search');
   });
 
   it('starts from the explorer when nothing is saved', () => {

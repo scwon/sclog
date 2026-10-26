@@ -5,7 +5,7 @@
 import type { FileKind } from '../../stores/file.logic';
 
 /** 패널이 보여 주는 화면. 활동 막대와 좁은 화면의 전환 버튼이 이 순서로 놓인다. */
-export const PANEL_VIEWS = ['profile', 'explorer'] as const;
+export const PANEL_VIEWS = ['profile', 'explorer', 'search'] as const;
 
 /** 패널 화면 하나. */
 export type PanelView = (typeof PANEL_VIEWS)[number];
@@ -83,8 +83,12 @@ export function restorePanelView(saved: unknown): PanelView | null {
   return v === PANEL_SAVE_VERSION && isPanelView(view) ? view : null;
 }
 
-/** 파일을 열었을 때 패널이 보일 화면. 홈 로그는 프로필, 글은 탐색기이고, 그 밖의 화면은 지금 화면을 둔다. */
+/**
+ * 파일을 열었을 때 패널이 보일 화면. 지금 화면이 검색이면 파일 종류와 상관없이 검색 화면을 둔다(결과를 이어 연다).
+ * 그 밖에는 홈 로그는 프로필, 글은 탐색기이고, 나머지 화면은 지금 화면을 둔다.
+ */
 export function viewForFile(current: PanelView, kind: FileKind): PanelView {
+  if (current === 'search') return current;
   if (kind === 'log') return 'profile';
   if (kind === 'post') return 'explorer';
   return current;
