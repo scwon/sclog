@@ -1,17 +1,17 @@
 ---
 /**
- * 홈페이지 (포트폴리오)
- * 프로필, 소셜 링크, 경력, 최근 글 섹션을 표시
+ * 홈: `posts.log` 흐름 로그. 줄 번호·장 흐름·첫 문장은 모두 글 파일에서 읽는다.
  */
+import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProfileSection from '../components/ProfileSection.astro';
-import CareerSection from '../components/CareerSection.astro';
-import RecentPosts from '../components/RecentPosts.astro';
+import FlowLog from '../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../utils/blog';
-import { profile, socialLinks, careers } from '../data/profile';
+import { flowLines, flowPost } from '../utils/flow';
 
 const posts = await getPublishedPosts();
-const recentPosts = posts.slice(0, 5);
+const flows = await Promise.all(
+  posts.map(async (post) => ({ post, flow: flowPost(post, (await render(post)).headings) })),
+);
 ---
 
 <BaseLayout
@@ -25,17 +25,10 @@ const recentPosts = posts.slice(0, 5);
     summary: `글 ${posts.length}편`,
   }}
 >
-  <div class="container">
-    <ProfileSection profile={profile} socialLinks={socialLinks} />
-    <CareerSection careers={careers} />
-    <RecentPosts posts={recentPosts} totalCount={posts.length} />
-  </div>
+  <FlowLog
+    lines={flowLines(flows)}
+    brand="scwon’s blog"
+    author="원성철"
+    githubUrl="https://github.com/scwon"
+  />
 </BaseLayout>
-
-<style>
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-</style>

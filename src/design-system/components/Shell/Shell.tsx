@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
+import { useStore } from '@nanostores/react';
+import { $reading, resetReading, type ReadingState } from '../../stores/reading';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon } from './icons';
@@ -84,6 +86,20 @@ function navigateLikeLink(url: string): void {
   link.remove();
 }
 
+const serverReading = (): ReadingState => ({
+  line: null,
+  chapter: null,
+  section: null,
+  percent: null,
+});
+
+/** 현재 장·절을 `04 개발자란? › 3~4년차`처럼 적는다. */
+export function symbolOf({ chapter, section }: ReadingState): string {
+  if (!chapter) return '';
+  const head = `${chapter.no} ${chapter.text}`;
+  return section ? `${head} › ${section.text}` : head;
+}
+
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
 function Brand({ name }: { name: string }) {
   const [head, ...rest] = name.split('’');
@@ -156,6 +172,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
     [],
   );
   const [log, setLog] = useState<string | null>(null);
+  const reading = useStore($reading, { ssr: serverReading });
   const timers = useRef<number[]>([]);
   const explorerRef = useRef<HTMLElement>(null);
   const lastOpened = useRef({ url: '', at: 0 });
@@ -183,6 +200,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
       lastOpened.current = { url: next.url, at: now };
       setFile(next);
       openTab({ url: next.url, title: next.title, path: next.path });
+      resetReading();
       // 좁은 화면에서 탐색기로 글을 골랐다면 패널을 닫는다.
       if (!window.matchMedia(DESKTOP).matches) setExplorer('auto');
 
@@ -450,9 +468,14 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
           </span>
         ) : (
           <span className="flex min-w-0 flex-1 items-center gap-4 pr-3 pl-3">
-            <span className="truncate">{file?.path}</span>
-            {file?.reading !== undefined && <span>읽는 시간 {file.reading}분</span>}
-            {file?.summary && <span>{file.summary}</span>}
+            {file?.kind === 'post' ? (
+              <span className="min-w-0 truncate font-sans">{symbolOf(reading) || file.title}</span>
+            ) : (
+              <span className="truncate">{file?.summary ?? file?.path}</span>
+            )}
+            {reading.line !== null && <span className="max-[759px]:hidden">Ln {reading.line}</span>}
+            <span className="flex-1" />
+            {reading.percent !== null && <span>{reading.percent}%</span>}
           </span>
         )}
       </footer>
