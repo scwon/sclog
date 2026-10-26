@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -29,6 +31,11 @@ import {
   type PanelState,
   type PanelView,
 } from './panel.logic';
+import type { PaletteHandle } from './Palette';
+import { platformOf, shortcutFor, type FocusTarget, type Platform } from './shortcuts.logic';
+
+/** 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 JS에 넣지 않는다. */
+const Palette = lazy(() => import('./Palette'));
 
 /** 탐색기 트리의 글 파일 하나. */
 export interface TreeFile {
@@ -121,6 +128,39 @@ function navigateLikeLink(url: string): void {
   document.body.append(link);
   link.click();
   link.remove();
+}
+
+/** 글자를 치는 입력창이 아닌 `<input>` 종류. 여기에 포커스가 있어도 단축키는 동작한다. */
+const NON_TEXT_INPUTS = new Set([
+  'button',
+  'checkbox',
+  'color',
+  'file',
+  'image',
+  'radio',
+  'range',
+  'reset',
+  'submit',
+]);
+
+/** 키를 받은 요소의 종류(단축키 판정용). */
+function focusTarget(target: EventTarget | null): FocusTarget {
+  if (!(target instanceof HTMLElement)) return 'other';
+  if (target.matches('[data-palette-input]')) return 'palette-input';
+  if (
+    target.isContentEditable ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(target.type))
+  )
+    return 'text';
+  return 'other';
+}
+
+/** 브라우저의 플랫폼. 서버 HTML에는 넣지 않고, 키를 처음 받거나 키 표기를 처음 그릴 때 읽는다. */
+function browserPlatform(): Platform {
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  return platformOf(nav.userAgentData?.platform || nav.platform || '');
 }
 
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
@@ -277,6 +317,10 @@ function ProfileView({ profile }: { profile: Profile }) {
  *
  * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
+ *
+ * 단축키는 `document`의 keydown 리스너 하나가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
+ * ⌘B(Ctrl+B) 패널 열고 닫기, Esc 맨 위 층(팔레트, 그다음 좁은 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는
+ * 처음 열 때 불러오는 청크다.
  */
 export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, current }: ShellProps) {
   const [file, setFile] = useState<EditorFile | null>(null);
@@ -385,23 +429,98 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
     };
   }, [explorerShown, openExplorer, updatePanel]);
 
-  // 겹침 패널은 Esc로 닫고, 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다.
+  // 겹침 패널이 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다. Esc로 닫기는 단축키 리스너가 맡는다.
   useEffect(() => {
     if (!overlay) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panelRef.current?.focus();
-    const restore = () => {
-      if (opener?.isConnected && panelRef.current?.contains(document.activeElement)) opener.focus();
+    const panelElement = panelRef.current;
+    panelElement?.focus();
+    return () => {
+      if (opener?.isConnected && panelElement?.contains(document.activeElement)) opener.focus();
     };
+  }, [overlay]);
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [platform, setPlatform] = useState<Platform | null>(null);
+  const paletteRef = useRef<PaletteHandle>(null);
+  // 팔레트를 열 때 포커스가 있던 자리. 닫으면 여기로 돌려준다.
+  const paletteOpener = useRef<HTMLElement | null>(null);
+
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
+    const opener = paletteOpener.current;
+    paletteOpener.current = null;
+    if (opener?.isConnected) opener.focus();
+  }, []);
+  const pickFromPalette = useCallback(
+    (url: string) => {
+      closePalette();
+      navigateLikeLink(url);
+    },
+    [closePalette],
+  );
+
+  // 단축키: `document`에 리스너 하나를 걸고 판정(`shortcuts.logic.ts`) 결과만 실행한다.
+  // 맥락은 그릴 때마다 ref에 옮겨 리스너를 다시 걸지 않는다.
+  const shortcutContext = useRef({ paletteOpen, overlay });
+  useEffect(() => {
+    shortcutContext.current = { paletteOpen, overlay };
+  }, [paletteOpen, overlay]);
+  useEffect(() => {
+    let known: Platform | null = null;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') updatePanel(dismissPanel);
+      known ??= browserPlatform();
+      const action = shortcutFor(
+        {
+          key: event.key,
+          code: event.code,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          isComposing: event.isComposing,
+          target: focusTarget(event.target),
+        },
+        {
+          paletteOpen: shortcutContext.current.paletteOpen,
+          overlayOpen: shortcutContext.current.overlay,
+          platform: known,
+        },
+      );
+      if (!action) return;
+      event.preventDefault();
+      switch (action) {
+        case 'open-palette':
+          paletteOpener.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          setPlatform(known);
+          setPaletteOpen(true);
+          break;
+        case 'toggle-panel':
+          updatePanel(togglePanel);
+          break;
+        case 'close-palette':
+          closePalette();
+          break;
+        case 'close-overlay':
+          updatePanel(dismissPanel);
+          break;
+        case 'palette-prev':
+          paletteRef.current?.move(-1);
+          break;
+        case 'palette-next':
+          paletteRef.current?.move(1);
+          break;
+        case 'palette-pick':
+          paletteRef.current?.pick();
+          break;
+        case 'swallow':
+          break;
+      }
     };
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      restore();
-    };
-  }, [overlay, updatePanel]);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [closePalette, updatePanel]);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
@@ -651,6 +770,18 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
           </span>
         )}
       </footer>
+
+      {paletteOpen && platform && (
+        <Suspense fallback={null}>
+          <Palette
+            ref={paletteRef}
+            tree={tree}
+            platform={platform}
+            onPick={pickFromPalette}
+            onDismiss={closePalette}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

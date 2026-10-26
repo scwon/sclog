@@ -1,6 +1,6 @@
 /**
  * 모든 페이지 × 두 테마 × 세 폭(1440·1024·390)에서 axe-core 검사를 돌린다. 홈은 패널이 프로필 화면이므로,
- * 패널이 숨는 폭(1100px 미만)에서는 패널을 열어 한 번 더 본다.
+ * 패널이 숨는 폭(1100px 미만)에서는 패널을 열어 한 번 더 본다. 홈에서는 ⌘P(Ctrl+P)로 연 명령 팔레트도 본다.
  * 움직임 줄이기를 켜서 펼침 도중의 반투명 글자를 명암비 위반으로 잘못 잡지 않게 한다.
  * `run.mjs`가 `globalThis.QA = { base, pages, axe }`를 넣고 ego-browser에서 import한다.
  */
@@ -62,6 +62,19 @@ for (const width of [1440, 1024, 390]) {
       runs++;
       if (violations.length)
         failures.push(`${width} ${theme} ${decodeURI(path)}: ${violations.join('; ')}`);
+      if (path === '/') {
+        // 열린 명령 팔레트(처음 쓸 때 불러오는 청크라 조금 기다린다).
+        await page.keyboard.press('ControlOrMeta+P');
+        await page.waitForSelector("loc=css:[role='dialog'][aria-label='명령 팔레트']", {
+          state: 'visible',
+        });
+        const paletteViolations = await axeViolations();
+        runs++;
+        if (paletteViolations.length)
+          failures.push(`${width} ${theme} 팔레트: ${paletteViolations.join('; ')}`);
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(200);
+      }
       if (path === '/' && width < 1100) {
         await openPanel(width < 760);
         await page.waitForTimeout(300);
