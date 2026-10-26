@@ -66,4 +66,4 @@
   - 모두 IDE 창 안에 열리고, 화면을 옮기면 탭이 쌓인다.
   - 에디터 루트 `data-file-url`이 맞고, 글꼴 요청은 모두 같은 사이트(`www.scwon.me`)로 간다.
   - 콘솔에는 404 페이지 응답 한 건만 있다(의도한 요청).
-- 확인할 것: `scwon.me`가 `www.scwon.me`로 넘어가는데 canonical·사이트맵은 `https://scwon.me/…`(apex)를 쓴다. 검색엔진에는 최종 주소를 canonical로 주는 편이 낫다. `site`를 `https://www.scwon.me`로 바꾸거나, Vercel에서 apex를 기본 도메인으로 두는 것 중 하나를 정하면 된다.
+- `scwon.me`가 `www.scwon.me`로 넘어가는데 canonical·사이트맵은 `https://scwon.me/…`를 썼다. 사용자 결정에 따라 `site`를 실제로 도착하는 주소인 `https://www.scwon.me`로 바꿨다.
