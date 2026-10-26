@@ -11,7 +11,7 @@
    * 코드 블록에 복사 버튼과 언어 라벨을 추가하는 스크립트
    */
   function initCodeBlocks() {
-    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.post-content pre');
+    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.doc-prose pre');
 
     codeBlocks.forEach((pre) => {
       // 이미 처리된 코드 블록은 건너뜀

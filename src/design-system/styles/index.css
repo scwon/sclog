@@ -11,6 +11,7 @@
 @import './base.css';
 @import './motion.css';
 @import './ide.css';
+@import './prose.css';
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 

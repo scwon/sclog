@@ -127,6 +127,10 @@ function Sign({ className }: { className?: string }) {
   );
 }
 
+/** 개요의 현재 항목: 선택 바탕, 굵은 글자, 세로선 위의 코랄 막대. */
+const outlineCurrent =
+  'bg-state-selected font-semibold text-text before:absolute before:top-1.5 before:bottom-1.5 before:left-5 before:w-[3px] before:bg-accent';
+
 /** 접힘 삼각형(장식). */
 function Twisty() {
   return (
@@ -406,36 +410,61 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
             <SectionHead id="explorer-outline">개요</SectionHead>
             <nav aria-label="글 목차" className="pt-0.5 pb-1.5">
               <ol className="relative m-0 list-none p-0 before:absolute before:inset-y-0 before:left-[21px] before:w-px before:bg-border-subtle">
-                {outline.map((chapter, index) => (
-                  <li key={chapter.id}>
-                    <a
-                      href={`#${chapter.id}`}
-                      className="flex gap-2 py-[5px] pr-3.5 pl-8 text-[13px] leading-[1.45] text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="min-w-[18px] font-mono text-[11.5px] leading-[1.68] text-text-faint"
+                {outline.map((chapter, index) => {
+                  const inChapter = reading.chapter?.id === chapter.id;
+                  const current = inChapter && !reading.section;
+                  return (
+                    <li key={chapter.id}>
+                      <a
+                        href={`#${chapter.id}`}
+                        aria-current={current ? 'location' : undefined}
+                        className={cn(
+                          'relative flex gap-2 py-[5px] pr-3.5 pl-8 text-[13px] leading-[1.45] text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                          inChapter && 'text-text',
+                          current && outlineCurrent,
+                        )}
                       >
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <span>{chapter.text}</span>
-                    </a>
-                    {chapter.children.length > 0 && (
-                      <ol className="m-0 list-none p-0">
-                        {chapter.children.map((section) => (
-                          <li key={section.id}>
-                            <a
-                              href={`#${section.id}`}
-                              className="block py-[5px] pr-3.5 pl-15 text-[12.5px] leading-[1.45] text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2"
-                            >
-                              {section.text}
-                            </a>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </li>
-                ))}
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'min-w-[18px] font-mono text-[11.5px] leading-[1.68] text-text-muted',
+                            inChapter && 'text-accent-text',
+                          )}
+                        >
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span>{chapter.text}</span>
+                      </a>
+                      {chapter.children.length > 0 && (
+                        <ol className="m-0 list-none p-0">
+                          {chapter.children.map((section) => {
+                            const here = reading.section?.id === section.id;
+                            return (
+                              <li key={section.id}>
+                                <a
+                                  href={`#${section.id}`}
+                                  aria-current={here ? 'location' : undefined}
+                                  className={cn(
+                                    'relative block py-[5px] pr-3.5 pl-15 text-[12.5px] leading-[1.45] text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                    here && outlineCurrent,
+                                  )}
+                                >
+                                  {section.text}
+                                </a>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
+                    </li>
+                  );
+                })}
+                {/* 읽은 만큼 채워지는 세로선 */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-[21px] w-px origin-top bg-accent transition-transform duration-(--motion-fast) ease-standard"
+                  style={{ transform: `scaleY(${(reading.percent ?? 0) / 100})` }}
+                />
               </ol>
             </nav>
           </section>

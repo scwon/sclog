@@ -44,8 +44,8 @@
   --type-body-sm: var(--font-size-17);
   --type-body-leading: var(--line-height-1_92);
   --type-body-sm-leading: var(--line-height-1_9);
-  --type-title: var(--font-size-68);
-  --type-title-sm: var(--font-size-38);
+  --type-title: var(--font-size-54); /* 글 제목 */
+  --type-title-sm: var(--font-size-34); /* 좁은 화면의 글 제목 */
   --type-display-max: var(--font-size-116); /* 블로그 이름처럼 화면 폭에 맞춰 커지는 글자의 상한 */
 }
 

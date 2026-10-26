@@ -133,5 +133,43 @@ const outlineJson =
       <slot />
     </main>
     {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
+    <script>
+      /**
+       * 펼침: 파일을 열 때 첫 1.4화면 안의 줄·블록을 위에서부터 차례로 보인다(2층 motion.css의 `[data-unfold]`).
+       * 움직임 줄이기 설정에서는 아무것도 하지 않는다. 마지막 항목의 애니메이션이 끝나면 표시를 걷어 낸다.
+       */
+      const TARGETS = [
+        '.flow > .flow-line:not([hidden])',
+        '[data-doc] .doc-frontmatter',
+        '[data-doc] .doc-head > *',
+        '[data-doc] .doc-hero',
+        '[data-doc] .doc-prose > *',
+      ].join(', ');
+
+      function unfold() {
+        const editor = document.getElementById('editor');
+        if (!editor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter(
+          (item) => item.getBoundingClientRect().top < window.innerHeight * 1.4,
+        );
+        if (items.length === 0) return;
+        items.forEach((item, index) => {
+          item.dataset.unfoldItem = '';
+          item.style.setProperty('--i', String(index));
+        });
+        editor.dataset.unfold = '';
+        const finish = () => {
+          delete editor.dataset.unfold;
+          for (const item of items) {
+            delete item.dataset.unfoldItem;
+            item.style.removeProperty('--i');
+          }
+        };
+        items.at(-1)?.addEventListener('animationend', finish, { once: true });
+        window.setTimeout(finish, 3000);
+      }
+
+      document.addEventListener('astro:page-load', unfold);
+    </script>
   </body>
 </html>

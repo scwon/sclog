@@ -109,7 +109,10 @@
     }
   }
 
-  /* 경로 표시줄의 `개요` 버튼. 좁은 화면에서 탐색기(개요)를 연다 */
+  /*
+   * 경로 표시줄의 `개요` 버튼. 1180px 미만에서 탐색기(개요)를 연다. 그 폭에서 경로 표시줄은
+   * 현재 장과 진행선을 보이는 고정 막대 역할을 한다.
+   */
   .ide-crumbs-outline {
     display: none;
     flex: none;
@@ -124,7 +127,7 @@
     font: 500 12px/1 var(--family-sans);
     cursor: pointer;
 
-    @media (max-width: 759px) {
+    @media (max-width: 1179px) {
       display: inline-flex;
     }
   }
@@ -764,6 +767,301 @@
   @keyframes blink {
     50% {
       opacity: 0;
+    }
+  }
+}
+
+/*
+ * 글 화면: 연 파일. frontmatter → 제목·작성 정보 → 대표 이미지 → 본문 → 꼬리. 모든 블록에 줄 번호가 있고
+ * 읽는 위치의 줄 번호는 코랄이다(스크립트가 `.is-current`를 붙인다).
+ */
+@layer components {
+  .doc {
+    --doc-gutter: var(--gutter-width);
+
+    position: relative;
+    max-width: calc(680px + var(--doc-gutter) * 2);
+    margin: 0 auto;
+    padding: 36px var(--doc-gutter) 96px;
+    counter-reset: line;
+
+    @media (max-width: 759px) {
+      --doc-gutter: var(--gutter-width-md);
+
+      padding: 24px 18px 72px var(--doc-gutter);
+    }
+
+    /* 줄 번호: CSS 카운터로 그리는 장식. 블록의 첫 줄 높이(--lh)에 맞춰 세로 위치를 맞춘다 */
+    & :is(.doc-fm-line, .doc-title, .doc-byline, .doc-prose > *) {
+      position: relative;
+
+      &::after {
+        content: counter(line) / '';
+        position: absolute;
+        top: 0;
+        left: calc(var(--doc-gutter) * -1);
+        width: calc(var(--doc-gutter) - 22px);
+        color: var(--text-faint);
+        font: 400 12px / var(--lh, 28px) var(--family-mono);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+        text-align: right;
+        pointer-events: none;
+        counter-increment: line;
+        transition: color var(--motion-fast) var(--motion-easing);
+
+        @media (max-width: 759px) {
+          width: calc(var(--doc-gutter) - 12px);
+          font-size: 11px;
+        }
+      }
+
+      &:hover::after {
+        color: var(--text);
+      }
+
+      &.is-current::after {
+        color: var(--accent-text);
+      }
+    }
+
+    & .doc-prose > :is(p, blockquote) {
+      --lh: calc(var(--type-body) * var(--type-body-leading));
+
+      @media (max-width: 759px) {
+        --lh: calc(var(--type-body-sm) * var(--type-body-sm-leading));
+      }
+    }
+
+    & .doc-prose > h2 {
+      --lh: 15px;
+    }
+
+    & .doc-prose > h3 {
+      --lh: 33.6px;
+    }
+
+    & .doc-prose > h4 {
+      --lh: 29px;
+    }
+
+    & .doc-prose > hr {
+      --lh: 6px;
+    }
+  }
+
+  /* frontmatter: 키는 코랄, 문자열은 code-string, 숫자는 본 글자색 */
+  .doc-frontmatter {
+    margin: 0 0 36px;
+    color: var(--text-soft);
+    font: 400 13px/22px var(--family-mono);
+    overflow-wrap: anywhere;
+
+    @media (max-width: 759px) {
+      margin-bottom: 28px;
+      font-size: 11.5px;
+      line-height: 20px;
+    }
+  }
+
+  .doc-fm-line {
+    display: block;
+    --lh: 22px;
+
+    @media (max-width: 759px) {
+      --lh: 20px;
+    }
+  }
+
+  .doc-fm-key {
+    color: var(--accent-text);
+  }
+
+  .doc-fm-str {
+    color: var(--code-string);
+  }
+
+  .doc-fm-num {
+    color: var(--text);
+  }
+
+  .doc-fm-punct {
+    color: var(--text-muted);
+  }
+
+  .doc-head {
+    margin-bottom: 36px;
+  }
+
+  .doc-title {
+    margin: 0;
+    outline: none;
+    font-size: var(--type-title);
+    font-weight: 800;
+    line-height: 1.16;
+    letter-spacing: -0.042em;
+    text-wrap: balance;
+    --lh: calc(var(--type-title) * 1.16);
+
+    @media (max-width: 759px) {
+      font-size: var(--type-title-sm);
+      line-height: 1.2;
+      --lh: calc(var(--type-title-sm) * 1.2);
+    }
+  }
+
+  .doc-byline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 22px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    --lh: 28px;
+  }
+
+  .doc-byline-author {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .doc-byline-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  /* 작성자 서명: 코랄 동그라미 안의 아포스트로피 */
+  .doc-sign {
+    display: inline-block;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    padding-top: 0.2em;
+    overflow: hidden;
+    border-radius: 50%;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font: 800 28px/1 var(--family-display);
+    text-align: center;
+  }
+
+  /* 대표 이미지: 코랄 매트 */
+  .doc-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin: 0 0 64px;
+    padding: 52px 40px 0;
+    overflow: hidden;
+    border-radius: var(--corner-lg);
+    background-color: var(--accent);
+
+    & img {
+      width: 357px;
+      max-width: 100%;
+      height: auto;
+      margin-bottom: -18px;
+      border: 1px solid color-mix(in srgb, var(--on-accent) 14%, transparent);
+      border-bottom: 0;
+      border-radius: 7px 7px 0 0;
+      box-shadow: 0 24px 48px -18px color-mix(in srgb, var(--on-accent) 45%, transparent);
+    }
+
+    @media (max-width: 759px) {
+      margin: 0 -18px 48px calc(var(--doc-gutter) * -1);
+      padding: 32px 20px 0;
+      border-radius: 0;
+
+      & img {
+        width: min(100%, 320px);
+        margin-bottom: -14px;
+      }
+    }
+  }
+
+  .doc-foot {
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+
+  .doc-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0 0 32px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .doc-author {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 22px 24px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--corner-xl);
+    background-color: var(--surface-raised);
+
+    & .doc-sign {
+      width: 44px;
+      height: 44px;
+      font-size: 46px;
+    }
+
+    & a {
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: color var(--motion-fast) var(--motion-easing);
+    }
+
+    & a:hover {
+      color: var(--text);
+    }
+  }
+
+  .doc-author-name {
+    margin: 0 0 2px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .doc-end {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 28px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* 경로 표시줄 끝: 현재 장·절과 읽은 만큼의 코랄 진행선 */
+  .ide-crumbs-symbol {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    font: 400 12.5px/1 var(--family-sans);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ide-crumbs-progress {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background-color: var(--accent);
+    transform: scaleX(var(--progress, 0));
+    transform-origin: left;
+  }
+
+  /* 좁은 화면의 글 경로 표시줄은 지금 위치만 보인다 */
+  @media (max-width: 759px) {
+    .ide-crumbs:has(.ide-crumbs-symbol:not(:empty)) .ide-crumbs-path {
+      display: none;
     }
   }
 }

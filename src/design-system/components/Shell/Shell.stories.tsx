@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { setReading } from '../../stores/reading';
 import type { OutlineItem } from '../../stores/file.logic';
 import { Shell, type ShellProps } from './Shell';
 
@@ -31,6 +33,19 @@ const outline: OutlineItem[] = [
   },
   { id: 'end', text: '마치며', children: [{ id: 'say', text: '하고 싶은 말' }] },
 ];
+
+/** 글을 3~4년차까지 읽은 상태. 창 틀이 파일을 열며 읽기 위치를 비운 뒤에 채운다(형제 effect는 순서대로 돈다). */
+function ReadTo34() {
+  useEffect(() => {
+    setReading({
+      line: 28,
+      chapter: { id: 'developer', no: '04', text: '개발자란?' },
+      section: { id: 'y34', text: '3~4년차' },
+      percent: 53,
+    });
+  }, []);
+  return null;
+}
 
 /** 에디터 루트(페이지 ↔ 창 틀 계약). 실제 사이트에서는 Astro 레이아웃이 정적 HTML로 그린다. */
 function Editor({ file, children }: { file: Record<string, string>; children: React.ReactNode }) {
@@ -85,11 +100,15 @@ export const Home: Story = {
   ),
 };
 
-/** 글 열림 상태: 글 탭이 활성이고, 탐색기의 현재 글이 강조되며 그 아래 개요가 보인다. */
+/**
+ * 글 열림 상태: 글 탭이 활성이고, 탐색기의 현재 글이 강조되며 그 아래 개요가 보인다. 3~4년차까지 읽어
+ * 개요의 현재 항목과 세로선(53%), 상태줄 `04 개발자란? › 3~4년차 · Ln 28 · 53%`가 보인다.
+ */
 export const ArticleOpen: Story = {
   render: (args) => (
     <>
       <Shell {...args} />
+      <ReadTo34 />
       <Editor
         file={{
           title: '프로 개발자 2023일 후기',
