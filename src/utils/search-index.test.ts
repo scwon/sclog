@@ -212,6 +212,23 @@ describe('searchPost chapters and sections', () => {
     expect(block?.section).toEqual({ id: '3-4년차', text: '3~4년차' });
   });
 
+  it('pairs a Markdown heading inside a JSX element so the headings after it stay in step', () => {
+    const blocks = searchPost(
+      source({
+        body: '<details>\n\n# 안쪽\n\n</details>\n\n# 바깥\n\n문단',
+        headings: [
+          { depth: 1, slug: 'an', text: '안쪽' },
+          { depth: 1, slug: 'bak', text: '바깥' },
+        ],
+      }),
+    ).blocks.slice(6);
+    expect(blocks.map(({ chapter, text }) => [chapter?.id, text])).toEqual([
+      ['an', '안쪽'],
+      ['bak', '바깥'],
+      ['bak', '문단'],
+    ]);
+  });
+
   it('treats a setext heading as a heading', () => {
     const blocks = searchPost(
       source({ body: '장\n===\n\n문단', headings: [{ depth: 1, slug: 'jang', text: '장' }] }),
@@ -233,7 +250,7 @@ describe('searchPost plain text', () => {
     ['nothing inside snake_case', 'use_state 와 a_b_c', 'use_state 와 a_b_c'],
     [
       'link syntax but keeps the text',
-      '[문서](https://a.dev) 와 [참조][ref] 링크',
+      '[문서](https://a.dev) 와 [참조][ref] 링크\n\n[ref]: https://b.dev',
       '문서 와 참조 링크',
     ],
     ['images', '앞 ![그림](/a.png) 뒤', '앞 뒤'],
@@ -249,7 +266,7 @@ describe('searchPost plain text', () => {
     ],
     ['expressions', '값은 {props.value} 이고 {/* 메모 */} 끝', '값은 이고 끝'],
     ['escapes and entities', '\\*별\\* &amp; &lt;태그&gt; &#44;', '*별* & <태그> ,'],
-    ['autolink brackets', '<https://scwon.me> 로', 'https://scwon.me 로'],
+    ['nothing from a bare URL, which links itself', 'https://scwon.me 로', 'https://scwon.me 로'],
     ['line breaks', '첫 줄  \n둘째 줄<br/>셋째', '첫 줄 둘째 줄 셋째'],
   ])('strips %s', (_, body, expected) => {
     expect(bodyTexts(body)).toEqual([expected]);

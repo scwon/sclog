@@ -33,3 +33,7 @@
 **측정값**
 
 - 1200px 화면에서 ↗ 상자는 17.6px(본문 글자 크기 × 0.95)이고 링크 글자 줄 안에 들어간다. 숨은 글자는 1×1px이다. `target`은 비어 있다(ego-browser, `astro preview` 4311).
+
+### 2026-10-27 satteri 유지 결정
+
+- 이 티켓이 더한 직접 의존성 `satteri`·`@astrojs/markdown-satteri`는 그대로 둔다(사용자 결정). CLAUDE.md Tech Stack에 "MDX 처리" 줄로 적었다. 사용자 hast 단계는 `satteri({ hastPlugins })`에 두고, rehype 플러그인은 무시된다.
