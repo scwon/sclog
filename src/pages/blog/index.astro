@@ -1,15 +1,23 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Header from '../../components/Header.astro';
 import BlogCard from '../../components/BlogCard.astro';
 import { getPublishedPosts } from '../../utils/blog';
 
 const posts = await getPublishedPosts();
 ---
 
-<BaseLayout title="블로그" description="SCLOG - 개발 블로그의 모든 글 목록입니다.">
-  <Header />
-  <main class="container">
+<BaseLayout
+  title="블로그"
+  description="SCLOG - 개발 블로그의 모든 글 목록입니다."
+  file={{
+    title: '글 목록',
+    path: 'posts/',
+    url: '/blog/',
+    kind: 'page',
+    summary: `글 ${posts.length}편`,
+  }}
+>
+  <div class="container">
     <header class="page-header">
       <h1>블로그</h1>
       <p class="subtitle">개발 이야기와 경험을 공유합니다.</p>
@@ -24,7 +32,7 @@ const posts = await getPublishedPosts();
         ))}
       </div>
     )}
-  </main>
+  </div>
 </BaseLayout>
 
 <style>

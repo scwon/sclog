@@ -10,6 +10,7 @@
 @import './fonts.css';
 @import './base.css';
 @import './motion.css';
+@import './ide.css';
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 

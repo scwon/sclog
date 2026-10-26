@@ -4,7 +4,6 @@
  * 프로필, 소셜 링크, 경력, 최근 글 섹션을 표시
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
 import ProfileSection from '../components/ProfileSection.astro';
 import CareerSection from '../components/CareerSection.astro';
 import RecentPosts from '../components/RecentPosts.astro';
@@ -18,13 +17,19 @@ const recentPosts = posts.slice(0, 5);
 <BaseLayout
   title="SCLOG - 개발 블로그"
   description="프론트엔드 개발자의 기술 블로그. 개발 경험과 인사이트를 공유합니다."
+  file={{
+    title: 'posts.log',
+    path: 'posts.log',
+    url: '/',
+    kind: 'log',
+    summary: `글 ${posts.length}편`,
+  }}
 >
-  <Header />
-  <main class="container">
+  <div class="container">
     <ProfileSection profile={profile} socialLinks={socialLinks} />
     <CareerSection careers={careers} />
     <RecentPosts posts={recentPosts} totalCount={posts.length} />
-  </main>
+  </div>
 </BaseLayout>
 
 <style>

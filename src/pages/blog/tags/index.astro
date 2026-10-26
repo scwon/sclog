@@ -1,22 +1,30 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import Header from '../../../components/Header.astro';
 import TagList from '../../../components/TagList.astro';
 import { getAllTags } from '../../../utils/blog';
 
 const tags = await getAllTags();
 ---
 
-<BaseLayout title="태그" description="SCLOG 블로그의 모든 태그 목록입니다.">
-  <Header />
-  <main class="container">
+<BaseLayout
+  title="태그"
+  description="SCLOG 블로그의 모든 태그 목록입니다."
+  file={{
+    title: '태그',
+    path: 'tags/',
+    url: '/blog/tags/',
+    kind: 'page',
+    summary: `태그 ${tags.size}개`,
+  }}
+>
+  <div class="container">
     <header class="page-header">
       <h1>태그</h1>
       <p class="subtitle">관심 있는 주제를 선택하세요.</p>
     </header>
 
     {tags.size === 0 ? <p class="no-tags">아직 태그가 없습니다.</p> : <TagList tags={tags} />}
-  </main>
+  </div>
 </BaseLayout>
 
 <style>

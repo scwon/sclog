@@ -1,5 +1,14 @@
 ---
+/**
+ * 모든 화면의 레이아웃: 전체 화면 IDE 창.
+ * 창 틀(`Shell`)은 화면을 옮겨도 남는 아일랜드 하나이고(ADR 0001), 에디터 내용은 아래 `<main id="editor">` 안의
+ * 정적 HTML이다. 에디터 루트의 `data-file-*`와 개요 JSON이 페이지 ↔ 창 틀 계약이다.
+ */
+import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
+import { Shell } from '@/design-system';
+import { getPublishedPosts } from '../utils/blog';
+import { buildTree, type IdeFile, type IdeOutlineItem } from '../utils/ide';
 import '../styles/global.css';
 
 interface Props {
@@ -10,6 +19,10 @@ interface Props {
   publishedTime?: Date;
   modifiedTime?: Date;
   tags?: string[];
+  /** 에디터에 열린 파일. 탭·창 제목·상태줄·경로 표시줄이 이 값을 쓴다. */
+  file: IdeFile;
+  /** 글의 개요(탐색기 아래 목차). */
+  outline?: IdeOutlineItem[];
 }
 
 const {
@@ -20,18 +33,35 @@ const {
   publishedTime,
   modifiedTime,
   tags,
+  file,
+  outline,
 } = Astro.props;
+
+const tree = buildTree(await getPublishedPosts());
+
+// 경로 표시줄: posts › 2023 › <파일>.mdx, posts › posts.log, tags › <태그>
+const segments = file.kind === 'log' ? ['posts', file.path] : file.path.split('/').filter(Boolean);
+const sectionHref: Record<string, string> = { posts: '/', tags: '/blog/tags/' };
+const crumbs = segments.map((label, index) => ({
+  label,
+  href: index < segments.length - 1 ? sectionHref[label] : undefined,
+  current: index === segments.length - 1,
+}));
+
+// `</script>`로 JSON이 끊기지 않게 `<`를 이스케이프한다.
+const outlineJson =
+  outline && outline.length > 0 ? JSON.stringify(outline).replaceAll('<', '\\u003c') : undefined;
 ---
 
 <!doctype html>
-<html lang="ko">
+<html lang="ko" transition:animate="none">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Preload profile hover alternate image -->
-    <link rel="preload" href="/images/scwon_dot.png" as="image" />
-    <!-- 첫 페인트 전에 테마를 정한다: 저장값 → 시스템 설정 → 어두운 테마 -->
+    <!-- 첫 페인트 전에 테마를 정한다: 저장값 → 시스템 설정 → 어두운 테마.
+         화면을 옮길 때는 <html> 속성이 새 문서 것으로 바뀌므로 바꾸기 직전에 지금 테마를 옮겨 붙인다. -->
     <script is:inline>
       (function () {
         var theme = null;
@@ -42,6 +72,15 @@ const {
           theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         }
         document.documentElement.setAttribute('data-theme', theme);
+        if (!window.sclogThemeCarry) {
+          window.sclogThemeCarry = true;
+          document.addEventListener('astro:before-swap', function (event) {
+            event.newDocument.documentElement.setAttribute(
+              'data-theme',
+              document.documentElement.getAttribute('data-theme') || 'dark',
+            );
+          });
+        }
       })();
     </script>
     <meta name="generator" content={Astro.generator} />
@@ -54,8 +93,45 @@ const {
       modifiedTime={modifiedTime}
       tags={tags}
     />
+    <ClientRouter />
   </head>
   <body>
-    <slot />
+    <a class="ide-skip" href="#editor">
+      본문으로 건너뛰기
+    </a>
+    <Shell
+      client:load
+      transition:persist="shell"
+      brand="scwon’s blog"
+      author="원성철"
+      githubUrl="https://github.com/scwon"
+      sourceUrl="https://github.com/scwon/sclog"
+      tree={tree}
+    />
+    <main
+      id="editor"
+      class="ide-editor"
+      tabindex="-1"
+      data-file-title={file.title}
+      data-file-path={file.path}
+      data-file-url={file.url}
+      data-file-kind={file.kind}
+      data-file-size={file.size}
+      data-file-reading={file.reading}
+      data-file-summary={file.summary}
+    >
+      <div class="ide-crumbs">
+        <ol class="ide-crumbs-path" aria-label="위치">
+          {crumbs.map((crumb) => (
+            <li aria-current={crumb.current ? 'page' : undefined}>
+              {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : crumb.label}
+            </li>
+          ))}
+        </ol>
+        <slot name="crumbs-end" />
+      </div>
+      <slot />
+    </main>
+    {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
   </body>
 </html>

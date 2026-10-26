@@ -10,6 +10,9 @@ const TAB_LINK = 'a[data-tab-link]';
 const serverTabs = () => toTabRecord(initialTabs().files);
 const serverActive = () => initialTabs().active;
 
+/** 글 파일(`.mdx`)은 파일 이름만, 나머지(`posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
+const tabLabel = (path: string) => (path.endsWith('.mdx') ? path.split('/').pop() : path);
+
 /** `Tabs`의 props. */
 export interface TabsProps {
   /**
@@ -146,7 +149,7 @@ export function Tabs({
                 )}
               >
                 <TabGlyph pinned={pinned} />
-                {file.path.split('/').pop()}
+                {tabLabel(file.path)}
               </a>
               {!pinned && (
                 <button

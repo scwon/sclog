@@ -1,11 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
 ---
 
-<BaseLayout title="페이지를 찾을 수 없습니다" description="요청하신 페이지가 존재하지 않습니다.">
-  <Header />
-  <main class="container">
+<BaseLayout
+  title="페이지를 찾을 수 없습니다"
+  description="요청하신 페이지가 존재하지 않습니다."
+  file={{ title: '페이지를 찾을 수 없습니다', path: '404', url: '/404', kind: 'page' }}
+>
+  <div class="container">
     <div class="error-page">
       <h1 class="error-code">404</h1>
       <h2 class="error-title">페이지를 찾을 수 없습니다</h2>
@@ -19,7 +21,7 @@ import Header from '../components/Header.astro';
         </a>
       </div>
     </div>
-  </main>
+  </div>
 </BaseLayout>
 
 <style>

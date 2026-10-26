@@ -76,8 +76,10 @@ function syncFromAttribute(): void {
   $theme.set(readAttribute());
 }
 
-// 구독자가 생기면 `data-theme` 변화와 시스템 설정 변경을 듣는다.
+// 구독자가 생기면 `data-theme` 변화와 시스템 설정 변경을 듣는다. nanostores는 서버 렌더링 중 `get()`에도
+// 잠깐 마운트하므로, DOM이 없으면 아무것도 하지 않는다.
 onMount($theme, () => {
+  if (typeof document === 'undefined') return;
   syncFromAttribute();
   const observer = new MutationObserver(syncFromAttribute);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

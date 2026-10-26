@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import Header from '../../../components/Header.astro';
 import BlogCard from '../../../components/BlogCard.astro';
 import { getAllTags, getPostsByTag } from '../../../utils/blog';
 
@@ -15,9 +14,18 @@ const { tag } = Astro.params;
 const posts = await getPostsByTag(tag);
 ---
 
-<BaseLayout title={`#${tag} 태그 글`} description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}>
-  <Header />
-  <main class="container">
+<BaseLayout
+  title={`#${tag} 태그 글`}
+  description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}
+  file={{
+    title: `#${tag}`,
+    path: `tags/${tag}`,
+    url: `/blog/tags/${tag}/`,
+    kind: 'page',
+    summary: `글 ${posts.length}편`,
+  }}
+>
+  <div class="container">
     <header class="page-header">
       <a href="/blog/tags" class="back-link">
         ← 모든 태그
@@ -35,7 +43,7 @@ const posts = await getPostsByTag(tag);
         ))}
       </div>
     )}
-  </main>
+  </div>
 </BaseLayout>
 
 <style>

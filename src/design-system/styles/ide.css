@@ -1,0 +1,131 @@
+/*
+ * IDE 창 틀 둘레의 정적 HTML 스타일(에디터 영역·경로 표시줄·건너뛰기 링크).
+ * 창 틀 자체(제목 표시줄·활동 막대·탐색기·탭·상태줄)는 `Shell` 컴포넌트가 유틸리티로 그린다.
+ * 출처: specs/010-blog-renewal/prototype/blog-opus/ide.css
+ */
+
+/*
+ * 에디터의 왼쪽 여백. 고정된 활동 막대와 탐색기만큼 비운다. `Shell`이 탐색기를 닫으면
+ * `<html data-explorer="closed">`를 붙이고, 탭 표시줄도 같은 값을 쓴다.
+ * - 760px 미만: 활동 막대가 없고 탐색기는 서랍이다
+ * - 1100px 미만: 탐색기는 겹침 패널이다
+ */
+@layer base {
+  :root {
+    --editor-left: 0px;
+    --editor-top: calc(var(--bar-height) * 2);
+  }
+
+  @media (min-width: 760px) {
+    :root {
+      --editor-left: var(--rail-width);
+    }
+  }
+
+  @media (min-width: 1100px) {
+    :root:not([data-explorer='closed']) {
+      --editor-left: calc(var(--rail-width) + var(--panel-width));
+    }
+  }
+
+  html {
+    scroll-padding-top: calc(var(--editor-top) + var(--bar-height-sm) + 24px);
+  }
+}
+
+@layer components {
+  .ide-skip {
+    position: fixed;
+    z-index: 60;
+    top: -80px;
+    left: 16px;
+    padding: 12px 18px;
+    border-radius: var(--corner-md);
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+
+    &:focus {
+      top: 16px;
+    }
+  }
+
+  /* 에디터: 창 틀 아일랜드 밖의 정적 HTML. 고정 요소와 겹치지 않게 창 치수만큼 비운다. */
+  .ide-editor {
+    position: relative;
+    min-height: 100vh;
+    margin-left: var(--editor-left);
+    padding: var(--editor-top) 0 var(--bar-height-xs);
+    outline: none;
+  }
+
+  /* 경로 표시줄: 탭 아래에 붙어 있는 줄 */
+  .ide-crumbs {
+    position: sticky;
+    z-index: 20;
+    top: var(--editor-top);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--bar-height-sm);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background-color: var(--surface);
+    color: var(--text-muted);
+    font: 400 12px/1 var(--family-mono);
+
+    @media (max-width: 759px) {
+      padding: 0 12px 0 14px;
+    }
+  }
+
+  .ide-crumbs-path {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    list-style: none;
+
+    & a {
+      transition: color var(--motion-fast) var(--motion-easing);
+    }
+
+    & a:hover {
+      color: var(--text);
+    }
+
+    & li + li::before {
+      content: '›';
+      margin-right: 7px;
+      opacity: 0.7;
+    }
+
+    & [aria-current] {
+      color: var(--text-soft);
+    }
+  }
+
+  /* 경로 표시줄의 `개요` 버튼. 좁은 화면에서 탐색기(개요)를 연다 */
+  .ide-crumbs-outline {
+    display: none;
+    flex: none;
+    align-items: center;
+    height: 24px;
+    margin-left: auto;
+    padding: 0 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--corner-sm);
+    background-color: var(--surface-raised);
+    color: var(--text-soft);
+    font: 500 12px/1 var(--family-sans);
+    cursor: pointer;
+
+    @media (max-width: 759px) {
+      display: inline-flex;
+    }
+  }
+}

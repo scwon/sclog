@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveInitialTheme } from '@/design-system/stores/theme.logic';
 
@@ -27,22 +27,39 @@ function themeScript(html: string): string | undefined {
     .find((body) => body.includes('data-theme'));
 }
 
+/** dist 안 경로 → 그 페이지의 URL: `index.html` → `/`, `a/index.html` → `/a/`, `404.html` → `/404` */
+function urlOf(path: string): string {
+  const relative = path
+    .slice(dist.length + 1)
+    .split(sep)
+    .join('/');
+  return relative.endsWith('index.html')
+    ? `/${relative.slice(0, -'index.html'.length)}`
+    : `/${relative.slice(0, -'.html'.length)}`;
+}
+
+/** 에디터 루트(`<main>`)의 `data-file-url`. */
+function fileUrl(html: string): string | undefined {
+  return /<main[^>]*\bdata-file-url="([^"]*)"/.exec(html)?.[1];
+}
+
 interface Environment {
   stored?: string | null;
   storageThrows?: boolean;
   prefersLight?: boolean;
 }
 
-/** 스크립트를 브라우저 대역(localStorage·matchMedia·documentElement) 위에서 실행하고 붙은 테마를 돌려준다. */
-function runThemeScript(script: string, env: Environment): string | undefined {
+/** 스크립트를 브라우저 대역(localStorage·matchMedia·documentElement) 위에서 실행한다. */
+function runThemeScript(script: string, env: Environment) {
   const attributes = new Map<string, string>();
+  const listeners = new Map<string, (event: unknown) => void>();
   const localStorage = {
-    getItem(key: string) {
+    getItem(name: string) {
       if (env.storageThrows) throw new Error('SecurityError');
-      return key === 'theme' ? (env.stored ?? null) : null;
+      return name === 'theme' ? (env.stored ?? null) : null;
     },
   };
-  const window = {
+  const window: Record<string, unknown> = {
     localStorage,
     matchMedia: (query: string) => ({
       matches: query.includes('light') ? Boolean(env.prefersLight) : !env.prefersLight,
@@ -51,10 +68,10 @@ function runThemeScript(script: string, env: Environment): string | undefined {
   const document = {
     documentElement: {
       setAttribute: (name: string, value: string) => attributes.set(name, value),
-      dataset: new Proxy({} as Record<string, string>, {
-        set: (_, key, value) => (attributes.set(`data-${String(key)}`, String(value)), true),
-      }),
+      getAttribute: (name: string) => attributes.get(name) ?? null,
     },
+    addEventListener: (type: string, listener: (event: unknown) => void) =>
+      listeners.set(type, listener),
   };
   new Function('window', 'document', 'localStorage', 'matchMedia', script)(
     window,
@@ -62,7 +79,7 @@ function runThemeScript(script: string, env: Environment): string | undefined {
     localStorage,
     window.matchMedia,
   );
-  return attributes.get('data-theme');
+  return { theme: attributes.get('data-theme'), listeners };
 }
 
 describe.skipIf(!built)('build output', () => {
@@ -96,7 +113,39 @@ describe.skipIf(!built)('build output', () => {
         stored: env.storageThrows ? null : env.stored,
         prefersLight: env.prefersLight,
       });
-      expect(runThemeScript(script, env)).toBe(expected);
+      expect(runThemeScript(script, env).theme).toBe(expected);
+    });
+
+    // <ClientRouter />는 화면을 옮길 때 <html> 속성을 새 문서 것으로 바꾸므로, 바꾸기 직전에 지금 테마를 옮겨 붙인다.
+    it('carries the current theme onto the next page before a client-side swap', () => {
+      const { listeners } = runThemeScript(script, { stored: 'light' });
+      const next = new Map<string, string>();
+      listeners.get('astro:before-swap')?.({
+        newDocument: {
+          documentElement: { setAttribute: (n: string, v: string) => next.set(n, v) },
+        },
+      });
+      expect(next.get('data-theme')).toBe('light');
+    });
+  });
+
+  describe('page ↔ shell contract', () => {
+    it('gives every page an editor root whose data-file-url is its own URL', () => {
+      const mismatched = pages
+        .map(({ path, html }) => ({ expected: urlOf(path), actual: fileUrl(html) }))
+        .filter(({ expected, actual }) => actual !== expected);
+      expect(mismatched).toEqual([]);
+    });
+
+    it('keeps the post URLs: every post source has /blog/<slug>/', () => {
+      const slugs = readdirSync(resolve(import.meta.dirname, '../content/blog'))
+        .filter((name) => name.endsWith('.mdx'))
+        .map((name) => name.slice(0, -'.mdx'.length));
+      expect(slugs.length).toBeGreaterThan(0);
+      const missing = slugs.filter(
+        (slug) => !existsSync(resolve(dist, 'blog', slug, 'index.html')),
+      );
+      expect(missing).toEqual([]);
     });
   });
 
