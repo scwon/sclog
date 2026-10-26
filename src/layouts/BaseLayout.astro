@@ -3,6 +3,7 @@
  * 모든 화면의 레이아웃: 전체 화면 IDE 창.
  * 창 틀(`Shell`)은 화면을 옮겨도 남는 아일랜드 하나이고(ADR 0001), 에디터 내용은 아래 `<main id="editor">` 안의
  * 정적 HTML이다. 에디터 루트의 `data-file-*`와 개요 JSON이 페이지 ↔ 창 틀 계약이다.
+ * `<html>`의 `transition:name="root"`는 테마 퍼짐(motion.css)이 고르는 전환 이름이다. 화면 이동 움직임은 `none`으로 끈다.
  */
 import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
@@ -55,7 +56,7 @@ const outlineJson =
 ---
 
 <!doctype html>
-<html lang="ko" transition:animate="none">
+<html lang="ko" transition:animate="none" transition:name="root">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

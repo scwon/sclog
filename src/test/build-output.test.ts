@@ -3,6 +3,8 @@ import { resolve, sep } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { SearchIndex } from '@/design-system';
+import type { TreeYear } from '@/design-system/components/Shell/Shell';
+import { nextFile } from '@/design-system/components/Shell/tree.logic';
 import { resolveInitialTheme } from '@/design-system/stores/theme.logic';
 
 /**
@@ -103,6 +105,17 @@ function publishedPostUrls(): string[] {
     .filter(({ date, draft }) => !draft && date.valueOf() <= Date.now())
     .toSorted((a, b) => b.date.valueOf() - a.date.valueOf())
     .map(({ url }) => url);
+}
+
+/** 글 끝 이동 줄(`nav.doc-end`)의 줄들: 링크 주소, 라벨, 접근 가능한 이름(`aria-label`), 꼬리표 자리 유무. */
+function docEndLines(html: string) {
+  const nav = /<nav class="doc-end"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+  return [...nav.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map(([, line]) => ({
+    href: /<a\b[^>]*\bhref="([^"]*)"/.exec(line)?.[1],
+    label: /class="doc-end-label"[^>]*>([^<]*)</.exec(line)?.[1],
+    name: /<a\b[^>]*\baria-label="([^"]*)"/.exec(line)?.[1],
+    mark: line.includes('data-next-file-mark'),
+  }));
 }
 
 interface Environment {
@@ -250,6 +263,64 @@ describe.skipIf(!built)('build output', () => {
             'in docs/research/blog-search.md require.';
       expect(verdict).toBe('under 100KB');
     });
+  });
+
+  describe('doc end lines', () => {
+    const posts = pages
+      .map(({ html }) => ({
+        html,
+        kind: /<main[^>]*\bdata-file-kind="([^"]*)"/.exec(html)?.[1],
+        url: fileUrl(html) ?? '',
+        title: /<main[^>]*\bdata-file-title="([^"]*)"/.exec(html)?.[1] ?? '',
+        path: /<main[^>]*\bdata-file-path="([^"]*)"/.exec(html)?.[1] ?? '',
+        published: /property="article:published_time" content="([^"]*)"/.exec(html)?.[1] ?? '',
+      }))
+      .filter(({ kind }) => kind === 'post');
+
+    // 글 페이지들로 탐색기 트리를 다시 짓는다: `posts/<연도>/…`의 연도 폴더, 폴더 안은 새 글 먼저.
+    const tree: TreeYear[] = [...new Set(posts.map(({ path }) => path.split('/')[1]))]
+      .toSorted((a, b) => b.localeCompare(a))
+      .map((year) => ({
+        year,
+        files: posts
+          .filter(({ path }) => path.split('/')[1] === year)
+          .toSorted((a, b) => b.published.localeCompare(a.published))
+          .map(({ url, title, path }) => ({ url, title, path })),
+      }));
+
+    it.each(posts.map(({ url, html }) => ({ url, html })))(
+      'ends $url with the next file line (only when the folder has a newer post), posts.log, 맨 위로',
+      ({ url, html }) => {
+        const next = nextFile(tree, url);
+        const nextLine = next
+          ? [
+              {
+                href: next.url,
+                label: `${next.path.split('/').at(-1)} →`,
+                name: `다음 파일: ${next.title}`,
+                mark: true,
+              },
+            ]
+          : [];
+        expect(docEndLines(html)).toEqual([
+          ...nextLine,
+          { href: '/', label: 'posts.log', name: undefined, mark: false },
+          { href: '#editor', label: '맨 위로', name: undefined, mark: false },
+        ]);
+      },
+    );
+  });
+
+  it('names the <html> view transition root on every page, for the theme spread', () => {
+    // Astro는 `<html>`에 범위 속성을 붙이고, 그 범위의 이름을 `<head>`의 `<style>`에 적는다.
+    const unnamed = pages.filter(({ html }) => {
+      const scope = /<html\b[^>]*\bdata-astro-transition-scope="([^"]+)"/.exec(html)?.[1];
+      return (
+        !scope ||
+        !html.includes(`[data-astro-transition-scope="${scope}"] { view-transition-name: root; }`)
+      );
+    });
+    expect(unnamed.map(({ path }) => path)).toEqual([]);
   });
 
   it('lists every page except 404 in the sitemap, with the same URLs', () => {

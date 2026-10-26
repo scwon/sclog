@@ -4,7 +4,9 @@ import {
   initialPanel,
   panelVisible,
   pickView,
+  restorePanelView,
   showView,
+  startView,
   togglePanel,
   viewForFile,
 } from './panel.logic';
@@ -90,5 +92,41 @@ describe('viewForFile (파일을 열었을 때의 패널 화면)', () => {
   it('keeps the current view on other pages', () => {
     expect(viewForFile('profile', 'page')).toBe('profile');
     expect(viewForFile('explorer', 'page')).toBe('explorer');
+  });
+});
+
+describe('restorePanelView (저장해 둔 마지막 패널 화면)', () => {
+  it('restores a saved view', () => {
+    expect(restorePanelView({ v: 1, view: 'profile' })).toBe('profile');
+    expect(restorePanelView({ v: 1, view: 'explorer' })).toBe('explorer');
+  });
+
+  it('drops a value with another version', () => {
+    expect(restorePanelView({ v: 2, view: 'profile' })).toBeNull();
+    expect(restorePanelView({ view: 'profile' })).toBeNull();
+  });
+
+  it('drops an unknown view or a malformed value', () => {
+    expect(restorePanelView({ v: 1, view: 'terminal' })).toBeNull();
+    expect(restorePanelView({ v: 1 })).toBeNull();
+    expect(restorePanelView('profile')).toBeNull();
+    expect(restorePanelView(null)).toBeNull();
+  });
+});
+
+describe('startView (새로고침 뒤 처음 패널 화면)', () => {
+  it('keeps the restored view on pages without a rule', () => {
+    expect(startView('profile', 'page')).toBe('profile');
+  });
+
+  it('applies the file rule over the restored view', () => {
+    expect(startView('explorer', 'log')).toBe('profile');
+    expect(startView('profile', 'post')).toBe('explorer');
+  });
+
+  it('starts from the explorer when nothing is saved', () => {
+    expect(startView(null, 'page')).toBe('explorer');
+    expect(startView(null, 'log')).toBe('profile');
+    expect(startView(null)).toBe('explorer');
   });
 });

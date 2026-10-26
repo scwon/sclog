@@ -13,6 +13,7 @@ export {
   type TreeFile,
   type TreeYear,
 } from './components/Shell/Shell';
+export { nextFile } from './components/Shell/tree.logic';
 export { Tabs, type TabsProps } from './components/Tabs/Tabs';
 export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip/Tooltip';
