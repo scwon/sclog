@@ -473,7 +473,8 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
  *
  * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
- * 검색 화면(`SearchView`)은 처음 열 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다.
+ * 검색 화면(`SearchView`)은 처음 보일 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다. 마지막 화면이
+ * 검색이어도 패널이 닫혀 있으면 받지 않는다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
  * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
@@ -525,6 +526,11 @@ export function Shell({
   const visible = panelVisible(panel, desktop);
   const overlay = !desktop && openMode === 'open';
   const explorerShown = visible && panel.view === 'explorer';
+  // 검색 화면이 한 번이라도 보였는가. 그 전에는 마지막 화면이 검색이어도 패널이 닫혀 있으면(좁은 화면) 검색 화면
+  // 청크와 색인을 받지 않는다. 한 번 보인 뒤에는 패널을 닫아도 그려 둔 채 둔다.
+  const [searchShown, setSearchShown] = useState(false);
+  if (visible && panel.view === 'search' && !searchShown) setSearchShown(true);
+
   const pick = useCallback(
     (view: PanelView) => {
       updatePanel((state, wide) => pickView(state, view, wide));
@@ -869,11 +875,13 @@ export function Shell({
         {panel.view === 'profile' ? (
           <ProfileView profile={profile} history={summarizeHistory(history)} />
         ) : panel.view === 'search' ? (
-          <Suspense
-            fallback={<p className="m-0 px-4 py-2 font-mono text-[11.5px] text-text-muted">…</p>}
-          >
-            <SearchView indexUrl={searchIndexUrl} />
-          </Suspense>
+          searchShown && (
+            <Suspense
+              fallback={<p className="m-0 px-4 py-2 font-mono text-[11.5px] text-text-muted">…</p>}
+            >
+              <SearchView indexUrl={searchIndexUrl} />
+            </Suspense>
+          )
         ) : (
           <>
             <section aria-labelledby="explorer-posts" className="pb-2">

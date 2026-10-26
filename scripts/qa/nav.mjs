@@ -479,6 +479,18 @@ const searchInput = () =>
     const input = document.querySelector('#panel input[type=search]');
     return input ? { value: input.value, focused: document.activeElement === input } : null;
   });
+/** 검색 입력창에 포커스가 올 때까지 기다린다. 포커스는 다음 프레임에 주는데 자동화 탭은 프레임이 느리다. */
+const searchFocused = () =>
+  page
+    .waitForFunction(
+      () => document.activeElement?.matches('#panel input[type=search]') === true,
+      undefined,
+      { timeout: 3000 },
+    )
+    .then(
+      () => true,
+      () => false,
+    );
 check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
 // 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
 await page.evaluate(() => {
@@ -489,7 +501,7 @@ await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검
 });
 await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
 check('패널이 검색 화면', (await panelView()) === '검색');
-check('검색 입력창에 포커스', (await searchInput())?.focused === true);
+check('검색 입력창에 포커스', await searchFocused());
 await page.fill('loc=css:#panel input[type=search]', '개발');
 await page.waitForFunction(
   () => /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
@@ -513,6 +525,43 @@ if (hit) {
   check('새로고침 뒤에도 검색 화면', (await panelView()) === '검색');
   check('새로고침하면 검색어가 비워짐', (await searchInput())?.value === '');
 }
+
+// 좁은 화면(900px, 패널이 겹쳐 열린다): 마지막 패널 화면이 검색이어도 패널이 닫혀 있으면 색인을 받지 않는다.
+// ⌘⇧F로 겹침 패널과 함께 입력창에 포커스가 가고, 거기서 Esc로 겹침 패널을 닫는다. 활동 막대의 검색 버튼으로
+// 두 번째 열 때도 입력창에 포커스가 간다.
+await page.cdp('Emulation.setDeviceMetricsOverride', {
+  width: 900,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
+await page.reload();
+await page.waitForTimeout(1500);
+check('좁은 화면: 패널이 닫혀 있음', !(await panelShown()));
+check('좁은 화면: 닫힌 검색 화면은 색인을 받지 않음', !(await indexRequested()));
+check('에디터에 포커스(좁은 화면 ⌘⇧F 전)', await focusEditor());
+await page.keyboard.press('ControlOrMeta+Shift+F');
+check('좁은 화면: ⌘⇧F로 검색 입력창에 포커스', await searchFocused());
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+check('좁은 화면: 검색 입력창에서 Esc로 겹침 패널이 닫힘', !(await panelShown()));
+for (const round of ['처음', '두 번째']) {
+  await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+    label: `검색 버튼(${round})`,
+  });
+  check(`좁은 화면: 검색 버튼으로 ${round} 열면 입력창에 포커스`, await searchFocused());
+  await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+    label: `검색 버튼으로 닫기(${round})`,
+  });
+  await page.waitForTimeout(300);
+}
+check('좁은 화면: 검색 버튼으로 닫힘', !(await panelShown()));
+await page.cdp('Emulation.setDeviceMetricsOverride', {
+  width: 1440,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
 
 const events = await page.events();
 const errors = events
