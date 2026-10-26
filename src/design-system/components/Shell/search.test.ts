@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SearchBlock, SearchIndex, SearchPost } from '../../stores/search-index';
+import type { SearchBlock, SearchIndex, SearchPost } from './search-index';
 import { capHits, excerpt, searchPosts } from './search.logic';
 
 const developer = { id: '개발자란', no: '04', text: '개발자란?' };

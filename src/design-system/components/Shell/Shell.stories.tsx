@@ -5,7 +5,7 @@ import { $readingHistory } from '../../stores/readingHistory';
 import { emptyHistory, type ReadingHistory } from '../../stores/readingHistory.logic';
 import type { OutlineItem } from '../../stores/file.logic';
 import { setSearchQuery } from '../../stores/search';
-import type { SearchBlock, SearchIndex } from '../../stores/search-index';
+import type { SearchBlock, SearchIndex } from './search-index';
 import { writePanelView } from './panel';
 import { Shell, type ShellProps } from './Shell';
 

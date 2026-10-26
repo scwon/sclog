@@ -362,15 +362,43 @@ if (middle) {
   await page.waitForTimeout(1500);
   await page.click("loc=css:header a[href='/']", { label: '홈으로' });
   await page.waitForTimeout(800);
+  // 글이 열린 때(`astro:page-load`)와 버튼이 뜬 때를 페이지 시계로 잰다. 자동화 탭은 화면 이동이 느릴 수 있어
+  // 클릭부터 고정 시간을 기다리지 않고, 버튼을 기다린 뒤 열기 요약(약 2.2초)이 끝난 다음에 떴는지 본다.
+  await page.evaluate(() => {
+    const timing = {};
+    window.qaResume = timing;
+    document.addEventListener('astro:page-load', () => (timing.open ??= performance.now()), {
+      once: true,
+    });
+    const footer = document.querySelector('footer');
+    const observer = new MutationObserver(() => {
+      if (!footer?.querySelector('button')) return;
+      timing.offered = performance.now();
+      observer.disconnect();
+    });
+    if (footer) observer.observe(footer, { childList: true, subtree: true });
+    return true;
+  });
   await page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 다시 열기' });
   await page.waitForTimeout(1000);
   check(
     '이어 읽기: 열기 요약 동안은 버튼이 없음',
     !(await page.evaluate(() => !!document.querySelector('footer button'))),
   );
-  await page.waitForTimeout(1700);
+  try {
+    await page.waitForSelector('loc=css:footer button', { state: 'visible', timeout: 6000 });
+  } catch {
+    // 아래 확인이 실패로 남긴다.
+  }
   const offered = await statusLine();
+  const timing = await page.evaluate(() => ({ ...window.qaResume }));
+  const after = timing.open && timing.offered ? Math.round(timing.offered - timing.open) : null;
   check('이어 읽기: 버튼이 뜸', offered.includes('에서 이어 읽기 ·'), offered);
+  check(
+    '이어 읽기: 열기 요약이 끝난 뒤에 뜸',
+    after !== null && after >= 2000,
+    after === null ? '' : `글이 열리고 ${after}ms`,
+  );
   await page.click('loc=css:footer button', { label: '이어 읽기 누르기' });
   await page.waitForTimeout(800);
   const resumed = await page.evaluate(() => ({
@@ -451,6 +479,18 @@ const searchInput = () =>
     const input = document.querySelector('#panel input[type=search]');
     return input ? { value: input.value, focused: document.activeElement === input } : null;
   });
+/** 검색 입력창에 포커스가 올 때까지 기다린다. 포커스는 다음 프레임에 주는데 자동화 탭은 프레임이 느리다. */
+const searchFocused = () =>
+  page
+    .waitForFunction(
+      () => document.activeElement?.matches('#panel input[type=search]') === true,
+      undefined,
+      { timeout: 3000 },
+    )
+    .then(
+      () => true,
+      () => false,
+    );
 check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
 // 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
 await page.evaluate(() => {
@@ -461,7 +501,7 @@ await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검
 });
 await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
 check('패널이 검색 화면', (await panelView()) === '검색');
-check('검색 입력창에 포커스', (await searchInput())?.focused === true);
+check('검색 입력창에 포커스', await searchFocused());
 await page.fill('loc=css:#panel input[type=search]', '개발');
 await page.waitForFunction(
   () => /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
@@ -485,6 +525,43 @@ if (hit) {
   check('새로고침 뒤에도 검색 화면', (await panelView()) === '검색');
   check('새로고침하면 검색어가 비워짐', (await searchInput())?.value === '');
 }
+
+// 좁은 화면(900px, 패널이 겹쳐 열린다): 마지막 패널 화면이 검색이어도 패널이 닫혀 있으면 색인을 받지 않는다.
+// ⌘⇧F로 겹침 패널과 함께 입력창에 포커스가 가고, 거기서 Esc로 겹침 패널을 닫는다. 활동 막대의 검색 버튼으로
+// 두 번째 열 때도 입력창에 포커스가 간다.
+await page.cdp('Emulation.setDeviceMetricsOverride', {
+  width: 900,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
+await page.reload();
+await page.waitForTimeout(1500);
+check('좁은 화면: 패널이 닫혀 있음', !(await panelShown()));
+check('좁은 화면: 닫힌 검색 화면은 색인을 받지 않음', !(await indexRequested()));
+check('에디터에 포커스(좁은 화면 ⌘⇧F 전)', await focusEditor());
+await page.keyboard.press('ControlOrMeta+Shift+F');
+check('좁은 화면: ⌘⇧F로 검색 입력창에 포커스', await searchFocused());
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+check('좁은 화면: 검색 입력창에서 Esc로 겹침 패널이 닫힘', !(await panelShown()));
+for (const round of ['처음', '두 번째']) {
+  await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+    label: `검색 버튼(${round})`,
+  });
+  check(`좁은 화면: 검색 버튼으로 ${round} 열면 입력창에 포커스`, await searchFocused());
+  await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+    label: `검색 버튼으로 닫기(${round})`,
+  });
+  await page.waitForTimeout(300);
+}
+check('좁은 화면: 검색 버튼으로 닫힘', !(await panelShown()));
+await page.cdp('Emulation.setDeviceMetricsOverride', {
+  width: 1440,
+  height: 900,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
 
 const events = await page.events();
 const errors = events

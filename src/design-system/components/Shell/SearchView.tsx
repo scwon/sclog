@@ -3,8 +3,14 @@ import { atom } from 'nanostores';
 import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
 import { Button } from '../Button/Button';
-import { $searchFocus, $searchQuery, setSearchQuery } from '../../stores/search';
-import type { SearchIndex } from '../../stores/search-index';
+import { FileGlyph } from './icons';
+import {
+  $searchFocus,
+  $searchQuery,
+  clearSearchFocusRequest,
+  setSearchQuery,
+} from '../../stores/search';
+import { SEARCH_INDEX_VERSION, type SearchIndex } from './search-index';
 import { capHits, excerpt, searchPosts, type SearchFile, type SearchHit } from './search.logic';
 
 /**
@@ -25,7 +31,7 @@ function isSearchIndex(value: unknown): value is SearchIndex {
   return (
     typeof value === 'object' &&
     value !== null &&
-    (value as { v?: unknown }).v === 1 &&
+    (value as { v?: unknown }).v === SEARCH_INDEX_VERSION &&
     Array.isArray((value as { posts?: unknown }).posts)
   );
 }
@@ -110,10 +116,7 @@ function FileGroup({ file }: { file: SearchFile }) {
         className="flex h-7 w-full cursor-pointer items-center gap-1.5 pr-3 pl-3 font-mono text-xs text-text transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover focus-visible:-outline-offset-2"
       >
         <Twisty folded={folded} />
-        <span
-          aria-hidden="true"
-          className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-        />
+        <FileGlyph />
         <span className="truncate">{file.name}</span>
         <span className="ml-auto rounded-full bg-state-selected px-1.5 text-[11px] leading-[1.5] text-text-soft">
           <span className="sr-only">일치 </span>
@@ -170,7 +173,7 @@ export default function SearchView({ indexUrl }: SearchViewProps) {
   useEffect(() => {
     if (!focusRequested) return;
     input.current?.focus();
-    $searchFocus.set(false);
+    clearSearchFocusRequest();
   }, [focusRequested]);
 
   const results = useMemo(
@@ -183,6 +186,7 @@ export default function SearchView({ indexUrl }: SearchViewProps) {
       <div className="px-3 pt-1 pb-2">
         <input
           ref={input}
+          data-search-input=""
           type="search"
           value={query}
           onChange={(event) => setSearchQuery(event.target.value)}

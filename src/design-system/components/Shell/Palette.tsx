@@ -15,14 +15,15 @@ import {
   type Ref,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { FileGlyph } from './icons';
 import {
   isCommandQuery,
   paletteCommands,
   paletteFiles,
   type PaletteCommandId,
-  type PaletteTree,
 } from './palette.logic';
-import { SHORTCUT_KEYS, keyLabel, type Platform } from './shortcuts.logic';
+import { SHORTCUT_KEYS, keyLabel, type Platform, type ShellCommand } from './shortcuts.logic';
+import type { TreeYear } from './Shell';
 
 /** 창 틀이 팔레트에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 팔레트는 그 결과만 받는다. */
 export interface PaletteHandle {
@@ -35,7 +36,7 @@ export interface PaletteHandle {
 /** `Palette`의 props. */
 export interface PaletteProps {
   /** 탐색기 트리 props. 팔레트는 이것만 거르고 검색 색인은 받지 않는다. */
-  tree: PaletteTree[];
+  tree: TreeYear[];
   /** 키 표기를 고르는 플랫폼. 창 틀이 브라우저에서 처음 그릴 때 정한다. */
   platform: Platform;
   /** 지금 글에 다음 파일이 있는가. 없으면 명령 목록에서 `다음 파일 열기`를 뺀다. */
@@ -43,20 +44,10 @@ export interface PaletteProps {
   /** 글 줄을 골랐다. 창 틀이 팔레트를 닫고 그 글로 옮긴다. */
   onPick: (url: string) => void;
   /** 명령을 골랐다. 창 틀이 팔레트를 닫고 실행한다. `파일 열기`는 팔레트가 스스로 파일 모드로 돌아간다. */
-  onCommand: (id: Exclude<PaletteCommandId, 'open-file'>) => void;
+  onCommand: (command: ShellCommand) => void;
   /** 바깥을 눌렀다. 창 틀이 팔레트를 닫고 포커스를 연 자리로 돌려준다. */
   onDismiss: () => void;
   ref?: Ref<PaletteHandle>;
-}
-
-/** 파일 아이콘(장식). 탐색기의 파일 줄과 같은 모양이다. */
-function FileGlyph() {
-  return (
-    <span
-      aria-hidden="true"
-      className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-    />
-  );
 }
 
 /** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 키 표기와 안내의 키 부분을 숨긴다. */

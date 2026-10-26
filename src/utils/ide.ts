@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs';
 import type { MarkdownHeading } from 'astro';
-import type { EditorFile, OutlineItem, TreeFile } from '@/design-system';
+import { fileName, type EditorFile, type OutlineItem, type TreeFile } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
 
@@ -64,7 +64,7 @@ export function docEndLinks(next: TreeFile | null): DocEndLink[] {
   return [
     {
       href: next.url,
-      label: `${next.path.split('/').at(-1)} →`,
+      label: `${fileName(next.path)} →`,
       note: next.title,
       name: `다음 파일: ${next.title}`,
       next: true,

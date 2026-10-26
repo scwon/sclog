@@ -3,7 +3,8 @@
  * 바인딩은 `SearchView.tsx`가 맡는다. 글자 맞추기는 명령 팔레트와 같은 `match.logic.ts`를 쓴다.
  */
 
-import type { SearchBlock, SearchIndex } from '../../stores/search-index';
+import { fileName } from '../../stores/file.logic';
+import type { SearchBlock, SearchIndex } from './search-index';
 import { matchRanges, normalizeForMatch, type MatchRange } from './match.logic';
 
 /** 이 글자 수(앞뒤 공백을 지운 원래 글자 기준)부터 찾는다. */
@@ -88,7 +89,7 @@ export function searchPosts(index: SearchIndex, query: string): SearchResults | 
         url: post.url,
         title: post.title,
         path: post.path,
-        name: post.path.split('/').pop() ?? post.path,
+        name: fileName(post.path),
         hits,
       };
       return { file, order, inTitle: normalizeForMatch(post.title).includes(needle) };

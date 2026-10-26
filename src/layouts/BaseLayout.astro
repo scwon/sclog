@@ -141,7 +141,7 @@ const outlineJson =
     </main>
     {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
     <script>
-      import { resetReading, showTab } from '@/design-system';
+      import { REDUCED_MOTION, resetReading, showTab } from '@/design-system';
 
       /**
        * 펼침: 파일을 열 때 첫 1.4화면 안의 줄·블록을 위에서부터 차례로 보인다(2층 motion.css의 `[data-unfold]`).
@@ -160,7 +160,7 @@ const outlineJson =
         const editor = document.getElementById('editor');
         const { fileUrl: url, fileTitle: title, filePath: path } = editor?.dataset ?? {};
         if (!editor || !url || !title || !path || !showTab({ url, title, path })) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if (window.matchMedia(REDUCED_MOTION).matches) return;
         const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter((item) => {
           const { top, bottom } = item.getBoundingClientRect();
           return bottom > 0 && top < window.innerHeight * 1.4;

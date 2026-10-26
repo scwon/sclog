@@ -1,4 +1,5 @@
 import { atom, onMount } from 'nanostores';
+import { REDUCED_MOTION } from '../media';
 import {
   DEFAULT_THEME,
   nextTheme,
@@ -95,7 +96,7 @@ export function toggleTheme(): void {
   const button = document.querySelector(THEME_TOGGLE);
   const instant = switchesInstantly({
     navigating,
-    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion: window.matchMedia(REDUCED_MOTION).matches,
     supported: 'startViewTransition' in document,
   });
   if (!button || instant) {

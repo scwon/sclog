@@ -52,3 +52,7 @@
 **측정값**
 
 - 팔레트 청크 `Palette.*.js`는 5,187B(gzip 2,435B)다. 티켓 19 때는 3,549B(gzip 1,762B)였다.
+
+### 2026-10-27 리뷰 수정 (브랜치 `blog-details/review-fixes`)
+
+- 팔레트 명령 `find-in-posts`는 단축키 동작과 같은 이름 `open-search`로 바꿨다. 둘 다 `runCommand`가 실행한다. 이 티켓 Comments에 적힌 활동 막대 검색 버튼의 포커스 문제는 `focusSearchSoon`으로 고쳤다. 900px에서 두 번째로 열 때도 입력창에 포커스가 가는지 이동 시나리오가 본다.

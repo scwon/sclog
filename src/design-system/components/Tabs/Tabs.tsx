@@ -1,6 +1,8 @@
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
+import { REDUCED_MOTION } from '../../media';
+import { fileName } from '../../stores/file.logic';
 import { $activeTab, $openTabs, closeTab, toTabRecord } from '../../stores/tabs';
 import { POSTS_LOG, addOrActivate, initialTabs, type TabFile } from '../../stores/tabs.logic';
 
@@ -13,7 +15,7 @@ function serverState(current?: TabFile) {
 }
 
 /** 글 파일(`.mdx`)은 파일 이름만, 나머지(`posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
-const tabLabel = (path: string) => (path.endsWith('.mdx') ? path.split('/').pop() : path);
+const tabLabel = (path: string) => (path.endsWith('.mdx') ? fileName(path) : path);
 
 /** `Tabs`의 props. */
 export interface TabsProps {
@@ -108,7 +110,7 @@ function useActiveTabInView(
     const view = bar.getBoundingClientRect();
     const box = tab.getBoundingClientRect();
     if (box.left >= view.left && box.right <= view.right) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.matchMedia(REDUCED_MOTION).matches;
     tab.scrollIntoView({
       inline: 'nearest',
       block: 'nearest',

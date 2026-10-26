@@ -29,3 +29,8 @@
 - 활동 막대 버튼을 `PANEL_VIEWS.map`과 `VIEW_ICON` 레코드로 그리게 바꿨다. 화면을 하나 더하려면 `PANEL_VIEWS`, `VIEW_LABEL`, `VIEW_ICON`에 항목을 넣고 패널 본문 분기를 더하면 된다. 좁은 화면의 전환 버튼은 이미 `PANEL_VIEWS`를 돌고 있었다.
 - `[data-explorer-toggle]`은 원래부터 `showView('explorer')`로 탐색기를 열었다. 코드는 바꾸지 않았다.
 - 이동 시나리오(`scripts/qa/nav.mjs`) 끝에 태그 화면 단계를 더했다. 새로 불러온 태그 화면에 글에서 고른 프로필이 남는지 보고, 탐색기를 골라 새로고침한 뒤와 프로필을 골라 새로고침한 뒤 각각 그 화면이 남는지 본다. 지침대로 `pnpm qa`는 돌리지 않았다. 대신 4316 포트 preview에서 같은 시나리오를 돌렸고 22개 항목이 모두 통과했다. 콘솔 오류(하이드레이션 불일치 포함)도 없었다. 마지막 체크박스의 `pnpm qa`는 통합 브랜치에서 확인할 몫으로 남긴다.
+
+### 2026-10-27 리뷰 수정 (브랜치 `blog-details/review-fixes`)
+
+- 쿠키를 막은 Chrome은 `sessionStorage`를 읽기만 해도 SecurityError를 던져서, `typeof` 검사가 `try` 밖에 있던 `panel.ts`도 함께 깨졌다. 지금은 저장소 접근과 메모리 대체를 `stores/storage.ts`의 `visitorStorage`가 맡고, `panel.ts`는 그것만 부른다.
+- `panel.ts`는 `stores/`로 옮기지 않았다. `stores/`는 아일랜드 사이 공유 상태 자리인데, 패널 화면은 창 틀 혼자 쓴다. 옮기면 `stores/`가 `components/Shell/panel.logic.ts`를 가져오는 역방향 의존도 생긴다. `VIEW_LABEL`·`VIEW_KEYS`·`VIEW_ICON`은 화면별 맵 `VIEWS` 하나로 합쳤다.

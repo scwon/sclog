@@ -11,6 +11,16 @@ const base = {
   strokeWidth: 1.5,
 } as const;
 
+/** 글 파일 기호(장식): 접힌 모서리 종이. 탐색기 파일 줄, 검색 화면의 파일 줄, 팔레트의 글 줄이 같이 쓴다. */
+export function FileGlyph() {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
+    />
+  );
+}
+
 /** 햄버거 메뉴(좁은 화면의 탐색기 서랍). */
 export function MenuIcon(props: IconProps) {
   return (

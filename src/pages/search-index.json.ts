@@ -4,7 +4,7 @@
  */
 import type { APIRoute } from 'astro';
 import { render } from 'astro:content';
-import type { SearchIndex } from '@/design-system';
+import { SEARCH_INDEX_VERSION, type SearchIndex } from '@/design-system';
 import { SITE } from '../site';
 import { getPublishedPosts } from '../utils/blog';
 import { postFile } from '../utils/ide';
@@ -14,7 +14,7 @@ import { searchPost } from '../utils/search-index';
 export const GET: APIRoute = async () => {
   const posts = await getPublishedPosts();
   const index: SearchIndex = {
-    v: 1,
+    v: SEARCH_INDEX_VERSION,
     posts: await Promise.all(
       posts.map(async (post) => {
         const { headings } = await render(post);
