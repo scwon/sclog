@@ -6,7 +6,8 @@
  * 에디터 루트의 펼침 표시로 본다.
  * 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
  * 글 가운데 장에서 홈으로 떠났다가 돌아오면 열기 요약 뒤 이어 읽기 버튼이 뜨고, 누르면 그 장으로 가며 사라지는지 본다.
- * 끝으로 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
+ * 그다음 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
+ * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -423,6 +424,54 @@ check(
 );
 await showExplorer();
 check('지우면 탐색기 꼬리표가 사라짐', (await explorerMark(post.url)) === '');
+
+// 검색 화면: 열기 전에는 색인을 받지 않는다. 결과를 누르면 글이 열리고 패널은 검색 화면에 남으며, 새로고침 뒤에도
+// 검색 화면이다(검색어는 메모리에만 있어 비워진다).
+const indexRequested = () =>
+  page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .some((entry) => entry.name.includes('/search-index.json')),
+  );
+const searchInput = () =>
+  page.evaluate(() => {
+    const input = document.querySelector('#panel input[type=search]');
+    return input ? { value: input.value, focused: document.activeElement === input } : null;
+  });
+check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
+// 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
+await page.evaluate(() => {
+  window.qaShell = document.getElementById('panel')?.closest('astro-island');
+});
+await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
+  label: '검색 화면 열기',
+});
+await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
+check('패널이 검색 화면', (await panelView()) === '검색');
+check('검색 입력창에 포커스', (await searchInput())?.focused === true);
+await page.fill('loc=css:#panel input[type=search]', '개발');
+await page.waitForFunction(
+  () => /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
+  undefined,
+  { timeout: 5000 },
+);
+check('검색 화면을 열면 색인을 받음', await indexRequested());
+const hit = await page.evaluate(
+  () => document.querySelector("#panel ul[aria-label='검색 결과'] a")?.getAttribute('href') ?? null,
+);
+check('검색 결과 링크가 있음', hit !== null, hit ?? '');
+if (hit) {
+  await page.click("css=#panel ul[aria-label='검색 결과'] a >> nth=0", { label: '첫 결과 열기' });
+  await page.waitForTimeout(2000);
+  check('결과를 누르면 그 글이 열림', (await editor()).url === hit.split('#')[0], hit);
+  check('창 틀 유지(검색 결과)', await shellKept());
+  check('결과를 연 뒤에도 패널이 검색 화면', (await panelView()) === '검색');
+  check('결과를 연 뒤에도 검색어가 남음', (await searchInput())?.value === '개발');
+  await page.reload();
+  await page.waitForTimeout(1500);
+  check('새로고침 뒤에도 검색 화면', (await panelView()) === '검색');
+  check('새로고침하면 검색어가 비워짐', (await searchInput())?.value === '');
+}
 
 const events = await page.events();
 const errors = events

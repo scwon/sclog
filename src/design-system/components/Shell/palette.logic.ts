@@ -1,6 +1,10 @@
 /**
  * 명령 팔레트의 파일 모드. DOM을 모르고, 탐색기 트리 props와 입력으로 보일 글 줄을 정한다. 바인딩은 `Palette.tsx`가 맡는다.
+ * 찾기 정규화는 패널 검색 화면과 같은 `match.logic.ts`의 `normalizeForMatch`(NFD + 소문자)라, 입력 중인 음절("개바")도
+ * "개발"에 부분 일치한다.
  */
+
+import { normalizeForMatch } from './match.logic';
 
 /** 팔레트가 읽는 탐색기 트리 모양(`Shell`의 `TreeYear`와 같다). */
 export interface PaletteTree {
@@ -26,14 +30,6 @@ function rows(tree: PaletteTree[]): PaletteFile[] {
       return { url, title, name: path.slice(cut + 1), folder: path.slice(0, Math.max(cut, 0)) };
     }),
   );
-}
-
-/**
- * 찾기 정규화: NFD로 풀고 소문자로 맞춘다. 패널 검색 화면과 같은 규칙이라 입력 중인 음절("개바")도
- * "개발"에 부분 일치한다.
- */
-export function normalizeForMatch(text: string): string {
-  return text.normalize('NFD').toLowerCase();
 }
 
 /** 줄의 순위. 작을수록 위다. 맞지 않으면 `null`. */

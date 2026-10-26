@@ -33,7 +33,16 @@ import { $resume, dismissResume } from '../../stores/resume';
 import { resumeLabel } from '../../stores/resume.logic';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
-import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon, ProfileIcon } from './icons';
+import { requestSearchFocus } from '../../stores/search';
+import {
+  BranchIcon,
+  CodeIcon,
+  ExplorerIcon,
+  ExternalIcon,
+  MenuIcon,
+  ProfileIcon,
+  SearchIcon,
+} from './icons';
 import {
   PANEL_VIEWS,
   dismissPanel,
@@ -54,6 +63,9 @@ import { platformOf, shortcutFor, type FocusTarget, type Platform } from './shor
 
 /** 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 JS에 넣지 않는다. */
 const Palette = lazy(() => import('./Palette'));
+
+/** 검색 화면은 처음 열 때 불러오는 청크다(첫 화면 JS에 넣지 않는다). */
+const SearchView = lazy(() => import('./SearchView'));
 
 /** 탐색기 트리의 글 파일 하나. */
 export interface TreeFile {
@@ -97,6 +109,8 @@ export interface ShellProps {
   sourceUrl: string;
   tree: TreeYear[];
   profile: Profile;
+  /** 검색 화면이 처음 열릴 때 내려받는 검색 색인(`SearchIndex`)의 주소. 예: `/search-index.json` */
+  searchIndexUrl: string;
   /**
    * 지금 화면의 파일(제목·경로·URL·종류). 서버 HTML에 탭·창 제목·패널 화면·탐색기 강조를 미리 그려, JS가 없거나
    * 하이드레이션 전에도 맞게 보인다. 하이드레이션 뒤에는 에디터 루트의 계약(`data-file-*`)을 읽어 바꾼다.
@@ -112,12 +126,17 @@ const OUTLINE_ID = 'editor-outline';
 const PANEL_ID = 'panel';
 
 /** 패널 화면 이름. 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에 쓴다. */
-const VIEW_LABEL: Record<PanelView, string> = { explorer: '탐색기', profile: '프로필' };
+const VIEW_LABEL: Record<PanelView, string> = {
+  explorer: '탐색기',
+  profile: '프로필',
+  search: '검색',
+};
 
 /** 활동 막대에서 패널 화면을 고르는 아이콘. */
 const VIEW_ICON: Record<PanelView, ReactNode> = {
   explorer: <ExplorerIcon />,
   profile: <ProfileIcon />,
+  search: <SearchIcon />,
 };
 
 /** 1100px 이상인가. 서버는 화면 폭을 모르므로 넓은 화면으로 그린다. */
@@ -387,7 +406,7 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
 }
 
 /**
- * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(탐색기 또는 프로필)·탭·상태줄을 모두
+ * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(프로필·탐색기·검색)·탭·상태줄을 모두
  * `position: fixed`로 그리는 아일랜드 하나다(ADR 0001). 에디터 내용은 아일랜드 밖 정적 HTML이고,
  * 창 틀은 페이지가 열릴 때마다(`astro:page-load`) 에디터 루트의 `data-file-*`를 읽어 탭을 열고
  * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다. 같은 자리에 창 틀 밖에서 띄운 상태줄 알림
@@ -395,7 +414,8 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * 글 화면 스크립트가 이어 읽기(`$resume`)를 권하면, 그 글의 열기 요약이 사라지는 순간 상태줄 오른쪽에
  * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
  *
- * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
+ * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
+ * 검색 화면(`SearchView`)은 처음 열 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
  * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
@@ -404,7 +424,16 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * ⌘B(Ctrl+B) 패널 열고 닫기, Esc 맨 위 층(팔레트, 그다음 좁은 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는
  * 처음 열 때 불러오는 청크다.
  */
-export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, current }: ShellProps) {
+export function Shell({
+  brand,
+  author,
+  githubUrl,
+  sourceUrl,
+  tree,
+  profile,
+  searchIndexUrl,
+  current,
+}: ShellProps) {
   const [file, setFile] = useState<EditorFile | null>(null);
   // 하이드레이션 전에는 서버가 넘긴 현재 파일을 보인다.
   const shown: CurrentFile | null = file ?? current ?? null;
@@ -438,7 +467,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   const overlay = !desktop && openMode === 'open';
   const explorerShown = visible && panel.view === 'explorer';
   const pick = useCallback(
-    (view: PanelView) => updatePanel((state, wide) => pickView(state, view, wide)),
+    (view: PanelView) => {
+      updatePanel((state, wide) => pickView(state, view, wide));
+      // 활동 막대로 검색 화면을 열면 바로 입력하게 입력창에 포커스를 준다. 닫는 누름이면 숨은 입력창이라 포커스가 가지 않는다.
+      if (view === 'search') requestSearchFocus();
+    },
     [updatePanel],
   );
 
@@ -731,6 +764,12 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         </fieldset>
         {panel.view === 'profile' ? (
           <ProfileView profile={profile} history={summarizeHistory(history)} />
+        ) : panel.view === 'search' ? (
+          <Suspense
+            fallback={<p className="m-0 px-4 py-2 font-mono text-[11.5px] text-text-muted">…</p>}
+          >
+            <SearchView indexUrl={searchIndexUrl} />
+          </Suspense>
         ) : (
           <>
             <section aria-labelledby="explorer-posts" className="pb-2">
