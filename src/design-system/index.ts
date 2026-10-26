@@ -37,3 +37,4 @@ export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
 export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
+export type { SearchBlock, SearchIndex, SearchPost } from './stores/search-index';
