@@ -20,6 +20,7 @@
   --motion-unfold: var(--duration-420); /* 펼침의 줄 하나 */
   --motion-unfold-stagger: var(--duration-34); /* 펼침의 줄 사이 지연 */
   --motion-slow: var(--duration-450); /* 큰 이동·확대 */
+  --motion-blink: var(--duration-1100); /* 커서 깜빡임 한 주기 */
 
   /* 치수: 화면 가장자리의 막대(bar)·레일(rail)·패널(panel)과 줄 머리 열(gutter·track) */
   --bar-height: var(--size-38); /* 맨 위 막대, 탭 막대 */

@@ -208,6 +208,18 @@ describe.skipIf(!built)('build output', () => {
     );
   });
 
+  it('names the <html> view transition root on every page, for the theme spread', () => {
+    // Astro는 `<html>`에 범위 속성을 붙이고, 그 범위의 이름을 `<head>`의 `<style>`에 적는다.
+    const unnamed = pages.filter(({ html }) => {
+      const scope = /<html\b[^>]*\bdata-astro-transition-scope="([^"]+)"/.exec(html)?.[1];
+      return (
+        !scope ||
+        !html.includes(`[data-astro-transition-scope="${scope}"] { view-transition-name: root; }`)
+      );
+    });
+    expect(unnamed.map(({ path }) => path)).toEqual([]);
+  });
+
   it('lists every page except 404 in the sitemap, with the same URLs', () => {
     expect(existsSync(resolve(dist, 'sitemap-index.xml'))).toBe(true);
     const sitemap = readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8');
