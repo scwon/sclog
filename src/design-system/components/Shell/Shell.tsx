@@ -25,6 +25,7 @@ import {
   pickView,
   showView,
   togglePanel,
+  viewForFile,
   type PanelState,
   type PanelView,
 } from './panel.logic';
@@ -44,7 +45,7 @@ export interface TreeYear {
 }
 
 /** 지금 화면의 파일. 경로는 `posts/<연도>/<slug>.mdx`, `posts.log`, `tags/<태그>`, `404` 등이다. */
-export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url'>;
+export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url' | 'kind'>;
 
 /** 패널의 프로필 화면에 보이는 블로그 주인 소개. */
 export interface Profile {
@@ -55,8 +56,6 @@ export interface Profile {
   bio: string;
   /** 사진 URL. 원형으로 잘라 보인다. */
   photo: string;
-  /** 사진을 뒤집으면 보이는 뒷면 사진 URL. */
-  photoBack: string;
   /** 경력 줄. 예: `WhaTapLabs · 2017.10~` */
   career: string[];
   /** 연락처 링크. 이메일은 `mailto:` URL로 넣는다. */
@@ -74,7 +73,7 @@ export interface ShellProps {
   tree: TreeYear[];
   profile: Profile;
   /**
-   * 지금 화면의 파일(제목·경로·URL). 서버 HTML에 탭·창 제목·탐색기 강조를 미리 그려, JS가 없거나
+   * 지금 화면의 파일(제목·경로·URL·종류). 서버 HTML에 탭·창 제목·패널 화면·탐색기 강조를 미리 그려, JS가 없거나
    * 하이드레이션 전에도 맞게 보인다. 하이드레이션 뒤에는 에디터 루트의 계약(`data-file-*`)을 읽어 바꾼다.
    * 계약의 원본은 에디터 루트이고, 이 값은 서버 HTML을 위한 같은 값의 사본이다.
    */
@@ -222,44 +221,18 @@ function RailButton({
 const panelLink =
   'flex h-7.5 items-center gap-1 pr-3 pl-6.5 font-mono text-xs text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2';
 
-/**
- * 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처. 사진에 마우스를 올리거나 사진을 누르면 동전처럼
- * 뒤집혀 뒷면 사진이 보이고, 움직임 줄이기 설정에서는 돌지 않고 바로 바뀐다.
- */
+/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처. */
 function ProfileView({ profile }: { profile: Profile }) {
-  const [flipped, setFlipped] = useState(false);
   return (
     <div className="pb-2">
       <div className="px-4.5 pt-3 pb-4">
-        <button
-          type="button"
-          aria-label={`${profile.name} 사진 뒤집기`}
-          aria-pressed={flipped}
-          onClick={() => setFlipped((previous) => !previous)}
-          className="group block size-22 cursor-pointer rounded-full perspective-[600px] focus-visible:outline-offset-2"
-        >
-          <span
-            className={cn(
-              'relative block size-full transition-transform duration-(--motion-slow) ease-standard transform-3d group-hover:rotate-y-180 motion-reduce:transition-none',
-              flipped && 'rotate-y-180',
-            )}
-          >
-            <img
-              src={profile.photo}
-              alt=""
-              width={88}
-              height={88}
-              className="absolute inset-0 size-full rounded-full object-cover backface-hidden"
-            />
-            <img
-              src={profile.photoBack}
-              alt=""
-              width={88}
-              height={88}
-              className="absolute inset-0 size-full rotate-y-180 rounded-full object-cover backface-hidden"
-            />
-          </span>
-        </button>
+        <img
+          src={profile.photo}
+          alt={`${profile.name} 사진`}
+          width={88}
+          height={88}
+          className="block size-22 rounded-full object-cover"
+        />
         <h2 className="mt-3.5 mb-0 font-display text-[19px] leading-tight font-extrabold tracking-[-0.01em] text-text">
           {profile.name}
         </h2>
@@ -310,7 +283,12 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   // 하이드레이션 전에는 서버가 넘긴 현재 파일을 보인다.
   const shown: CurrentFile | null = file ?? current ?? null;
   const desktop = useDesktop();
-  const [panel, setPanel] = useState<PanelState>(initialPanel);
+  // 첫 화면은 서버가 넘긴 현재 파일의 종류로 정한다(홈은 프로필, 글은 탐색기).
+  const [panel, setPanel] = useState<PanelState>(() =>
+    current
+      ? { ...initialPanel, view: viewForFile(initialPanel.view, current.kind) }
+      : initialPanel,
+  );
   const openMode = panelOpen(panel, desktop);
   /** 패널 상태를 바꾼다. 화면 폭은 누른 순간의 값을 읽는다. */
   const updatePanel = useCallback(
@@ -353,8 +331,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
       if (!next) return;
       setFile(next);
       openTab({ url: next.url, title: next.title, path: next.path });
-      // 좁은 화면에서 패널로 글을 골랐다면 패널을 닫는다.
-      if (!window.matchMedia(DESKTOP).matches) updatePanel(dismissPanel);
+      // 패널 화면을 파일 종류에 맞춘다. 좁은 화면에서 패널로 글을 골랐다면 패널을 닫는다.
+      updatePanel((state, wide) => {
+        const moved = { ...state, view: viewForFile(state.view, next.kind) };
+        return wide ? moved : dismissPanel(moved, wide);
+      });
 
       const { command, result } = openLog(next);
       const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;

@@ -16,7 +16,6 @@ export const PROFILE: Profile = {
   role: '개발자',
   bio: '관심 가는 건 다 해보고 다 만드는 개발자 원성철입니다.',
   photo: '/images/profile/photo.jpg',
-  photoBack: '/images/profile/dot.png',
   career: ['WhaTapLabs · 2017.10~'],
   links: [
     { label: 'GitHub', url: SITE.githubUrl },

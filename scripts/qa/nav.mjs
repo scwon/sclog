@@ -1,6 +1,6 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
- * 프로필 화면 → 다시 글(프로필 유지) → 탐색기 화면.
+ * 다시 글. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -33,6 +33,8 @@ const tabs = () =>
   page.evaluate(() =>
     [...document.querySelectorAll("nav[aria-label='열린 파일'] a")].map((a) => a.textContent),
   );
+const panelView = () =>
+  page.evaluate(() => document.getElementById('panel')?.getAttribute('aria-label'));
 const statusLine = () => page.evaluate(() => document.querySelector('footer')?.textContent ?? '');
 
 await page.cdp('Runtime.enable');
@@ -55,12 +57,14 @@ await page.evaluate(() => {
   window.qaShell = document.getElementById('panel')?.closest('astro-island');
 });
 check('홈이 posts.log', (await editor()).url === '/');
+check('홈은 패널이 프로필', (await panelView()) === '프로필');
 
 await page.click('loc=css:.flow-link', { label: '첫 글 열기' });
 await page.waitForTimeout(2000);
 const post = await editor();
 check('글로 이동', post.kind === 'post', post.url);
 check('창 틀 유지(홈 → 글)', await shellKept());
+check('글은 패널이 탐색기', (await panelView()) === '탐색기');
 check('글 탭이 열림', (await tabs()).length === 2, (await tabs()).join(', '));
 
 const last = await page.evaluate(() => {
@@ -89,6 +93,7 @@ await page.evaluate(() => history.back());
 await page.waitForTimeout(1500);
 check('뒤로 두 번이면 홈', (await editor()).url === '/');
 check('창 틀 유지(뒤로)', await shellKept());
+check('홈으로 오면 프로필', (await panelView()) === '프로필');
 
 await page.click(`loc=css:button[aria-label='${post.title} 닫기']`, { label: '글 탭 닫기' });
 await page.waitForTimeout(800);
@@ -100,25 +105,16 @@ await page.waitForTimeout(500);
 const themeAfter = await page.evaluate(() => document.documentElement.dataset.theme);
 check('테마가 바뀜', themeBefore !== themeAfter, `${themeBefore} → ${themeAfter}`);
 
-const panelView = () =>
-  page.evaluate(() => document.getElementById('panel')?.getAttribute('aria-label'));
-await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
-  label: '프로필 열기',
-});
-await page.waitForTimeout(300);
-check('패널이 프로필', (await panelView()) === '프로필');
-
 await page.click('loc=css:.flow-link', { label: '글 다시 열기' });
 await page.waitForTimeout(2000);
 check('다시 글', (await editor()).url === post.url);
 check('창 틀 유지(다시 글)', await shellKept());
-check('이동 뒤에도 패널이 프로필', (await panelView()) === '프로필');
 
-await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='탐색기']", {
-  label: '탐색기로 돌아가기',
+await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
+  label: '프로필 열기',
 });
 await page.waitForTimeout(300);
-check('패널이 다시 탐색기', (await panelView()) === '탐색기');
+check('글에서도 프로필을 열 수 있음', (await panelView()) === '프로필');
 check(
   '테마가 이동 뒤에도 유지',
   (await page.evaluate(() => document.documentElement.dataset.theme)) === themeAfter,

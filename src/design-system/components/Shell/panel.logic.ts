@@ -1,6 +1,8 @@
 /**
- * 패널 전환 규칙. DOM을 모르고, 지금 상태·누른 것·화면 폭으로 다음 상태만 정한다. 바인딩은 `Shell.tsx`가 맡는다.
+ * 패널 전환 규칙. DOM을 모르고, 지금 상태·누른 것(또는 연 파일)·화면 폭으로 다음 상태만 정한다. 바인딩은 `Shell.tsx`가 맡는다.
  */
+
+import type { FileKind } from '../../stores/file.logic';
 
 /** 패널이 보여 주는 화면. 활동 막대와 좁은 화면의 전환 버튼이 이 순서로 놓인다. */
 export const PANEL_VIEWS = ['profile', 'explorer'] as const;
@@ -54,4 +56,11 @@ export function togglePanel(state: PanelState, wide: boolean): PanelState {
 /** 패널 열림을 화면 폭에 돌려준다(좁은 화면에서는 닫힘). 화면은 기억한다. */
 export function dismissPanel(state: PanelState, wide: boolean): PanelState {
   return { view: state.view, open: 'auto', wide };
+}
+
+/** 파일을 열었을 때 패널이 보일 화면. 홈 로그는 프로필, 글은 탐색기이고, 그 밖의 화면은 지금 화면을 둔다. */
+export function viewForFile(current: PanelView, kind: FileKind): PanelView {
+  if (kind === 'log') return 'profile';
+  if (kind === 'post') return 'explorer';
+  return current;
 }

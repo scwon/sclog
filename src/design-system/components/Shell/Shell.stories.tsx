@@ -22,7 +22,6 @@ const profile: ShellProps['profile'] = {
   role: 'Frontend Developer',
   bio: '프론트엔드 개발자 원성철입니다.',
   photo: '/images/profile/photo.jpg',
-  photoBack: '/images/profile/dot.png',
   career: ['WhaTapLabs · 2017.10~'],
   links: [
     { label: 'GitHub', url: 'https://github.com/scwon' },
@@ -98,7 +97,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 홈 상태: `posts.log`가 활성 탭이고 탐색기에는 글 트리만 있다. 상태줄에 열기 요약이 2초 보인다. */
+/** 홈 상태: `posts.log`가 활성 탭이고 패널은 프로필을 보인다. 상태줄에 열기 요약이 2초 보인다. */
 export const Home: Story = {
   render: (args) => (
     <>
@@ -155,12 +154,4 @@ export const ArticleOpen: Story = {
       />
     </>
   ),
-};
-
-/** 프로필 화면: 활동 막대 맨 위 프로필 아이콘을 눌러 패널이 탐색기 대신 프로필을 보인다. 사진에 마우스를 올리면 뒤집힌다. */
-export const ProfileOpen: Story = {
-  ...Home,
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '프로필' }));
-  },
 };

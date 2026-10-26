@@ -6,6 +6,7 @@ import {
   pickView,
   showView,
   togglePanel,
+  viewForFile,
 } from './panel.logic';
 
 describe('pickView (활동 막대 아이콘)', () => {
@@ -77,5 +78,17 @@ describe('화면 폭 경계', () => {
 
     const openNarrow = showView('profile', false);
     expect(panelVisible(openNarrow, true)).toBe(true);
+  });
+});
+
+describe('viewForFile (파일을 열었을 때의 패널 화면)', () => {
+  it('shows the profile on the home log and the explorer on a post', () => {
+    expect(viewForFile('explorer', 'log')).toBe('profile');
+    expect(viewForFile('profile', 'post')).toBe('explorer');
+  });
+
+  it('keeps the current view on other pages', () => {
+    expect(viewForFile('profile', 'page')).toBe('profile');
+    expect(viewForFile('explorer', 'page')).toBe('explorer');
   });
 });
