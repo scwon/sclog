@@ -1,5 +1,5 @@
 /**
- * 빌드된 사이트(`dist/`)를 `astro preview`로 띄우고 ego-browser로 화면 확인 스크립트를 돌린다.
+ * 빌드된 사이트(`dist/`)를 Astro `preview()` API로 띄우고 ego-browser로 화면 확인 스크립트를 돌린다.
  * 테스트(Vitest)가 볼 수 없는 화면 이동·접근성을 맡는다. CI에는 없고 로컬에서 `pnpm qa`로 쓴다.
  *
  *   node scripts/qa/run.mjs            a11y.mjs와 nav.mjs 모두
@@ -10,6 +10,7 @@ import { readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { preview } from 'astro';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -37,25 +38,19 @@ function pageUrls() {
   return urls.toSorted();
 }
 
-async function waitForServer(server) {
-  let exited = false;
-  server.on('exit', () => (exited = true));
-  for (let i = 0; i < 50 && !exited; i++) {
-    try {
-      if ((await fetch(base)).ok) return;
-    } catch {
-      // 아직 뜨는 중
-    }
-    await new Promise((done) => setTimeout(done, 200));
-  }
-  throw new Error(
-    `${base}에 preview 서버가 뜨지 않았다(위 오류 참고, 포트 ${port}를 이미 쓰는 프로세스가 있는지 lsof -i :${port})`,
-  );
-}
-
-function run(command, args) {
+/** 스크립트가 멈추면(직렬화 안 되는 값을 evaluate로 돌려받는 등) 제한 시간 뒤 끝낸다. 남은 프로세스는 다음 실행의 작업 공간을 막는다. */
+function run(command, args, timeoutMs = 10 * 60 * 1000) {
   return new Promise((done) => {
-    spawn(command, args, { cwd: root, stdio: 'inherit' }).on('exit', (code) => done(code ?? 1));
+    // ego-browser nodejs는 stdin으로도 스크립트를 받으므로 stdin을 넘기면 입력을 기다리며 멈출 수 있다.
+    const child = spawn(command, args, { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] });
+    const timer = setTimeout(() => {
+      console.error(`${timeoutMs / 1000}초가 지나 멈춘 것으로 보고 끝낸다`);
+      child.kill();
+    }, timeoutMs);
+    child.on('exit', (code) => {
+      clearTimeout(timer);
+      done(code ?? 1);
+    });
   });
 }
 
@@ -64,13 +59,10 @@ const qa = {
   pages: pageUrls(),
   axe: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
 };
-const preview = spawn('pnpm', ['astro', 'preview', '--port', String(port), '--host', '127.0.0.1'], {
-  cwd: root,
-  stdio: ['ignore', 'ignore', 'inherit'],
-});
+// CLI(`astro preview`)를 자식 프로세스로 띄우면 끈 뒤에도 서버가 남아 다음 실행의 포트를 막으므로 같은 프로세스에서 띄운다.
+const server = await preview({ root, logLevel: 'error', server: { port, host: '127.0.0.1' } });
 let failed = 0;
 try {
-  await waitForServer(preview);
   for (const name of scripts) {
     const entry = pathToFileURL(join(here, `${name}.mjs`)).href;
     console.log(`\n▶ qa:${name}`);
@@ -85,7 +77,7 @@ try {
   console.error(error.message);
   failed++;
 } finally {
-  preview.kill();
+  await server.stop();
 }
 console.log(failed ? `\n✗ qa 실패 ${failed}개` : '\n✓ qa 통과');
 process.exit(failed ? 1 : 0);
