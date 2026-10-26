@@ -65,6 +65,13 @@ describe('semantic tokens', () => {
   );
 });
 
+describe('motion tokens', () => {
+  it('give the cursor blink one 1100ms cycle through --motion-blink', () => {
+    const reference = /^var\((--[\w-]+)\)$/.exec(shared.get('--motion-blink') ?? '')?.[1] ?? '';
+    expect(primitives.get(reference)).toBe('1100ms');
+  });
+});
+
 describe('@theme inline', () => {
   it('only exposes semantic tokens, never primitives', () => {
     const references = [...theme.matchAll(/var\((--[\w-]+)\)/g)].map(([, name]) => name);
