@@ -6,6 +6,7 @@ import type { SearchIndex } from '@/design-system';
 import type { TreeYear } from '@/design-system/components/Shell/Shell';
 import { nextFile } from '@/design-system/components/Shell/tree.logic';
 import { resolveInitialTheme } from '@/design-system/stores/theme.logic';
+import { isExternalLink } from '@/utils/external-link';
 
 /**
  * `pnpm build`가 만든 `dist/`를 바깥에서 검사한다. `dist/`가 없으면 건너뛴다(CI는 build 뒤 test).
@@ -45,6 +46,72 @@ function urlOf(path: string): string {
 /** 에디터 루트(`<main>`)의 `data-file-url`. */
 function fileUrl(html: string): string | undefined {
   return /<main[^>]*\bdata-file-url="([^"]*)"/.exec(html)?.[1];
+}
+
+interface OutlineEntry {
+  id: string;
+  text: string;
+  children: { id: string; text: string }[];
+}
+
+/** 페이지 ↔ 창 틀 계약의 개요 JSON. */
+function outlineOf(html: string): OutlineEntry[] {
+  const json = /<script[^>]*\bid="editor-outline"[^>]*>([\s\S]*?)<\/script>/.exec(html)?.[1];
+  return json ? (JSON.parse(json) as OutlineEntry[]) : [];
+}
+
+/** HTML이 이스케이프한 글자를 되돌린다(속성 값과 글자에 나오는 것만). */
+function decodeEntities(value: string): string {
+  return value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 태그 하나의 속성 값. */
+function attribute(tag: string, name: string): string | undefined {
+  const value = new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1];
+  return value === undefined ? undefined : decodeEntities(value);
+}
+
+/** id로 찾은 제목(h2~h6)의 여는 태그와 안쪽 HTML. 제목은 서로 겹치지 않는다. */
+function headingById(html: string, id: string): { open: string; inner: string } | undefined {
+  const pattern = new RegExp(
+    `(<h([2-6])\\b[^>]*\\sid="${escapeRegExp(id)}"[^>]*>)([\\s\\S]*?)</h\\2>`,
+  );
+  const match = pattern.exec(html);
+  return match ? { open: match[1], inner: match[3] } : undefined;
+}
+
+/** 안쪽 HTML에서 id가 가리키는 요소(제목의 마지막 자식)의 글자. */
+function elementText(inner: string, id: string): string | undefined {
+  const start = new RegExp(`<(\\w+)\\b[^>]*\\sid="${escapeRegExp(id)}"[^>]*>`).exec(inner);
+  if (!start) return undefined;
+  const tag = start[1];
+  const rest = inner.slice(start.index + start[0].length);
+  const body = rest.slice(0, rest.lastIndexOf(`</${tag}>`));
+  return decodeEntities(body.replace(/<[^>]*>/g, ''));
+}
+
+/** 글 본문(`.doc-prose`)의 HTML. 본문 바로 뒤에 글 꼬리(`.doc-foot`)가 온다. 글이 아니면 빈 문자열. */
+function postBody(html: string): string {
+  return /<div class="doc-prose[^"]*"[^>]*>([\s\S]*?)<footer class="doc-foot/.exec(html)?.[1] ?? '';
+}
+
+/** HTML 안의 `<a>`마다 `href`, 여는 태그의 속성 글자, 안쪽 HTML. */
+function anchors(html: string) {
+  return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map(([, attributes, inner]) => ({
+    href: /\bhref="([^"]*)"/.exec(attributes)?.[1] ?? '',
+    attributes,
+    inner,
+  }));
 }
 
 const VOID = new Set([
@@ -221,6 +288,135 @@ describe.skipIf(!built)('build output', () => {
         (slug) => !existsSync(resolve(dist, 'blog', slug, 'index.html')),
       );
       expect(missing).toEqual([]);
+    });
+  });
+
+  describe('chapter links', () => {
+    const posts = pages.filter(({ html }) => /<main[^>]*\bdata-file-kind="post"/.test(html));
+
+    /** 글마다 개요의 장·절(글 순서). */
+    const outlined = posts.map(({ path, html }) => ({
+      path,
+      html,
+      entries: outlineOf(html).flatMap((chapter) => [chapter, ...chapter.children]),
+    }));
+
+    it('puts a hidden copy button in the outline headings and nowhere else', () => {
+      expect(posts.length).toBeGreaterThan(0);
+      expect(
+        outlined.filter(({ entries }) => entries.length === 0).map(({ path }) => path),
+      ).toEqual([]);
+      const found = outlined.map(({ path, html }) => {
+        const buttons = [...html.matchAll(/<button\b[^>]*\bdata-chapter-link="([^"]*)"[^>]*>/g)];
+        return {
+          path,
+          targets: buttons.map(([, id]) => decodeEntities(id)),
+          shown: buttons.filter(([tag]) => !/\shidden(?=[\s>=])/.test(tag)).length,
+        };
+      });
+      expect(found).toEqual(
+        outlined.map(({ path, entries }) => ({
+          path,
+          targets: entries.map(({ id }) => id),
+          shown: 0,
+        })),
+      );
+    });
+
+    it('names each outline heading by its title text alone and the button by the title', () => {
+      const found = outlined.flatMap(({ path, html, entries }) =>
+        entries.map(({ id }) => {
+          const heading = headingById(html, id);
+          const labelledBy = attribute(heading?.open ?? '', 'aria-labelledby');
+          const button = /<button\b[^>]*>/.exec(heading?.inner ?? '')?.[0] ?? '';
+          return {
+            path,
+            id,
+            name: labelledBy ? elementText(heading?.inner ?? '', labelledBy) : undefined,
+            button: attribute(button, 'aria-label'),
+          };
+        }),
+      );
+      expect(found).toEqual(
+        outlined.flatMap(({ path, entries }) =>
+          entries.map(({ id, text }) => ({
+            path,
+            id,
+            name: text,
+            button: `'${text}' 장 주소 복사`,
+          })),
+        ),
+      );
+    });
+  });
+
+  // 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 HTML이 미리 불러오거나 다른 청크가 정적으로 가져오면 안 된다.
+  describe('command palette chunk', () => {
+    const scripts = files('.js').map((path) => ({
+      name: path.slice(path.lastIndexOf(sep) + 1),
+      js: readFileSync(path, 'utf8'),
+    }));
+    const palette = scripts.find(({ name }) => /^Palette\.[\w-]+\.js$/.test(name))?.name;
+
+    it('is split into its own chunk loaded by a dynamic import', () => {
+      expect(palette).toBeDefined();
+      const loaders = scripts.filter(({ js }) => js.includes(`import(\`./${palette}\`)`));
+      expect(loaders.map(({ name }) => name)).not.toEqual([]);
+    });
+
+    it('is not preloaded or referenced by any page', () => {
+      expect(
+        pages.filter(({ html }) => html.includes(palette ?? '?')).map(({ path }) => path),
+      ).toEqual([]);
+    });
+
+    it('is not imported statically by another chunk', () => {
+      const staticImport = new RegExp(
+        `(from|import)\\s*["'\`]\\./${palette?.replace(/\./g, '\\.')}`,
+      );
+      expect(scripts.filter(({ js }) => staticImport.test(js)).map(({ name }) => name)).toEqual([]);
+    });
+  });
+
+  describe('external link mark', () => {
+    const SPOKEN = '(외부 링크)';
+    // 사이트 주소(astro.config의 `site`)는 사이트맵 주소에서 읽는다.
+    const sitemap = built ? readFileSync(resolve(dist, 'sitemap-0.xml'), 'utf8') : '';
+    const SITE = new URL(/<loc>([^<]+)<\/loc>/.exec(sitemap)?.[1] ?? 'https://invalid.example')
+      .origin;
+
+    // 지금 발행된 글 본문에는 링크가 없어 아래 두 검사는 링크가 생기면 그때부터 실제로 걸린다.
+    // 표시를 넣는 규칙 자체는 src/utils/external-link.test.ts가 시험용 글 조각으로 본다.
+    const posts = pages.filter(({ html }) => postBody(html) !== '');
+    const bodyLinks = posts.flatMap(({ path, html }) =>
+      anchors(postBody(html)).map((link) => ({ path, ...link })),
+    );
+
+    it('finds the post bodies', () => {
+      expect(posts.length).toBeGreaterThan(0);
+    });
+
+    it('gives every external body link the ↗ icon and the hidden "(외부 링크)", without target', () => {
+      const external = bodyLinks.filter(({ href }) => isExternalLink(href, SITE));
+      const unmarked = external.filter(
+        ({ inner, attributes }) =>
+          !/<svg\b[^>]*aria-hidden="true"/.test(inner) ||
+          !inner.includes(`<span class="sr-only"> ${SPOKEN}</span>`) ||
+          /\btarget=/.test(attributes),
+      );
+      expect(unmarked).toEqual([]);
+    });
+
+    it('leaves same-site body links unmarked', () => {
+      const marked = bodyLinks
+        .filter(({ href }) => !isExternalLink(href, SITE))
+        .filter(({ inner }) => inner.includes(SPOKEN) || inner.includes('<svg'));
+      expect(marked).toEqual([]);
+    });
+
+    it('marks nothing outside the post body, such as the shell links', () => {
+      const outside = pages.filter(({ html }) => html.replace(postBody(html), '').includes(SPOKEN));
+      expect(outside.map(({ path }) => path)).toEqual([]);
     });
   });
 

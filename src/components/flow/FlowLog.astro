@@ -3,7 +3,8 @@
  * 흐름 로그. 줄마다 줄 번호와 레일을 두고 글 로그 줄 → 카드 → 장 노드 → 절 노드를 잇는다.
  * 홈 `posts.log`와 글 목록·태그·404가 같은 줄 구조를 쓴다(줄 모델은 `src/utils/flow.ts`).
  * 스타일은 디자인 시스템 2층(`ide.css`의 `.flow*`)만 쓰고 React는 쓰지 않는다(분류 꼬리표 `Badge`는 정적 HTML).
- * 접기와 현재 줄(상태줄 `Ln N`)은 아래 스크립트가 맡고, JS가 없으면 모두 펼친 채 보인다.
+ * 접기와 현재 줄(상태줄 `Ln N`), 글 로그 줄 머리의 읽음 꼬리표는 아래 스크립트가 맡고, JS가 없으면 모두 펼친 채
+ * 꼬리표 없이 보인다.
  */
 import { Badge } from '@/design-system';
 import type { FlowLine } from '../../utils/flow';
@@ -82,7 +83,12 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
     if (line.kind === 'log') {
       const { post } = line;
       return (
-        <li class="flow-line flow-log" data-line={line.no} id={`post-${post.id}`}>
+        <li
+          class="flow-line flow-log"
+          data-line={line.no}
+          id={`post-${post.id}`}
+          data-post-url={post.url}
+        >
           <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
           {line.foldable && (
             <button
@@ -98,6 +104,8 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
             <time datetime={post.date}>{post.date}</time>
             {post.category && <Badge variant="category">{post.category}</Badge>}
             <span class="flow-log-file">{post.file}</span>
+            {/* 읽음 꼬리표(`✓ 읽음`·`71% 읽는 중`)를 페이지 스크립트가 채우는 자리 */}
+            <span class="flow-log-mark" data-reading-mark />
           </p>
           <article class="flow-card">
             {post.heroImage && (
@@ -169,7 +177,8 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
 </ol>
 
 <script>
-  import { setReading } from '@/design-system';
+  import { $readingHistory, readingMark, setReading } from '@/design-system';
+  import { fillReadingMark } from '../../utils/readingMark';
 
   /** 글의 장 흐름을 접거나 편다. 접으면 장 줄을 숨기고 `··· N개 장 접힘` 줄을 보인다. */
   function setFolded(postId: string, folded: boolean) {
@@ -194,7 +203,18 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
     if (line?.dataset.line) setReading({ line: Number(line.dataset.line) });
   }
 
+  /** 글 로그 줄 머리에 읽음 꼬리표를 붙인다. 기록이 바뀌거나(지우기 포함) 화면이 열릴 때마다 다시 그린다. */
+  function paintReadingMarks() {
+    const history = $readingHistory.get();
+    for (const line of document.querySelectorAll<HTMLElement>('.flow [data-post-url]')) {
+      const slot = line.querySelector<HTMLElement>('[data-reading-mark]');
+      if (slot) fillReadingMark(slot, readingMark(history, line.dataset.postUrl ?? ''), 'long');
+    }
+  }
+
   // 번들 스크립트는 화면을 옮겨도 다시 돌지 않으므로 문서에 한 번만 건다.
+  $readingHistory.subscribe(paintReadingMarks);
+  document.addEventListener('astro:page-load', paintReadingMarks);
   document.addEventListener('click', (event) => {
     const target = event.target as Element | null;
     const fold = target?.closest<HTMLButtonElement>('.flow [data-fold]');

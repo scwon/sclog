@@ -85,3 +85,13 @@ export function buildOutline(headings: MarkdownHeading[]): IdeOutlineItem[] {
   }
   return outline;
 }
+
+/** 장 주소를 복사할 수 있는 제목: 개요에 오른 장과 절의 id → 제목 글자(글 순서). */
+export function chapterLinkTargets(outline: IdeOutlineItem[]): Map<string, string> {
+  return new Map(
+    outline.flatMap((chapter) => [
+      [chapter.id, chapter.text] as const,
+      ...chapter.children.map((section) => [section.id, section.text] as const),
+    ]),
+  );
+}

@@ -44,6 +44,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - 클래스 합치기는 `@/lib/utils`의 `cn`(shadcn `cn` 패키지)을 쓴다
 - 리뷰가 적용하는 판단 규칙은 `CODING_STANDARDS.md`
 - 화면 이동(`ClientRouter`)·아일랜드·페이지 스크립트를 고칠 때는 `docs/agents/astro-client-router.md`를 먼저 읽는다
+- 단축키를 붙이거나 키 처리를 고칠 때는 `docs/agents/shortcuts.md`를 먼저 읽는다
 
 ## Library Selection
 

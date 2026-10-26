@@ -1,0 +1,51 @@
+---
+/**
+ * 장 주소 복사 버튼. 개요에 오른 장·절 제목 안, 그 줄의 줄 번호 칸에 놓인다(`headings/Heading.astro`).
+ * 칸(`.doc-chapter-gutter`) 전체가 hover 영역이고 버튼은 칸 왼쪽 24×24px다. 모양은 2층 ide.css.
+ * 버튼은 `hidden`으로 나오고 글 화면 스크립트(`BlogPost.astro`)가 붙을 때 드러난다. JS가 없으면 보이지 않는다.
+ * 스크립트를 이 컴포넌트에 두면 본문(`.doc-prose`) 안에 `<script>`가 생겨 줄 번호 블록으로 세어지므로 두지 않는다.
+ */
+interface Props {
+  /** 제목 id(MDX가 만든 slug). 장 주소의 해시가 된다. */
+  id: string;
+  /** 제목 글자. 버튼 이름 `'{제목}' 장 주소 복사`에 쓴다. */
+  title: string;
+}
+
+const { id, title } = Astro.props;
+---
+
+<span class="doc-chapter-gutter">
+  <button
+    type="button"
+    class="doc-chapter-link"
+    data-chapter-link={id}
+    aria-label={`'${title}' 장 주소 복사`}
+    hidden
+  >
+    <svg
+      class="doc-chapter-link-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+    </svg>
+    <svg
+      class="doc-chapter-link-done"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 6 9 17l-5-5"></path>
+    </svg>
+  </button>
+</span>

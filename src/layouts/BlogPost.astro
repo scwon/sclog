@@ -2,6 +2,7 @@
 /**
  * 글 화면: 에디터에 연 파일. frontmatter(코드 색) → 제목·작성 정보 → 대표 이미지(코랄 매트) → 본문 → 꼬리.
  * 모든 블록에 줄 번호가 있고(2층 ide.css의 CSS 카운터), 아래 스크립트가 읽는 위치를 `reading` 스토어에 쓴다.
+ * 두 번째 스크립트는 장·절 제목의 장 주소 복사 버튼(`ChapterLink.astro`)을 드러내고 누름과 들어왔을 때 강조를 맡는다.
  * MDX 원본과 글 URL은 바꾸지 않는다.
  */
 import type { CollectionEntry } from 'astro:content';
@@ -167,16 +168,21 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
 
 <script>
   import {
+    $readingHistory,
     currentBlock,
     locateInOutline,
+    readingMark,
     readingPercent,
     readingSymbol,
+    recordReading,
     setReading,
     type OutlineItem,
   } from '@/design-system';
+  import { fillReadingMark } from '../utils/readingMark';
 
   /**
-   * 읽는 위치를 따라간다: 현재 블록(줄 번호 코랄), 현재 장·절, 읽은 비율.
+   * 읽는 위치를 따라간다: 현재 블록(줄 번호 코랄), 현재 장·절, 읽은 비율. 장과 비율은 읽기 기록에도 남긴다
+   * (90% 이상이면 읽은 글, 그 아래면 마지막 읽은 위치).
    * 블록이 읽는 선을 지날 때는 IntersectionObserver가, 비율은 스크롤이 알려 준다.
    * 번들 스크립트는 한 번만 돌므로 페이지가 열릴 때마다 다시 붙이고, 떠날 때 뗀다.
    */
@@ -206,6 +212,7 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
       outline = [];
     }
     const crumbs = document.querySelector<HTMLElement>('.ide-crumbs');
+    const url = document.getElementById('editor')?.dataset.fileUrl;
     let current: HTMLElement | null = null;
     let frame = 0;
     const update = () => {
@@ -228,6 +235,7 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
         clientHeight: window.innerHeight,
       });
       setReading({ line: index + 1, chapter, section, percent });
+      if (url) recordReading(url, chapter?.id ?? null, percent);
       if (symbol) symbol.textContent = readingSymbol({ chapter, section });
       crumbs?.style.setProperty('--progress', String(percent / 100));
     };
@@ -252,9 +260,86 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
     };
   }
 
+  /** 다음 파일 줄의 메모 뒤에 그 글의 읽음 꼬리표를 붙인다. 기록이 바뀌거나 화면이 열릴 때마다 다시 그린다. */
+  function paintNextFile() {
+    const line = document.querySelector<HTMLElement>('li.doc-end-next[data-next-file]');
+    const url = line?.querySelector<HTMLAnchorElement>('a.doc-end-link')?.getAttribute('href');
+    const slot = line?.querySelector<HTMLElement>('span[data-next-file-mark]');
+    if (url && slot) fillReadingMark(slot, readingMark($readingHistory.get(), url), 'short');
+  }
+
+  $readingHistory.subscribe(paintNextFile);
+  document.addEventListener('astro:page-load', paintNextFile);
   document.addEventListener('astro:page-load', attach);
   document.addEventListener('astro:before-swap', () => {
     detach?.();
     detach = null;
+  });
+</script>
+
+<script>
+  import { showStatusNotice, STATUS_NOTICE_MS } from '@/design-system';
+  import { chapterLinkNotice, chapterLinkUrl } from '../utils/chapter-link';
+
+  /**
+   * 장 주소 복사와 들어왔을 때 강조. 번들 스크립트는 한 번만 돌므로 클릭은 `document`에 위임하고,
+   * 버튼 드러내기와 강조는 파일이 열릴 때마다(`astro:page-load`) 한다. 강조는 그 장 제목의 `.is-linked`다.
+   */
+  const BUTTON = '[data-chapter-link]';
+  const copiedTimers = new WeakMap<HTMLElement, number>();
+
+  /** id가 장 주소 대상(복사 버튼이 있는 제목)이면 그 제목. */
+  function chapterHeading(id: string): HTMLElement | null {
+    const heading = document.getElementById(id);
+    return heading?.querySelector(`:scope > .doc-chapter-gutter > ${BUTTON}`) ? heading : null;
+  }
+
+  /** 강조를 그 장으로 옮긴다. `null`이면 지운다. */
+  function markLinked(heading: HTMLElement | null) {
+    for (const marked of document.querySelectorAll('.is-linked')) {
+      if (marked !== heading) marked.classList.remove('is-linked');
+    }
+    heading?.classList.add('is-linked');
+  }
+
+  function hashId(): string {
+    try {
+      return decodeURIComponent(location.hash.slice(1));
+    } catch {
+      return '';
+    }
+  }
+
+  // 파일이 열릴 때만 해시를 본다. 같은 화면에서 개요 링크로 해시만 바뀌면 page-load가 오지 않아 강조하지 않는다.
+  document.addEventListener('astro:page-load', () => {
+    for (const button of document.querySelectorAll<HTMLButtonElement>(BUTTON)) {
+      button.hidden = false;
+    }
+    const id = hashId();
+    markLinked(id ? chapterHeading(id) : null);
+  });
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element | null)?.closest<HTMLElement>(BUTTON);
+    const id = button?.dataset.chapterLink;
+    if (!button || !id) return;
+    // ClientRouter의 기록 상태(index·스크롤)를 잃지 않게 지금 state를 그대로 넘긴다. 스크롤하지 않는다.
+    history.replaceState(history.state, '', `#${id}`);
+    markLinked(chapterHeading(id));
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(chapterLinkUrl(location, id));
+      copied = true;
+    } catch {
+      copied = false;
+    }
+    showStatusNotice(chapterLinkNotice(id, copied));
+    if (!copied) return;
+    window.clearTimeout(copiedTimers.get(button));
+    button.dataset.copied = '';
+    copiedTimers.set(
+      button,
+      window.setTimeout(() => delete button.dataset.copied, STATUS_NOTICE_MS),
+    );
   });
 </script>

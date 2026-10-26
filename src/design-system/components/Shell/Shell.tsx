@@ -1,6 +1,6 @@
 import {
-  Suspense,
   lazy,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -9,12 +9,26 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
+import { $statusNotice, clearStatusNotice } from '../../stores/notice';
 import { $reading, emptyReading } from '../../stores/reading';
 import { chapterNo, readingSymbol } from '../../stores/reading.logic';
+import {
+  $readingHistory,
+  clearReadingHistory,
+  keepPublishedHistory,
+} from '../../stores/readingHistory';
+import {
+  emptyHistory,
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingMark,
+} from '../../stores/readingHistory.logic';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
@@ -42,6 +56,11 @@ import {
   type PanelView,
 } from './panel.logic';
 import { readPanelView, writePanelView } from './panel';
+import type { PaletteHandle } from './Palette';
+import { platformOf, shortcutFor, type FocusTarget, type Platform } from './shortcuts.logic';
+
+/** 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 JS에 넣지 않는다. */
+const Palette = lazy(() => import('./Palette'));
 
 /** 검색 화면은 처음 열 때 불러오는 청크다(첫 화면 JS에 넣지 않는다). */
 const SearchView = lazy(() => import('./SearchView'));
@@ -152,6 +171,39 @@ function navigateLikeLink(url: string): void {
   link.remove();
 }
 
+/** 글자를 치는 입력창이 아닌 `<input>` 종류. 여기에 포커스가 있어도 단축키는 동작한다. */
+const NON_TEXT_INPUTS = new Set([
+  'button',
+  'checkbox',
+  'color',
+  'file',
+  'image',
+  'radio',
+  'range',
+  'reset',
+  'submit',
+]);
+
+/** 키를 받은 요소의 종류(단축키 판정용). */
+function focusTarget(target: EventTarget | null): FocusTarget {
+  if (!(target instanceof HTMLElement)) return 'other';
+  if (target.matches('[data-palette-input]')) return 'palette-input';
+  if (
+    target.isContentEditable ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(target.type))
+  )
+    return 'text';
+  return 'other';
+}
+
+/** 브라우저의 플랫폼. 서버 HTML에는 넣지 않고, 키를 처음 받거나 키 표기를 처음 그릴 때 읽는다. */
+function browserPlatform(): Platform {
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  return platformOf(nav.userAgentData?.platform || nav.platform || '');
+}
+
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
 function Brand({ name }: { name: string }) {
   const [head, ...rest] = name.split('’');
@@ -250,8 +302,60 @@ function RailButton({
 const panelLink =
   'flex h-7.5 items-center gap-1 pr-3 pl-6.5 font-mono text-xs text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2';
 
-/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처. */
-function ProfileView({ profile }: { profile: Profile }) {
+/**
+ * 탐색기 파일 줄 끝의 읽음 꼬리표. 읽은 글은 `✓`(흐린 글자), 읽는 중인 글은 `42%`(강조 글자)이고, 스크린 리더는
+ * 기호 대신 "읽음"·"42% 읽는 중"을 읽는다. 줄지 않으므로 파일 이름이 먼저 말줄임된다.
+ */
+function ReadMark({ mark }: { mark: ReadingMark }) {
+  const { text, label } = markText(mark, 'short');
+  return (
+    <span
+      className={cn(
+        'ml-auto flex-none pl-1 text-[11px]',
+        mark.kind === 'read' ? 'text-text-muted' : 'text-accent-text',
+      )}
+    >
+      <span aria-hidden="true">{text}</span>
+      <span className="sr-only"> {label}</span>
+    </span>
+  );
+}
+
+/**
+ * 프로필 화면 맨 아래의 읽기 기록 칸. `이 브라우저에 N편 읽음 · M편 읽는 중`과 `기록 지우기`를 보이고, 기록이 없으면
+ * 안내 한 줄만 보인다. 지우면 버튼이 사라지므로 포커스를 안내 줄로 옮긴다.
+ */
+function HistorySection({ summary }: { summary: string | null }) {
+  const status = useRef<HTMLParagraphElement>(null);
+  return (
+    <section aria-labelledby="profile-history" className="border-t border-border pb-2">
+      <SectionHead id="profile-history">읽기 기록</SectionHead>
+      <p
+        ref={status}
+        tabIndex={-1}
+        className="m-0 py-1 pr-3 pl-6.5 font-mono text-xs leading-[1.6] text-text-soft outline-none"
+      >
+        {summary ? `이 브라우저에 ${summary}` : '이 브라우저에 남은 읽기 기록이 없습니다'}
+      </p>
+      {summary && (
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => {
+            clearReadingHistory();
+            status.current?.focus();
+          }}
+          className="mt-1 ml-6.5 font-mono text-xs"
+        >
+          기록 지우기
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처, 읽기 기록. */
+function ProfileView({ profile, history }: { profile: Profile; history: string | null }) {
   return (
     <div className="pb-2">
       <div className="px-4.5 pt-3 pb-4">
@@ -294,6 +398,7 @@ function ProfileView({ profile }: { profile: Profile }) {
           ))}
         </ul>
       </section>
+      <HistorySection summary={history} />
     </div>
   );
 }
@@ -302,12 +407,18 @@ function ProfileView({ profile }: { profile: Profile }) {
  * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(프로필·탐색기·검색)·탭·상태줄을 모두
  * `position: fixed`로 그리는 아일랜드 하나다(ADR 0001). 에디터 내용은 아일랜드 밖 정적 HTML이고,
  * 창 틀은 페이지가 열릴 때마다(`astro:page-load`) 에디터 루트의 `data-file-*`를 읽어 탭을 열고
- * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다.
+ * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다. 같은 자리에 창 틀 밖에서 띄운 상태줄 알림
+ * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
  *
  * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 검색 화면(`SearchView`)은 처음 열 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다.
  * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
+ * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
+ *
+ * 단축키는 `document`의 keydown 리스너 하나가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
+ * ⌘B(Ctrl+B) 패널 열고 닫기, Esc 맨 위 층(팔레트, 그다음 좁은 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는
+ * 처음 열 때 불러오는 청크다.
  */
 export function Shell({
   brand,
@@ -337,6 +448,9 @@ export function Shell({
   );
   const [log, setLog] = useState<string | null>(null);
   const reading = useStore($reading, { ssr: emptyReading });
+  // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 기록 없이 그리고, 그 뒤 실제 기록으로 다시 그린다.
+  const history = useStore($readingHistory, { ssr: emptyHistory });
+  const notice = useStore($statusNotice);
   const timers = useRef<number[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   // 마지막으로 읽은 에디터 루트. 화면을 옮기면 <body>가 바뀌어 새 요소가 된다.
@@ -371,6 +485,11 @@ export function Shell({
     if (saved) updatePanel((state) => ({ ...state, view: startView(saved, firstKind.current) }));
   }, [updatePanel]);
 
+  // 읽기 기록에서 발행된 글 목록(트리)에 없는 글을 버린다.
+  useEffect(() => {
+    keepPublishedHistory(tree.flatMap((year) => year.files.map((entry) => entry.url)));
+  }, [tree]);
+
   // 패널 화면이 바뀔 때마다 세션 동안 남긴다. 열림·닫힘은 저장하지 않는다.
   useEffect(() => writePanelView(panel.view), [panel.view]);
 
@@ -392,6 +511,8 @@ export function Shell({
         return wide ? moved : dismissPanel(moved, wide);
       });
 
+      // 새 파일의 열기 요약이 앞 파일에서 띄운 알림을 바로 바꾼다.
+      clearStatusNotice();
       const { command, result } = openLog(next);
       const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;
       timers.current.forEach(clearTimeout);
@@ -440,23 +561,98 @@ export function Shell({
     };
   }, [explorerShown, openExplorer, updatePanel]);
 
-  // 겹침 패널은 Esc로 닫고, 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다.
+  // 겹침 패널이 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다. Esc로 닫기는 단축키 리스너가 맡는다.
   useEffect(() => {
     if (!overlay) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panelRef.current?.focus();
-    const restore = () => {
-      if (opener?.isConnected && panelRef.current?.contains(document.activeElement)) opener.focus();
+    const panelElement = panelRef.current;
+    panelElement?.focus();
+    return () => {
+      if (opener?.isConnected && panelElement?.contains(document.activeElement)) opener.focus();
     };
+  }, [overlay]);
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [platform, setPlatform] = useState<Platform | null>(null);
+  const paletteRef = useRef<PaletteHandle>(null);
+  // 팔레트를 열 때 포커스가 있던 자리. 닫으면 여기로 돌려준다.
+  const paletteOpener = useRef<HTMLElement | null>(null);
+
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
+    const opener = paletteOpener.current;
+    paletteOpener.current = null;
+    if (opener?.isConnected) opener.focus();
+  }, []);
+  const pickFromPalette = useCallback(
+    (url: string) => {
+      closePalette();
+      navigateLikeLink(url);
+    },
+    [closePalette],
+  );
+
+  // 단축키: `document`에 리스너 하나를 걸고 판정(`shortcuts.logic.ts`) 결과만 실행한다.
+  // 맥락은 그릴 때마다 ref에 옮겨 리스너를 다시 걸지 않는다.
+  const shortcutContext = useRef({ paletteOpen, overlay });
+  useEffect(() => {
+    shortcutContext.current = { paletteOpen, overlay };
+  }, [paletteOpen, overlay]);
+  useEffect(() => {
+    let known: Platform | null = null;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') updatePanel(dismissPanel);
+      known ??= browserPlatform();
+      const action = shortcutFor(
+        {
+          key: event.key,
+          code: event.code,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          isComposing: event.isComposing,
+          target: focusTarget(event.target),
+        },
+        {
+          paletteOpen: shortcutContext.current.paletteOpen,
+          overlayOpen: shortcutContext.current.overlay,
+          platform: known,
+        },
+      );
+      if (!action) return;
+      event.preventDefault();
+      switch (action) {
+        case 'open-palette':
+          paletteOpener.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          setPlatform(known);
+          setPaletteOpen(true);
+          break;
+        case 'toggle-panel':
+          updatePanel(togglePanel);
+          break;
+        case 'close-palette':
+          closePalette();
+          break;
+        case 'close-overlay':
+          updatePanel(dismissPanel);
+          break;
+        case 'palette-prev':
+          paletteRef.current?.move(-1);
+          break;
+        case 'palette-next':
+          paletteRef.current?.move(1);
+          break;
+        case 'palette-pick':
+          paletteRef.current?.pick();
+          break;
+        case 'swallow':
+          break;
+      }
     };
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      restore();
-    };
-  }, [overlay, updatePanel]);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [closePalette, updatePanel]);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
@@ -554,7 +750,7 @@ export function Shell({
           ))}
         </fieldset>
         {panel.view === 'profile' ? (
-          <ProfileView profile={profile} />
+          <ProfileView profile={profile} history={summarizeHistory(history)} />
         ) : panel.view === 'search' ? (
           <Suspense
             fallback={<p className="m-0 px-4 py-2 font-mono text-[11.5px] text-text-muted">…</p>}
@@ -577,6 +773,7 @@ export function Shell({
                       {files.map((entry) => {
                         const active = shown?.url === entry.url;
                         const name = entry.path.split('/').pop();
+                        const mark = readingMark(history, entry.url);
                         return (
                           <li key={entry.url}>
                             <a
@@ -584,7 +781,8 @@ export function Shell({
                               title={name}
                               aria-current={active ? 'page' : undefined}
                               className={cn(
-                                'relative flex h-7.5 items-center gap-2 truncate pr-3 pl-10 font-mono text-xs leading-7.5 text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                mark?.kind === 'read' && 'text-text-muted',
                                 active &&
                                   'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
                               )}
@@ -593,7 +791,8 @@ export function Shell({
                                 aria-hidden="true"
                                 className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
                               />
-                              {name}
+                              <span className="min-w-0 truncate">{name}</span>
+                              {mark && <ReadMark mark={mark} />}
                             </a>
                           </li>
                         );
@@ -692,7 +891,14 @@ export function Shell({
           <BranchIcon className="size-3.5" />
           main
         </span>
-        {log ? (
+        {/* 상태줄 알림: 늘 있는 live 영역이라 글자가 바뀔 때 읽힌다. 떠 있는 동안 열기 요약 자리를 쓴다. */}
+        <span
+          aria-live="polite"
+          className={notice ? 'min-w-0 flex-1 truncate pr-3 pl-3' : 'sr-only'}
+        >
+          {notice && <span key={notice.id}>{notice.text}</span>}
+        </span>
+        {notice ? null : log ? (
           <span aria-hidden="true" className="min-w-0 flex-1 truncate pr-3 pl-3">
             {log}
           </span>
@@ -711,6 +917,18 @@ export function Shell({
           </span>
         )}
       </footer>
+
+      {paletteOpen && platform && (
+        <Suspense fallback={null}>
+          <Palette
+            ref={paletteRef}
+            tree={tree}
+            platform={platform}
+            onPick={pickFromPalette}
+            onDismiss={closePalette}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

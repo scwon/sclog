@@ -32,8 +32,30 @@ export {
   readingSymbol,
   type ReadingPlace,
 } from './stores/reading.logic';
-export { $activeTab, $openTabs, closeTab, openTab } from './stores/tabs';
-export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
+export {
+  $readingHistory,
+  clearReadingHistory,
+  flushReadingHistory,
+  keepPublishedHistory,
+  recordReading,
+} from './stores/readingHistory';
+export {
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingHistory,
+  type ReadingMark,
+  type ReadingPosition,
+} from './stores/readingHistory.logic';
+export {
+  $statusNotice,
+  clearStatusNotice,
+  showStatusNotice,
+  STATUS_NOTICE_MS,
+  type StatusNotice,
+} from './stores/notice';
+export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
+export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
 export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';

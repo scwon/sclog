@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { setReading } from '../../stores/reading';
+import { $readingHistory } from '../../stores/readingHistory';
+import { emptyHistory, type ReadingHistory } from '../../stores/readingHistory.logic';
 import type { OutlineItem } from '../../stores/file.logic';
 import { setSearchQuery } from '../../stores/search';
 import type { SearchBlock, SearchIndex } from '../../stores/search-index';
@@ -124,6 +126,49 @@ function ReadTo34() {
   return null;
 }
 
+/** 글이 여럿인 트리. 꼬리표 스토리가 쓴다. 이름이 긴 파일은 꼬리표 대신 이름이 먼저 말줄임된다. */
+const markedTree: ShellProps['tree'] = [
+  {
+    year: '2024',
+    files: [
+      {
+        url: '/blog/korean-search/',
+        title: '한국어 검색을 직접 만들기',
+        path: 'posts/2024/korean-search.mdx',
+      },
+      {
+        url: '/blog/astro-island-notes-with-a-very-long-file-name/',
+        title: 'Astro 아일랜드 노트',
+        path: 'posts/2024/astro-island-notes-with-a-very-long-file-name.mdx',
+      },
+      {
+        url: '/blog/frontend-team/',
+        title: '프론트엔드 팀 이야기',
+        path: 'posts/2024/frontend-team.mdx',
+      },
+    ],
+  },
+  ...tree,
+];
+
+/** 읽은 글 둘, 읽는 중인 글 둘(42%·71%)인 기록. */
+const markedHistory: ReadingHistory = {
+  read: ['/blog/frontend-team/', '/blog/pro-developer-2023-days/'],
+  positions: [
+    { url: '/blog/astro-island-notes-with-a-very-long-file-name/', chapter: 'one', percent: 42 },
+    { url: '/blog/korean-search/', chapter: 'two', percent: 71 },
+  ],
+};
+
+/** 읽기 기록을 채운다(저장소에는 쓰지 않는다). 스토리를 떠나면 비운다. */
+function SeedHistory({ history }: { history: ReadingHistory }) {
+  useEffect(() => {
+    $readingHistory.set(history);
+    return () => $readingHistory.set(emptyHistory());
+  }, [history]);
+  return null;
+}
+
 /** 에디터 루트(페이지 ↔ 창 틀 계약). 실제 사이트에서는 Astro 레이아웃이 정적 HTML로 그린다. */
 function Editor({ file, children }: { file: Record<string, string>; children: React.ReactNode }) {
   return (
@@ -220,6 +265,48 @@ export const ArticleOpen: Story = {
         // oxlint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(outline) }}
       />
+    </>
+  ),
+};
+
+/**
+ * 꼬리표가 붙은 탐색기: 읽은 글은 `✓`이고 이름이 흐리며, 읽는 중인 글은 `42%`(강조 글자)다. 긴 파일 이름은
+ * 꼬리표를 남기고 먼저 말줄임된다. 스크린 리더는 "읽음"·"42% 읽는 중"으로 읽는다.
+ */
+export const ReadingMarks: Story = {
+  args: { tree: markedTree },
+  render: (args) => (
+    <>
+      <Shell {...args} />
+      <SeedHistory history={markedHistory} />
+      <Editor
+        file={{
+          title: '프로 개발자 2023일 후기',
+          path: 'posts/2023/pro-developer-2023-days.mdx',
+          url: '/blog/pro-developer-2023-days/',
+          kind: 'post',
+          size: '12145',
+          reading: '7',
+        }}
+      >
+        <p className="p-8 text-text-muted">글 본문이 여기에 열린다.</p>
+      </Editor>
+    </>
+  ),
+};
+
+/** 프로필 화면 맨 아래의 읽기 기록 칸: `이 브라우저에 2편 읽음 · 2편 읽는 중`과 `기록 지우기`. 누르면 안내 한 줄만 남는다. */
+export const ReadingHistorySection: Story = {
+  args: { tree: markedTree },
+  render: (args) => (
+    <>
+      <Shell {...args} />
+      <SeedHistory history={markedHistory} />
+      <Editor
+        file={{ title: 'posts.log', path: 'posts.log', url: '/', kind: 'log', summary: '글 4편' }}
+      >
+        <p className="p-8 text-text-muted">흐름 로그가 여기에 열린다.</p>
+      </Editor>
     </>
   ),
 };
