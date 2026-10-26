@@ -53,3 +53,7 @@ interface SearchIndex {
 **측정값**
 
 - `/search-index.json`(글 1편, 55줄): 18,189B, gzip -9 5,480B. 연구 문서의 5.0KB보다 조금 큰 까닭은 블록마다 붙는 장·절 객체와 frontmatter·작성 정보 줄이다.
+
+### 2026-10-27 리뷰 수정 (브랜치 `blog-details/review-fixes`)
+
+- 판 번호 `v: 1`은 `SEARCH_INDEX_VERSION` 상수로 쓴다. 색인 페이지가 쓰고 검색 화면이 검사한다. 타입만 있던 `stores/search-index.ts`는 스토어가 아니어서 `components/Shell/search-index.ts`로 옮겼다. 장 타입은 이어 읽기와 같은 `NumberedChapter`이고, GLOSSARY에 **검색 색인**을 더했다.

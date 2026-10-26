@@ -4,9 +4,10 @@
 
 ## 코드
 
-- 붙은 키: 같은 파일의 `SHORTCUT_KEYS`(`palette`·`panel`·`search`) 한곳이다. 판정, 팔레트 명령 목록(`palette.logic.ts`의 `paletteCommands`), 팔레트 맨 아래 안내, 활동 막대 툴팁이 모두 이 값을 읽는다. ⌘⇧F를 빼야 하면 `search`를 `null`로 바꾸면 된다. 키가 없어지고, 명령 목록의 키 칸이 비고, 안내 줄과 툴팁의 키도 빠진다.
+- 붙은 키: `src/design-system/components/Shell/shortcuts.logic.ts`의 `SHORTCUT_KEYS`(`palette`·`panel`·`search`) 한곳이다. 판정, 팔레트 명령 목록(`palette.logic.ts`의 `paletteCommands`), 팔레트 맨 아래 안내, 활동 막대 툴팁이 모두 이 값을 읽는다. ⌘⇧F를 빼야 하면 `search`를 `null`로 바꾸면 된다. 키가 없어지고, 명령 목록의 키 칸이 비고, 안내 줄과 툴팁의 키도 빠진다.
 - 판정: `src/design-system/components/Shell/shortcuts.logic.ts`의 `shortcutFor(event, context)`. DOM을 모르는 순수 함수이고, 키 모양(`key`·`code`·수정 키·`isComposing`·포커스 대상 종류)과 맥락(팔레트 열림·겹침 패널 열림·플랫폼)을 받아 동작 하나나 `null`을 돌려준다. 규칙은 `shortcuts.test.ts`가 덮는다.
-- 바인딩: `Shell.tsx`가 `document`에 keydown 리스너 하나만 걸고 판정 결과를 실행한다. `null`이 아니면 기본 동작을 막는다. 키를 받는 리스너를 다른 곳에 더 걸지 않는다.
+- 바인딩: 같은 폴더 `shortcuts.ts`의 `useShortcuts`가 `document`에 keydown 리스너 하나만 걸고, 판정이 `null`이 아니면 기본 동작을 막고 `Shell.tsx`에 넘긴다. 키를 받는 리스너를 다른 곳에 더 걸지 않는다.
+- 실행: 붙은 키의 동작(`toggle-panel`·`open-search`)과 팔레트 `>` 명령은 같은 이름의 창 틀 명령(`ShellCommand`)이고, `Shell.tsx`의 `runCommand` 하나가 실행한다. 새 명령은 `ShellCommand`에 더하고 `runCommand`에 한 갈래를 단다.
 - 키 표기: `keyLabel(combo, platform)`이 `⌘⇧F` / `Ctrl+Shift+F`를 만든다. 플랫폼은 `platformOf(navigator 플랫폼 이름)`로 브라우저에서 처음 쓸 때 정하고 서버 HTML에는 넣지 않는다. 팔레트 안의 키 표기와 안내의 `>` 부분은 `(hover: hover) and (pointer: fine)`일 때만 보인다.
 - 도움말: 팔레트에 `>`를 치면 나오는 명령 목록이 이 블로그의 단축키 도움말이다. 키를 붙이면 그 명령 줄에도 키를 단다.
 

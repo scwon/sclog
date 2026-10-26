@@ -49,3 +49,8 @@
 
 - 팔레트 청크 `Palette.*.js`는 3,549B(gzip 1,762B)다. 첫 화면 HTML과 다른 청크는 이 청크를 정적으로 가져오지 않고, 창 틀 청크의 `import()` 한 곳에서만 불러온다(빌드 결과물 테스트).
 - 팔레트 상자: 1440px 폭에서 600px, 390px 폭에서 358px(양옆 16px). 위쪽은 화면 위에서 44px(제목 표시줄 바로 아래 6px)다.
+
+### 2026-10-27 리뷰 수정 (브랜치 `blog-details/review-fixes`)
+
+- 좁은 화면에서 ⌘⇧F를 누르면 검색 입력창에 포커스가 간다. 그 상태에서 Esc로 겹침 패널을 닫을 수 없던 문제를 고쳤다. 검색 입력창(`data-search-input`)의 Esc는 팔레트 입력창처럼 예외로 받는다. 겹침 패널이 없으면 Esc는 입력창에 맡기고, 다른 입력창은 지금처럼 끈다(스펙 끄는 때, `docs/agents/shortcuts.md`).
+- 단축키 리스너와 DOM 헬퍼는 `Shell/shortcuts.ts`의 `useShortcuts`로 옮겼다. 팔레트 명령과 단축키 동작은 공용 이름 `ShellCommand`와 실행 함수 `runCommand` 하나로 모았다.
