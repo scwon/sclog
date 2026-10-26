@@ -3,7 +3,7 @@
  */
 
 /** 패널이 보여 주는 화면. 활동 막대와 좁은 화면의 전환 버튼이 이 순서로 놓인다. */
-export const PANEL_VIEWS = ['explorer', 'profile'] as const;
+export const PANEL_VIEWS = ['profile', 'explorer'] as const;
 
 /** 패널 화면 하나. */
 export type PanelView = (typeof PANEL_VIEWS)[number];

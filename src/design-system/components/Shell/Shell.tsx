@@ -469,20 +469,15 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         aria-label="활동 막대"
         className="fixed top-(--bar-height) bottom-(--bar-height-xs) left-0 z-40 flex w-(--rail-width) flex-col items-center border-r border-border bg-surface-sunken py-1 max-[759px]:hidden"
       >
+        <RailButton view="profile" current={visible && panel.view === 'profile'} onPick={pick}>
+          <ProfileIcon />
+        </RailButton>
         <RailButton view="explorer" current={explorerShown} onPick={pick}>
           <ExplorerIcon />
         </RailButton>
         <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
           <CodeIcon />
         </a>
-        <RailButton
-          view="profile"
-          current={visible && panel.view === 'profile'}
-          onPick={pick}
-          className="mt-auto"
-        >
-          <ProfileIcon />
-        </RailButton>
       </nav>
 
       <aside

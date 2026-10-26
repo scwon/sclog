@@ -157,7 +157,7 @@ export const ArticleOpen: Story = {
   ),
 };
 
-/** 프로필 화면: 활동 막대 맨 아래 프로필 아이콘을 눌러 패널이 탐색기 대신 프로필을 보인다. 사진에 마우스를 올리면 뒤집힌다. */
+/** 프로필 화면: 활동 막대 맨 위 프로필 아이콘을 눌러 패널이 탐색기 대신 프로필을 보인다. 사진에 마우스를 올리면 뒤집힌다. */
 export const ProfileOpen: Story = {
   ...Home,
   play: async ({ canvas, userEvent }) => {
