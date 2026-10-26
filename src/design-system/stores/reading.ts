@@ -15,10 +15,13 @@ export interface ReadingState {
   percent: number | null;
 }
 
-const EMPTY: ReadingState = { line: null, chapter: null, section: null, percent: null };
+/** 아무것도 읽지 않은 상태. 서버 렌더링 스냅샷으로도 쓴다. */
+export function emptyReading(): ReadingState {
+  return { line: null, chapter: null, section: null, percent: null };
+}
 
 /** 현재 읽기 위치. */
-export const $reading = map<ReadingState>({ ...EMPTY });
+export const $reading = map<ReadingState>(emptyReading());
 
 /** 읽기 위치의 일부를 바꾼다. 값이 같으면 구독자를 깨우지 않는다. */
 export function setReading(next: Partial<ReadingState>): void {
@@ -31,5 +34,5 @@ export function setReading(next: Partial<ReadingState>): void {
 
 /** 새 파일을 열면 읽기 위치를 비운다. */
 export function resetReading(): void {
-  $reading.set({ ...EMPTY });
+  $reading.set(emptyReading());
 }

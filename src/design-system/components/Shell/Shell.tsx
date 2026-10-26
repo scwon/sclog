@@ -11,7 +11,8 @@ import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
-import { $reading, resetReading, type ReadingState } from '../../stores/reading';
+import { $reading, emptyReading } from '../../stores/reading';
+import { chapterNo, readingSymbol } from '../../stores/reading.logic';
 import { openTab } from '../../stores/tabs';
 import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon } from './icons';
@@ -64,9 +65,7 @@ function useDesktop(): boolean {
 }
 
 /** 에디터 루트의 계약(`data-file-*`, 개요 JSON)을 읽는다. */
-function readEditorFile(): EditorFile | null {
-  const editor = document.getElementById(EDITOR_ID);
-  if (!editor) return null;
+function readEditorFile(editor: HTMLElement): EditorFile | null {
   return parseEditorFile(
     { ...editor.dataset },
     document.getElementById(OUTLINE_ID)?.textContent ?? null,
@@ -84,20 +83,6 @@ function navigateLikeLink(url: string): void {
   document.body.append(link);
   link.click();
   link.remove();
-}
-
-const serverReading = (): ReadingState => ({
-  line: null,
-  chapter: null,
-  section: null,
-  percent: null,
-});
-
-/** 현재 장·절을 `04 개발자란? › 3~4년차`처럼 적는다. */
-export function symbolOf({ chapter, section }: ReadingState): string {
-  if (!chapter) return '';
-  const head = `${chapter.no} ${chapter.text}`;
-  return section ? `${head} › ${section.text}` : head;
 }
 
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
@@ -165,27 +150,29 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
   const [file, setFile] = useState<EditorFile | null>(null);
   // 탐색기 상태는 그 상태를 정한 화면 폭과 함께 둔다. 1100px 경계를 넘으면 다시 화면 폭에 맡긴다(auto).
   const desktop = useDesktop();
-  const [chosen, setChosen] = useState<{ state: ExplorerState; desktop: boolean }>({
+  const [explorerChoice, setExplorerChoice] = useState<{ state: ExplorerState; desktop: boolean }>({
     state: 'auto',
     desktop: true,
   });
-  const explorer: ExplorerState = chosen.desktop === desktop ? chosen.state : 'auto';
+  const explorer: ExplorerState =
+    explorerChoice.desktop === desktop ? explorerChoice.state : 'auto';
   const setExplorer = useCallback(
     (next: ExplorerState) =>
-      setChosen({ state: next, desktop: window.matchMedia(DESKTOP).matches }),
+      setExplorerChoice({ state: next, desktop: window.matchMedia(DESKTOP).matches }),
     [],
   );
   const [log, setLog] = useState<string | null>(null);
-  const reading = useStore($reading, { ssr: serverReading });
+  const reading = useStore($reading, { ssr: emptyReading });
   const timers = useRef<number[]>([]);
   const explorerRef = useRef<HTMLElement>(null);
-  const lastOpened = useRef({ url: '', at: 0 });
+  // 마지막으로 읽은 에디터 루트. 화면을 옮기면 <body>가 바뀌어 새 요소가 된다.
+  const lastEditor = useRef<HTMLElement | null>(null);
 
   const visible = desktop ? explorer !== 'closed' : explorer === 'open';
   const overlay = !desktop && explorer === 'open';
 
   const toggleExplorer = useCallback(() => {
-    setChosen((current) => {
+    setExplorerChoice((current) => {
       const wide = window.matchMedia(DESKTOP).matches;
       const state = current.desktop === wide ? current.state : 'auto';
       if (wide) return { state: state === 'closed' ? 'auto' : 'closed', desktop: wide };
@@ -193,27 +180,36 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
     });
   }, []);
 
+  /** 탐색기를 연다(이미 보이면 그대로). 경로 표시줄의 `개요` 버튼이 쓴다. */
+  const openExplorer = useCallback(() => {
+    const wide = window.matchMedia(DESKTOP).matches;
+    setExplorerChoice({ state: wide ? 'auto' : 'open', desktop: wide });
+    requestAnimationFrame(() =>
+      document.getElementById('explorer-outline')?.scrollIntoView({ block: 'nearest' }),
+    );
+  }, []);
+
   // 페이지가 열리면 계약을 읽어 탭을 열고 열기 요약을 보인다. 첫 하이드레이션과 첫 page-load가
   // 겹쳐 두 번 불리면 한 번만 처리한다.
   useEffect(() => {
     const handleOpen = () => {
-      const next = readEditorFile();
+      // 첫 하이드레이션과 첫 page-load가 모두 부르면 같은 에디터 루트이므로 한 번만 처리한다.
+      const editor = document.getElementById(EDITOR_ID);
+      if (!editor || editor === lastEditor.current) return;
+      lastEditor.current = editor;
+      const next = readEditorFile(editor);
       if (!next) return;
-      const now = performance.now();
-      if (lastOpened.current.url === next.url && now - lastOpened.current.at < 500) return;
-      lastOpened.current = { url: next.url, at: now };
       setFile(next);
       openTab({ url: next.url, title: next.title, path: next.path });
-      resetReading();
       // 좁은 화면에서 탐색기로 글을 골랐다면 패널을 닫는다.
       if (!window.matchMedia(DESKTOP).matches) setExplorer('auto');
 
       const { command, result } = openLog(next);
-      const quick = window.matchMedia(REDUCED_MOTION).matches;
+      const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;
       timers.current.forEach(clearTimeout);
       setLog(command);
       timers.current = [
-        window.setTimeout(() => setLog(result), quick ? 0 : 450),
+        window.setTimeout(() => setLog(result), reduceMotion ? 0 : 450),
         window.setTimeout(() => setLog(null), 2200),
       ];
     };
@@ -226,19 +222,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
     };
   }, [setExplorer]);
 
-  // 탐색기 상태를 <html data-explorer>에 알리고, 화면 이동으로 <html> 속성이 바뀌어도 이어 붙인다.
+  // 탐색기 상태를 <html data-explorer>에 알린다. 화면을 옮길 때 이 속성을 이어 붙이는 일은 소비자가 맡는다.
   useEffect(() => {
-    const apply = (root: HTMLElement) => {
-      if (explorer === 'auto') delete root.dataset.explorer;
-      else root.dataset.explorer = explorer;
-    };
-    apply(document.documentElement);
-    const carry = (event: Event) => {
-      const next = (event as Event & { newDocument?: Document }).newDocument;
-      if (next) apply(next.documentElement);
-    };
-    document.addEventListener('astro:before-swap', carry);
-    return () => document.removeEventListener('astro:before-swap', carry);
+    const root = document.documentElement;
+    if (explorer === 'auto') delete root.dataset.explorer;
+    else root.dataset.explorer = explorer;
   }, [explorer]);
 
   // 정적 HTML의 탐색기 버튼(경로 표시줄의 `개요` 등)도 같은 동작을 하고 펼침 상태를 알린다.
@@ -249,7 +237,11 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
       }
     };
     const onClick = (event: MouseEvent) => {
-      if ((event.target as Element | null)?.closest('[data-explorer-toggle]')) toggleExplorer();
+      const target = event.target as Element | null;
+      if (target?.closest('[data-explorer-toggle]')) openExplorer();
+      // 겹침 패널·서랍 안의 링크(같은 페이지의 개요 앵커 포함)를 누르면 패널을 닫는다.
+      else if (target?.closest(`#${EXPLORER_ID} a`) && !window.matchMedia(DESKTOP).matches)
+        setExplorer('auto');
     };
     sync();
     document.addEventListener('astro:page-load', sync);
@@ -258,7 +250,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
       document.removeEventListener('astro:page-load', sync);
       document.removeEventListener('click', onClick);
     };
-  }, [visible, toggleExplorer]);
+  }, [visible, openExplorer, setExplorer]);
 
   // 겹침 패널은 Esc로 닫고, 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다.
   useEffect(() => {
@@ -323,7 +315,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
       </header>
 
       <nav
-        aria-label="작업 막대"
+        aria-label="활동 막대"
         className="fixed top-(--bar-height) bottom-(--bar-height-xs) left-0 z-40 flex w-(--rail-width) flex-col items-center border-r border-border bg-surface-sunken py-1 max-[759px]:hidden"
       >
         <button
@@ -358,7 +350,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
           'fixed top-(--bar-height) bottom-(--bar-height-xs) left-(--rail-width) z-35 w-(--panel-width) [scrollbar-width:thin] overflow-y-auto border-r border-border bg-surface-panel pb-7 outline-none',
           'max-[759px]:left-0 max-[759px]:z-46 max-[759px]:w-[min(86vw,320px)]',
           explorer === 'auto' && 'hidden min-[1100px]:block',
-          explorer === 'open' && 'block max-[1099px]:shadow-2xl',
+          explorer === 'open' && 'block max-[1099px]:shadow-[24px_0_48px_-24px_var(--scrim)]',
           explorer === 'closed' && 'hidden',
         )}
       >
@@ -408,7 +400,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
         {outline.length > 0 && (
           <section aria-labelledby="explorer-outline" className="border-t border-border pb-2">
             <SectionHead id="explorer-outline">개요</SectionHead>
-            <nav aria-label="글 목차" className="pt-0.5 pb-1.5">
+            <nav aria-label="글 개요" className="pt-0.5 pb-1.5">
               <ol className="relative m-0 list-none p-0 before:absolute before:inset-y-0 before:left-[21px] before:w-px before:bg-border-subtle">
                 {outline.map((chapter, index) => {
                   const inChapter = reading.chapter?.id === chapter.id;
@@ -431,7 +423,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
                             inChapter && 'text-accent-text',
                           )}
                         >
-                          {String(index + 1).padStart(2, '0')}
+                          {chapterNo(index)}
                         </span>
                         <span>{chapter.text}</span>
                       </a>
@@ -498,7 +490,9 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree }: ShellProps)
         ) : (
           <span className="flex min-w-0 flex-1 items-center gap-4 pr-3 pl-3">
             {file?.kind === 'post' ? (
-              <span className="min-w-0 truncate font-sans">{symbolOf(reading) || file.title}</span>
+              <span className="min-w-0 truncate font-sans">
+                {readingSymbol(reading) || file.title}
+              </span>
             ) : (
               <span className="truncate">{file?.summary ?? file?.path}</span>
             )}

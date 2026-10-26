@@ -10,6 +10,7 @@ import BaseLayout from './BaseLayout.astro';
 import CodeBlock from '../components/blog/CodeBlock.astro';
 import Comments from '../components/blog/Comments.astro';
 import { Badge } from '@/design-system';
+import { SITE } from '../site';
 import { buildOutline, postFile } from '../utils/ide';
 
 interface Props {
@@ -94,7 +95,7 @@ const quote = (value: string) => JSON.stringify(value);
         <span class="doc-sign" aria-hidden="true">
           ’
         </span>
-        <span class="doc-byline-author">원성철</span>
+        <span class="doc-byline-author">{SITE.author}</span>
         <span class="doc-byline-sep" aria-hidden="true"></span>
         <time datetime={isoDate}>{isoDate.replaceAll('-', '.')}</time>
         <span class="doc-byline-sep" aria-hidden="true"></span>
@@ -129,8 +130,8 @@ const quote = (value: string) => JSON.stringify(value);
           ’
         </span>
         <div>
-          <p class="doc-author-name">원성철</p>
-          <a href="https://github.com/scwon">github.com/scwon</a>
+          <p class="doc-author-name">{SITE.author}</p>
+          <a href={SITE.githubUrl}>{SITE.githubUrl.replace(/^https?:\/\//, '')}</a>
         </div>
       </div>
       <nav class="doc-end" aria-label="글 끝 이동">
@@ -144,7 +145,14 @@ const quote = (value: string) => JSON.stringify(value);
 </BaseLayout>
 
 <script>
-  import { currentBlock, readingPercent, setReading } from '@/design-system';
+  import {
+    currentBlock,
+    locateInOutline,
+    readingPercent,
+    readingSymbol,
+    setReading,
+    type OutlineItem,
+  } from '@/design-system';
 
   /**
    * 읽는 위치를 따라간다: 현재 블록(줄 번호 코랄), 현재 장·절, 읽은 비율.
@@ -167,6 +175,12 @@ const quote = (value: string) => JSON.stringify(value);
       ...doc.querySelectorAll<HTMLElement>('.doc-fm-line, .doc-title, .doc-byline, .doc-prose > *'),
     ];
     const symbol = document.querySelector<HTMLElement>('[data-reading-symbol]');
+    let outline: OutlineItem[] = [];
+    try {
+      outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');
+    } catch {
+      outline = [];
+    }
     const crumbs = document.querySelector<HTMLElement>('.ide-crumbs');
     let current: HTMLElement | null = null;
     let frame = 0;
@@ -181,22 +195,9 @@ const quote = (value: string) => JSON.stringify(value);
         current = blocks[index] ?? null;
         current?.classList.add('is-current');
       }
-      let chapter: { id: string; no: string; text: string } | null = null;
-      let section: { id: string; text: string } | null = null;
-      let chapterNo = 0;
-      for (const block of blocks.slice(0, index + 1)) {
-        if (block.tagName === 'H2') {
-          chapterNo += 1;
-          chapter = {
-            id: block.id,
-            no: String(chapterNo).padStart(2, '0'),
-            text: block.textContent ?? '',
-          };
-          section = null;
-        } else if (block.tagName === 'H3' && chapter) {
-          section = { id: block.id, text: block.textContent ?? '' };
-        }
-      }
+      // 장·절의 구분은 탐색기 개요(계약 JSON)를 따른다. 글의 최상위 제목 단계와 상관없다.
+      const passed = blocks.slice(0, index + 1).flatMap((block) => (block.id ? [block.id] : []));
+      const { chapter, section } = locateInOutline(outline, passed);
       const percent = readingPercent({
         scrollTop: window.scrollY,
         scrollHeight: document.documentElement.scrollHeight,

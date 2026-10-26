@@ -1,25 +1,14 @@
 import { statSync } from 'node:fs';
 import type { MarkdownHeading } from 'astro';
+import type { EditorFile, OutlineItem } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
 
-/** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). */
-export interface IdeFile {
-  title: string;
-  path: string;
-  url: string;
-  kind: 'log' | 'post' | 'page';
-  size?: number;
-  reading?: number;
-  summary?: string;
-}
+/** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). 개요는 따로 넘긴다. */
+export type IdeFile = Omit<EditorFile, 'outline'>;
 
 /** 탐색기 개요의 장과 절. */
-export interface IdeOutlineItem {
-  id: string;
-  text: string;
-  children: { id: string; text: string }[];
-}
+export type IdeOutlineItem = OutlineItem;
 
 /** 글의 연도(UTC 기준이라 빌드 환경의 시간대와 무관하다). */
 export function postYear(post: BlogPost): string {

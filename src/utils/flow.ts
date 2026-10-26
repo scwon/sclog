@@ -1,5 +1,6 @@
 import type { MarkdownHeading } from 'astro';
 import type { BlogPost } from './blog';
+import { chapterNo } from '@/design-system';
 import { buildOutline, postFile, postUrl, postYear } from './ide';
 
 /** 흐름 로그의 장 노드와 그 아래 절 노드. */
@@ -67,7 +68,7 @@ export function flowPost(post: BlogPost, headings: MarkdownHeading[]): FlowPost 
     excerpt: firstSentence(post.body ?? ''),
     reading: postFile(post).reading,
     steps: buildOutline(headings).map((chapter, index) => ({
-      no: String(index + 1).padStart(2, '0'),
+      no: chapterNo(index),
       text: chapter.text,
       href: `${url}#${chapter.id}`,
       subs: chapter.children.map((section) => ({

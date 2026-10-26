@@ -135,7 +135,7 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
       return (
         <li class="flow-line flow-folded" data-folded={line.post.id} hidden>
           <span class="flow-ln" aria-hidden="true" />
-          <button class="flow-folded-label" type="button" data-unfold-post={line.post.id}>
+          <button class="flow-folded-label" type="button" data-expand-post={line.post.id}>
             ··· {line.post.steps.length}개 장 접힘
           </button>
         </li>
@@ -183,11 +183,11 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
     const fold = target?.closest<HTMLButtonElement>('.flow [data-fold]');
     if (fold?.dataset.fold)
       setFolded(fold.dataset.fold, fold.getAttribute('aria-expanded') === 'true');
-    const unfold = target?.closest<HTMLButtonElement>('.flow [data-unfold-post]');
-    if (unfold?.dataset.unfoldPost) {
-      setFolded(unfold.dataset.unfoldPost, false);
+    const expand = target?.closest<HTMLButtonElement>('.flow [data-expand-post]');
+    if (expand?.dataset.expandPost) {
+      setFolded(expand.dataset.expandPost, false);
       document
-        .querySelector<HTMLButtonElement>(`.flow [data-fold="${unfold.dataset.unfoldPost}"]`)
+        .querySelector<HTMLButtonElement>(`.flow [data-fold="${expand.dataset.expandPost}"]`)
         ?.focus();
     }
   });

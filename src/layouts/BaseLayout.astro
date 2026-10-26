@@ -7,6 +7,7 @@
 import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
 import { Shell } from '@/design-system';
+import { SITE } from '../site';
 import { getPublishedPosts } from '../utils/blog';
 import { buildTree, type IdeFile, type IdeOutlineItem } from '../utils/ide';
 import '../styles/global.css';
@@ -21,7 +22,7 @@ interface Props {
   tags?: string[];
   /** 에디터에 열린 파일. 탭·창 제목·상태줄·경로 표시줄이 이 값을 쓴다. */
   file: IdeFile;
-  /** 글의 개요(탐색기 아래 목차). */
+  /** 글의 개요(탐색기 아래). */
   outline?: IdeOutlineItem[];
 }
 
@@ -75,10 +76,12 @@ const outlineJson =
         if (!window.sclogThemeCarry) {
           window.sclogThemeCarry = true;
           document.addEventListener('astro:before-swap', function (event) {
-            event.newDocument.documentElement.setAttribute(
-              'data-theme',
-              document.documentElement.getAttribute('data-theme') || 'dark',
-            );
+            var root = document.documentElement;
+            var next = event.newDocument.documentElement;
+            next.setAttribute('data-theme', root.getAttribute('data-theme') || 'dark');
+            // 창 틀의 탐색기 상태(열기·닫기)도 이어 붙인다.
+            var explorer = root.getAttribute('data-explorer');
+            if (explorer) next.setAttribute('data-explorer', explorer);
           });
         }
       })();
@@ -102,10 +105,10 @@ const outlineJson =
     <Shell
       client:load
       transition:persist="shell"
-      brand="scwon’s blog"
-      author="원성철"
-      githubUrl="https://github.com/scwon"
-      sourceUrl="https://github.com/scwon/sclog"
+      brand={SITE.brand}
+      author={SITE.author}
+      githubUrl={SITE.githubUrl}
+      sourceUrl={SITE.sourceUrl}
       tree={tree}
     />
     <main
@@ -134,6 +137,8 @@ const outlineJson =
     </main>
     {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
     <script>
+      import { resetReading } from '@/design-system';
+
       /**
        * 펼침: 파일을 열 때 첫 1.4화면 안의 줄·블록을 위에서부터 차례로 보인다(2층 motion.css의 `[data-unfold]`).
        * 움직임 줄이기 설정에서는 아무것도 하지 않는다. 마지막 항목의 애니메이션이 끝나면 표시를 걷어 낸다.
@@ -149,9 +154,10 @@ const outlineJson =
       function unfold() {
         const editor = document.getElementById('editor');
         if (!editor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter(
-          (item) => item.getBoundingClientRect().top < window.innerHeight * 1.4,
-        );
+        const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter((item) => {
+          const { top, bottom } = item.getBoundingClientRect();
+          return bottom > 0 && top < window.innerHeight * 1.4;
+        });
         if (items.length === 0) return;
         items.forEach((item, index) => {
           item.dataset.unfoldItem = '';
@@ -170,6 +176,8 @@ const outlineJson =
       }
 
       document.addEventListener('astro:page-load', unfold);
+      // 새 페이지로 바뀌면 읽기 위치를 비운다. 새 페이지의 스크립트가 page-load에서 다시 채운다.
+      document.addEventListener('astro:after-swap', resetReading);
     </script>
   </body>
 </html>

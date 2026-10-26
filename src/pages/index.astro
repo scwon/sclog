@@ -7,6 +7,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import FlowLog from '../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../utils/blog';
 import { flowLines, flowPost } from '../utils/flow';
+import { SITE } from '../site';
 
 const posts = await getPublishedPosts();
 const flows = await Promise.all(
@@ -27,8 +28,8 @@ const flows = await Promise.all(
 >
   <FlowLog
     lines={flowLines(flows)}
-    brand="scwon’s blog"
-    author="원성철"
-    githubUrl="https://github.com/scwon"
+    brand={SITE.brand}
+    author={SITE.author}
+    githubUrl={SITE.githubUrl}
   />
 </BaseLayout>

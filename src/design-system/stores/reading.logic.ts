@@ -27,3 +27,47 @@ export function currentBlock(tops: number[], line: number): number {
   for (const [position, top] of tops.entries()) if (top <= line) index = position;
   return index;
 }
+
+/** 현재 장(번호·제목)과 절. */
+export interface ReadingPlace {
+  chapter: { id: string; no: string; text: string } | null;
+  section: { id: string; text: string } | null;
+}
+
+/** 장 번호. 01부터 두 자리. */
+export function chapterNo(index: number): string {
+  return String(index + 1).padStart(2, '0');
+}
+
+/** 현재 위치를 `04 개발자란? › 3~4년차`처럼 적는다. 첫 장 전이면 빈 문자열. */
+export function readingSymbol({ chapter, section }: ReadingPlace): string {
+  if (!chapter) return '';
+  const head = `${chapter.no} ${chapter.text}`;
+  return section ? `${head} › ${section.text}` : head;
+}
+
+/**
+ * 지나온 제목들(`passed`, 문서 순서의 id)로 현재 장·절을 정한다. 장·절의 구분은 개요(`outline`)를 따르므로
+ * 글의 최상위 제목 단계가 무엇이든 같게 동작한다. 개요에 없는 id는 건너뛴다.
+ */
+export function locateInOutline(
+  outline: { id: string; text: string; children: { id: string; text: string }[] }[],
+  passed: string[],
+): ReadingPlace {
+  const place: ReadingPlace = { chapter: null, section: null };
+  for (const id of passed) {
+    const index = outline.findIndex((chapter) => chapter.id === id);
+    if (index !== -1) {
+      place.chapter = { id, no: chapterNo(index), text: outline[index].text };
+      place.section = null;
+      continue;
+    }
+    const owner = outline.findIndex((chapter) => chapter.children.some((child) => child.id === id));
+    const section = outline[owner]?.children.find((child) => child.id === id);
+    if (section) {
+      place.chapter = { id: outline[owner].id, no: chapterNo(owner), text: outline[owner].text };
+      place.section = { id, text: section.text };
+    }
+  }
+  return place;
+}
