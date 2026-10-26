@@ -237,6 +237,15 @@ function browserPlatform(): Platform {
   return platformOf(nav.userAgentData?.platform || nav.platform || '');
 }
 
+/**
+ * 검색 입력창 포커스를 다음 프레임에 요청한다. 패널을 검색 화면으로 여는 누름(활동 막대, ⌘⇧F, 팔레트 명령)이 같이
+ * 쓴다. 바로 요청하면 좁은 화면에서 숨은 입력창에 포커스를 주거나, 겹침 패널이 열리며 패널로 옮기는 포커스가
+ * 입력창 포커스를 덮는다.
+ */
+function focusSearchSoon(): void {
+  requestAnimationFrame(requestSearchFocus);
+}
+
 /** 바뀌지 않는 값의 구독. */
 const noSubscribe = () => () => {};
 
@@ -520,19 +529,15 @@ export function Shell({
     (view: PanelView) => {
       updatePanel((state, wide) => pickView(state, view, wide));
       // 활동 막대로 검색 화면을 열면 바로 입력하게 입력창에 포커스를 준다. 닫는 누름이면 숨은 입력창이라 포커스가 가지 않는다.
-      if (view === 'search') requestSearchFocus();
+      if (view === 'search') focusSearchSoon();
     },
     [updatePanel],
   );
 
-  /**
-   * 패널을 검색 화면으로 열고(이미 보이면 그대로) 입력창에 포커스를 준다. ⌘⇧F와 팔레트의 `본문에서 찾기`가 쓴다.
-   * 포커스 요청은 다음 프레임에 보낸다. 좁은 화면에서 겹침 패널이 열리며 패널로 옮기는 포커스가 입력창 포커스를
-   * 덮지 않게 하려는 것이다.
-   */
+  /** 패널을 검색 화면으로 열고(이미 보이면 그대로) 입력창에 포커스를 준다. ⌘⇧F와 팔레트의 `본문에서 찾기`가 쓴다. */
   const openSearch = useCallback(() => {
     updatePanel((_, wide) => showView('search', wide));
-    requestAnimationFrame(requestSearchFocus);
+    focusSearchSoon();
   }, [updatePanel]);
 
   /** 패널을 탐색기 화면으로 연다(이미 보이면 그대로). 경로 표시줄의 `개요` 버튼이 쓴다. */
