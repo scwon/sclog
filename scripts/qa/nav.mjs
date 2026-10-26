@@ -1,6 +1,6 @@
 /**
  * 화면 이동 시나리오(1440px). 홈 → 글 → 개요의 마지막 장 → 뒤로 → 뒤로 → 글 탭 닫기 → 테마 전환 →
- * 다시 글. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
+ * 다시 글 → 태그 화면에서 고른 패널 화면이 새로고침 뒤에도 남는지. 패널은 홈에서 프로필, 글에서 탐색기를 보인다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -119,6 +119,36 @@ check(
   '테마가 이동 뒤에도 유지',
   (await page.evaluate(() => document.documentElement.dataset.theme)) === themeAfter,
 );
+
+// 마지막 패널 화면은 세션 동안 남는다. 글에서 고른 프로필이 새로 불러온 태그 화면에 남고, 태그 화면에서
+// 탐색기 → 프로필을 골라 새로고침할 때마다 고른 화면이 남는다.
+/** 활동 막대에서 화면을 고르고 새로고침한다. */
+const pickAndReload = async (label) => {
+  await page.click(`loc=css:nav[aria-label='활동 막대'] button[aria-label='${label}']`, {
+    label: `${label} 고르기`,
+  });
+  await page.waitForTimeout(300);
+  await page.reload();
+  await page.waitForTimeout(1500);
+};
+await page.goto(`${QA.base}/blog/tags/`);
+await page.waitForTimeout(1500);
+const tagUrl = await page.evaluate(
+  () =>
+    [...document.querySelectorAll('#editor a[href^="/blog/tags/"]')]
+      .filter((a) => a.getAttribute('href') !== '/blog/tags/')
+      .map((a) => a.href)[0] ?? null,
+);
+check('태그 화면 링크가 있음', tagUrl !== null);
+if (tagUrl) {
+  await page.goto(tagUrl);
+  await page.waitForTimeout(1500);
+  check('새로 불러온 태그 화면에 마지막 화면(프로필)', (await panelView()) === '프로필');
+  await pickAndReload('탐색기');
+  check('태그 화면에서 고른 탐색기가 새로고침 뒤 남음', (await panelView()) === '탐색기');
+  await pickAndReload('프로필');
+  check('태그 화면에서 고른 프로필이 새로고침 뒤 남음', (await panelView()) === '프로필');
+}
 
 const events = await page.events();
 const errors = events
