@@ -1,0 +1,81 @@
+import { describe, expect, it } from 'vitest';
+import {
+  dismissPanel,
+  initialPanel,
+  panelVisible,
+  pickView,
+  showView,
+  togglePanel,
+} from './panel.logic';
+
+describe('pickView (활동 막대 아이콘)', () => {
+  it('shows the other view in the panel', () => {
+    const next = pickView(initialPanel, 'profile', true);
+    expect(next.view).toBe('profile');
+    expect(panelVisible(next, true)).toBe(true);
+  });
+
+  it('closes the panel when the current view is picked again', () => {
+    const wide = pickView(initialPanel, 'explorer', true);
+    expect(panelVisible(wide, true)).toBe(false);
+
+    const narrow = pickView(pickView(initialPanel, 'profile', false), 'profile', false);
+    expect(panelVisible(narrow, false)).toBe(false);
+    expect(narrow.view).toBe('profile');
+  });
+
+  it('reopens a closed panel with the picked view', () => {
+    const closed = pickView(initialPanel, 'explorer', true);
+    const next = pickView(closed, 'explorer', true);
+    expect(next.view).toBe('explorer');
+    expect(panelVisible(next, true)).toBe(true);
+  });
+});
+
+describe('showView (좁은 화면의 전환 버튼, 개요 열기)', () => {
+  it('opens the panel on the view, even when it is already shown', () => {
+    const profile = showView('profile', false);
+    expect(profile.view).toBe('profile');
+    expect(panelVisible(profile, false)).toBe(true);
+
+    expect(panelVisible(showView('profile', false), false)).toBe(true);
+  });
+
+  it('switches a wide panel back to the explorer for the outline', () => {
+    const next = showView('explorer', true);
+    expect(next.view).toBe('explorer');
+    expect(panelVisible(next, true)).toBe(true);
+  });
+});
+
+describe('togglePanel (제목 표시줄의 메뉴 버튼)', () => {
+  it('opens and closes the panel without changing its view', () => {
+    const profile = showView('profile', false);
+    const closed = togglePanel(profile, false);
+    expect(panelVisible(closed, false)).toBe(false);
+    expect(closed.view).toBe('profile');
+
+    const reopened = togglePanel(closed, false);
+    expect(panelVisible(reopened, false)).toBe(true);
+    expect(reopened.view).toBe('profile');
+  });
+});
+
+describe('dismissPanel (좁은 화면에서 글을 열었을 때)', () => {
+  it('hides the narrow panel but keeps the last view', () => {
+    const next = dismissPanel(showView('profile', false), false);
+    expect(panelVisible(next, false)).toBe(false);
+    expect(next.view).toBe('profile');
+  });
+});
+
+describe('화면 폭 경계', () => {
+  it('leaves the panel to the screen width after crossing 1100px', () => {
+    const closedWide = togglePanel(initialPanel, true);
+    expect(panelVisible(closedWide, true)).toBe(false);
+    expect(panelVisible(closedWide, false)).toBe(false);
+
+    const openNarrow = showView('profile', false);
+    expect(panelVisible(openNarrow, true)).toBe(true);
+  });
+});

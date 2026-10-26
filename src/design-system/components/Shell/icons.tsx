@@ -29,6 +29,15 @@ export function ExplorerIcon(props: IconProps) {
   );
 }
 
+/** 사람 윤곽(활동 막대의 프로필). */
+export function ProfileIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 12.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4.5 20.5c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5" />
+    </svg>
+  );
+}
+
 /** 꺾쇠 코드(이 블로그의 소스). */
 export function CodeIcon(props: IconProps) {
   return (

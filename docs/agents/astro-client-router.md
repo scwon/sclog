@@ -6,7 +6,7 @@
 
 화면을 옮기면 `astro:before-swap`(새 문서가 준비됐고 아직 바꾸기 전) → `astro:after-swap`(DOM 교체 직후) → `astro:page-load`(새 화면 준비 끝) 순서로 온다. 첫 로드에는 `page-load`만 온다.
 
-- `<html>`의 속성(`data-theme`, `data-explorer`)은 새 문서 것으로 바뀐다. 이어 가야 하는 속성은 `before-swap`에서 `event.newDocument.documentElement`에 옮긴다. BaseLayout의 인라인 테마 스크립트가 이 일을 하고, 리스너가 화면마다 쌓이지 않게 `window.sclogThemeCarry`로 한 번만 등록한다.
+- `<html>`의 속성(`data-theme`, `data-panel`)은 새 문서 것으로 바뀐다. 이어 가야 하는 속성은 `before-swap`에서 `event.newDocument.documentElement`에 옮긴다. BaseLayout의 인라인 테마 스크립트가 이 일을 하고, 리스너가 화면마다 쌓이지 않게 `window.sclogThemeCarry`로 한 번만 등록한다.
 - 이전 화면의 상태를 비우는 일은 `after-swap`, 새 화면의 상태를 채우는 일은 `page-load`에 둔다. 둘을 한 이벤트에 두면 비우기와 채우기가 경쟁한다(읽기 위치 `resetReading`이 이렇게 나뉘어 있다).
 
 ## 스크립트는 한 번만 실행된다

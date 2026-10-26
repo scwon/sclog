@@ -17,6 +17,23 @@ const tree: ShellProps['tree'] = [
   },
 ];
 
+const profile: ShellProps['profile'] = {
+  name: '원성철',
+  role: 'Frontend Developer',
+  bio: '프론트엔드 개발자 원성철입니다.',
+  photo: '/images/profile/photo.jpg',
+  photoBack: '/images/profile/dot.png',
+  career: ['WhaTapLabs · 2017.10~'],
+  links: [
+    { label: 'GitHub', url: 'https://github.com/scwon' },
+    {
+      label: 'LinkedIn',
+      url: 'https://www.linkedin.com/in/%EC%84%B1%EC%B2%A0-%EC%9B%90-b9837821b/',
+    },
+    { label: 'scwon1999@gmail.com', url: 'mailto:scwon1999@gmail.com' },
+  ],
+};
+
 const outline: OutlineItem[] = [
   { id: 'today', text: '오늘은 2023년 04월 30일', children: [] },
   { id: 'why', text: '왜 개발자?', children: [] },
@@ -73,6 +90,7 @@ const meta = {
     githubUrl: 'https://github.com/scwon',
     sourceUrl: 'https://github.com/scwon/sclog',
     tree,
+    profile,
   },
 } satisfies Meta<typeof Shell>;
 
@@ -137,4 +155,12 @@ export const ArticleOpen: Story = {
       />
     </>
   ),
+};
+
+/** 프로필 화면: 활동 막대 맨 아래 프로필 아이콘을 눌러 패널이 탐색기 대신 프로필을 보인다. 사진에 마우스를 올리면 뒤집힌다. */
+export const ProfileOpen: Story = {
+  ...Home,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '프로필' }));
+  },
 };

@@ -1,14 +1,14 @@
 /*
  * IDE 창 틀 둘레의 정적 HTML 스타일(에디터 영역·경로 표시줄·건너뛰기 링크).
- * 창 틀 자체(제목 표시줄·활동 막대·탐색기·탭·상태줄)는 `Shell` 컴포넌트가 유틸리티로 그린다.
+ * 창 틀 자체(제목 표시줄·활동 막대·패널·탭·상태줄)는 `Shell` 컴포넌트가 유틸리티로 그린다.
  * 출처: specs/010-blog-renewal/prototype/blog-opus/ide.css
  */
 
 /*
- * 에디터의 왼쪽 여백. 고정된 활동 막대와 탐색기만큼 비운다. `Shell`이 탐색기를 닫으면
- * `<html data-explorer="closed">`를 붙이고, 탭 표시줄도 같은 값을 쓴다.
- * - 760px 미만: 활동 막대가 없고 탐색기는 서랍이다
- * - 1100px 미만: 탐색기는 겹침 패널이다
+ * 에디터의 왼쪽 여백. 고정된 활동 막대와 패널만큼 비운다. `Shell`이 패널을 닫으면
+ * `<html data-panel="closed">`를 붙이고, 탭 표시줄도 같은 값을 쓴다.
+ * - 760px 미만: 활동 막대가 없고 패널은 서랍이다
+ * - 1100px 미만: 패널은 겹쳐 열린다
  */
 @layer base {
   :root {
@@ -23,7 +23,7 @@
   }
 
   @media (min-width: 1100px) {
-    :root:not([data-explorer='closed']) {
+    :root:not([data-panel='closed']) {
       --editor-left: calc(var(--rail-width) + var(--panel-width));
     }
   }

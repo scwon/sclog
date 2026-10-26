@@ -7,7 +7,7 @@
 import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
 import { Shell } from '@/design-system';
-import { SITE } from '../site';
+import { PROFILE, SITE } from '../site';
 import { getPublishedPosts } from '../utils/blog';
 import { buildTree, type IdeFile, type IdeOutlineItem } from '../utils/ide';
 import '../styles/global.css';
@@ -79,9 +79,9 @@ const outlineJson =
             var root = document.documentElement;
             var next = event.newDocument.documentElement;
             next.setAttribute('data-theme', root.getAttribute('data-theme') || 'dark');
-            // 창 틀의 탐색기 상태(열기·닫기)도 이어 붙인다.
-            var explorer = root.getAttribute('data-explorer');
-            if (explorer) next.setAttribute('data-explorer', explorer);
+            // 창 틀의 패널 상태(열기·닫기)도 이어 붙인다.
+            var panel = root.getAttribute('data-panel');
+            if (panel) next.setAttribute('data-panel', panel);
           });
         }
       })();
@@ -110,6 +110,7 @@ const outlineJson =
       githubUrl={SITE.githubUrl}
       sourceUrl={SITE.sourceUrl}
       tree={tree}
+      profile={PROFILE}
       current={{ title: file.title, path: file.path, url: file.url }}
     />
     <main

@@ -8,6 +8,7 @@ export { IconButton, type IconButtonProps } from './components/IconButton/IconBu
 export {
   Shell,
   type CurrentFile,
+  type Profile,
   type ShellProps,
   type TreeFile,
   type TreeYear,
