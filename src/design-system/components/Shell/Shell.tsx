@@ -184,7 +184,7 @@ const panelTitle = 'text-[11.5px] font-semibold tracking-[0.06em] text-text-mute
 const railItem =
   'relative grid h-11.5 w-(--rail-width) place-items-center text-text-muted transition-colors duration-(--motion-fast) ease-standard hover:text-text focus-visible:-outline-offset-[5px] [&_svg]:size-[23px]';
 
-/** 활동 막대에서 패널 화면 하나를 고르는 버튼. 그 화면이 보이면 코랄 막대로 표시한다. */
+/** 활동 막대에서 패널 화면 하나를 고르는 버튼. 그 화면이 보이면 코랄 바탕·아이콘·왼쪽 막대로 표시한다. */
 function RailButton({
   view,
   current,
@@ -209,7 +209,7 @@ function RailButton({
         railItem,
         'cursor-pointer',
         current &&
-          'text-text before:absolute before:top-[9px] before:bottom-[9px] before:left-0 before:w-0.5 before:bg-accent',
+          'bg-state-selected text-accent-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent hover:text-accent-text',
         className,
       )}
     >
