@@ -5,11 +5,10 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type Ref,
 } from 'react';
 import { useStore } from '@nanostores/react';
-import { REDUCED_MOTION } from '../../media';
+import { REDUCED_MOTION, useFinePointer } from '../../media';
 import { $findQuery, setFindQuery } from '../../stores/find';
 import { IconButton } from '../IconButton/IconButton';
 import {
@@ -58,22 +57,6 @@ export interface FindWidgetProps {
   /** 닫기 버튼을 눌렀다. 창 틀이 찾기 줄을 닫고 포커스를 연 자리로 돌려준다. */
   onClose: () => void;
   ref?: Ref<FindHandle>;
-}
-
-/** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 툴팁에 키를 넣지 않는다. */
-const FINE_POINTER = '(hover: hover) and (pointer: fine)';
-
-/** 마우스를 쓰는 화면인가. 찾기 줄은 브라우저에서만 그리므로 서버 값은 쓰이지 않는다. */
-function useFinePointer(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = window.matchMedia(FINE_POINTER);
-      query.addEventListener('change', onChange);
-      return () => query.removeEventListener('change', onChange);
-    },
-    () => window.matchMedia(FINE_POINTER).matches,
-    () => true,
-  );
 }
 
 /**
