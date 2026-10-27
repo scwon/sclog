@@ -19,6 +19,9 @@ const config: StorybookConfig = {
     };
     viteConfig.plugins = viteConfig.plugins || [];
     viteConfig.plugins.push(tailwindcss());
+    // public/은 staticDirs가 복사한다. Vite도 기본 publicDir로 같은 폴더를 복사하면 두 복사가 겹쳐
+    // `EEXIST: mkdir storybook-static/images/…`로 빌드가 가끔 깨진다.
+    viteConfig.publicDir = false;
     return viteConfig;
   },
 };
