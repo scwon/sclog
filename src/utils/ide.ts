@@ -3,6 +3,7 @@ import type { MarkdownHeading } from 'astro';
 import { fileName, type EditorFile, type OutlineItem, type TreeFile } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
+import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, type Folder } from './folder';
 
 /** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). 개요는 따로 넘긴다. */
 export type IdeFile = Omit<EditorFile, 'outline'>;
@@ -15,16 +16,19 @@ export function postYear(post: BlogPost): string {
   return String(post.data.pubDate.getUTCFullYear());
 }
 
-/** 글 URL. 기존 주소 `/blog/<slug>/`를 그대로 쓴다. */
+/** 글 URL: 그 폴더의 주소 앞부분 + 슬러그(`/blog/<slug>/`, `/ai-written/<slug>/`). */
 export function postUrl(post: BlogPost): string {
-  return `/blog/${post.id}/`;
+  return `${FOLDER_ROUTES[postFolder(post)].postBase}${post.id}/`;
 }
 
-/** 글을 창 틀의 파일로 본다: 경로 `posts/<연도>/<slug>.mdx`, 크기는 원본 파일 바이트. */
+/**
+ * 글을 창 틀의 파일로 본다: 경로 `<폴더>/<연도>/<slug>.mdx`(`posts/…`, `ai-written/…`),
+ * 크기는 원본 파일 바이트.
+ */
 export function postFile(post: BlogPost): IdeFile {
   return {
     title: post.data.title,
-    path: `posts/${postYear(post)}/${post.id}.mdx`,
+    path: `${postFolder(post)}/${postYear(post)}/${post.id}.mdx`,
     url: postUrl(post),
     kind: 'post',
     size: post.filePath ? statSync(post.filePath).size : undefined,
@@ -53,11 +57,13 @@ export type DocEndLink =
   | { href: string; label: string; next?: never };
 
 /**
- * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → `posts.log` → `맨 위로`. 다음 파일이 없으면 그 줄만 뺀다.
+ * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더의 로그(`posts.log`·`ai-written.log`) → `맨 위로`.
+ * 다음 파일이 없으면 그 줄만 뺀다.
  */
-export function docEndLinks(next: TreeFile | null): DocEndLink[] {
+export function docEndLinks(folder: Folder, next: TreeFile | null): DocEndLink[] {
+  const { log } = FOLDER_ROUTES[folder];
   const rest: DocEndLink[] = [
-    { href: '/', label: 'posts.log' },
+    { href: log.url, label: log.name },
     { href: '#editor', label: '맨 위로' },
   ];
   if (!next) return rest;
@@ -71,6 +77,35 @@ export function docEndLinks(next: TreeFile | null): DocEndLink[] {
     },
     ...rest,
   ];
+}
+
+/** 경로 표시줄 조각 하나. 마지막 조각(`current`)과 폴더가 아닌 중간 조각은 링크가 없다. */
+export interface Crumb {
+  label: string;
+  href: string | undefined;
+  current: boolean;
+}
+
+/** 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, `tags`면 태그 목록, 나머지는 없음. */
+function sectionHref(label: string): string | undefined {
+  if (isFolder(label)) return FOLDER_ROUTES[label].log.url;
+  return label === 'tags' ? FOLDER_ROUTES.posts.tags : undefined;
+}
+
+/**
+ * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `tags › 회고`).
+ * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 첫 조각 링크는 폴더면 그 폴더의 로그, `tags`면 태그 목록이다.
+ */
+export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
+  const logFolder = FOLDERS.find((folder) => FOLDER_ROUTES[folder].log.name === file.path);
+  const segments =
+    file.kind === 'log' && logFolder
+      ? [logFolder, file.path]
+      : file.path.split('/').filter(Boolean);
+  return segments.map((label, index) => {
+    const current = index === segments.length - 1;
+    return { label, href: current ? undefined : sectionHref(label), current };
+  });
 }
 
 /** 본문 제목에서 개요를 만든다. 가장 얕은 단계가 장이고, 바로 아래 단계가 그 장의 절이다. */

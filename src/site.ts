@@ -8,6 +8,8 @@ export const SITE = {
   githubUrl: 'https://github.com/scwon',
   /** 이 블로그의 소스 저장소. */
   sourceUrl: 'https://github.com/scwon/sclog',
+  /** AI 글 제목 아래 고정 문구. 글마다 같고 직접 쓴 글에는 없다(ADR 0005). */
+  aiWrittenNotice: 'AI가 작성한 글입니다.',
 } as const;
 
 /** 패널의 프로필 화면에 보이는 소개. 이름·GitHub 주소는 `SITE` 값을 가리킨다. */

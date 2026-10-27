@@ -797,7 +797,7 @@
     }
 
     /* 줄 번호: CSS 카운터로 그리는 장식. 블록의 첫 줄 높이(--lh)에 맞춰 세로 위치를 맞춘다 */
-    & :is(.doc-fm-line, .doc-title, .doc-byline, .doc-prose > *) {
+    & :is(.doc-fm-line, .doc-title, .doc-byline, .doc-notice, .doc-prose > *) {
       position: relative;
 
       &::after {
@@ -1007,6 +1007,14 @@
     gap: 10px;
     align-items: center;
     margin: 22px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    --lh: 28px;
+  }
+
+  /* AI 글 고정 문구: 작성 정보 아래 본문 한 줄. 대표 이미지·본문과 띄운다 */
+  .doc-notice {
+    margin: 0 0 36px;
     color: var(--text-muted);
     font-size: 14px;
     --lh: 28px;

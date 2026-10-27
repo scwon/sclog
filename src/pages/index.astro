@@ -8,7 +8,7 @@ import { getPublishedPosts } from '../utils/blog';
 import { homeLines, loadFlows } from '../utils/flow';
 import { SITE } from '../site';
 
-const posts = await getPublishedPosts();
+const posts = await getPublishedPosts('posts');
 const flows = await loadFlows(posts);
 ---
 

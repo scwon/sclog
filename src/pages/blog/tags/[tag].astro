@@ -6,12 +6,12 @@ import { getAllTags, getPostsByTag } from '../../../utils/blog';
 import { listLines, loadFlows } from '../../../utils/flow';
 
 export async function getStaticPaths() {
-  const tags = await getAllTags();
+  const tags = await getAllTags('posts');
   return [...tags.keys()].map((tag) => ({ params: { tag } }));
 }
 
 const { tag } = Astro.params;
-const posts = await getPostsByTag(tag);
+const posts = await getPostsByTag('posts', tag);
 const flows = await loadFlows(posts);
 ---
 
