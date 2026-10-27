@@ -10,7 +10,7 @@ import {
 import { useStore } from '@nanostores/react';
 import { REDUCED_MOTION, useFinePointer } from '../../media';
 import { $findQuery, setFindQuery } from '../../stores/find';
-import { IconButton } from '../IconButton/IconButton';
+import { IconButton, type IconButtonProps } from '../IconButton/IconButton';
 import {
   compareStart,
   horizontalArea,
@@ -57,6 +57,20 @@ export interface FindWidgetProps {
   /** 닫기 버튼을 눌렀다. 창 틀이 찾기 줄을 닫고 포커스를 연 자리로 돌려준다. */
   onClose: () => void;
   ref?: Ref<FindHandle>;
+}
+
+/**
+ * 찾기 줄의 아이콘 버튼(이전·다음·닫기). 누르는 동안 포커스가 입력창을 떠나지 않게 해, 이전·다음을 누른 뒤 이어서
+ * Enter로 옮길 수 있다.
+ */
+function FindButton(props: Omit<IconButtonProps, 'className' | 'onMouseDown'>) {
+  return (
+    <IconButton
+      {...props}
+      onMouseDown={(event) => event.preventDefault()}
+      className="size-7 flex-none [&_svg]:size-4"
+    />
+  );
 }
 
 /**
@@ -211,35 +225,25 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
       >
         {live ? position : ''}
       </span>
-      <IconButton
+      <FindButton
         label="이전 일치"
         title={tip('이전 일치', keys.prev)}
         disabled={total === 0}
-        // 누르는 동안 포커스가 입력창을 떠나지 않게 해 이어서 Enter로 옮길 수 있게 한다.
-        onMouseDown={(event) => event.preventDefault()}
         onClick={() => move(-1)}
-        className="size-7 flex-none [&_svg]:size-4"
       >
         <ArrowUpIcon />
-      </IconButton>
-      <IconButton
+      </FindButton>
+      <FindButton
         label="다음 일치"
         title={tip('다음 일치', keys.next)}
         disabled={total === 0}
-        onMouseDown={(event) => event.preventDefault()}
         onClick={() => move(1)}
-        className="size-7 flex-none [&_svg]:size-4"
       >
         <ArrowDownIcon />
-      </IconButton>
-      <IconButton
-        label="찾기 닫기"
-        title={tip('찾기 닫기', keys.close)}
-        onClick={onClose}
-        className="size-7 flex-none [&_svg]:size-4"
-      >
+      </FindButton>
+      <FindButton label="찾기 닫기" title={tip('찾기 닫기', keys.close)} onClick={onClose}>
         <CloseIcon />
-      </IconButton>
+      </FindButton>
     </search>
   );
 }
