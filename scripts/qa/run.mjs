@@ -4,6 +4,7 @@
  *
  *   node scripts/qa/run.mjs            a11y.mjs와 nav.mjs 모두
  *   node scripts/qa/run.mjs nav        하나만
+ *   QA_PORT=4313 pnpm qa               포트 바꾸기(기본 4399). 작업 트리 여럿에서 함께 돌릴 때 쓴다
  */
 import { spawn } from 'node:child_process';
 import { readdirSync } from 'node:fs';
@@ -15,7 +16,7 @@ import { preview } from 'astro';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
 const dist = join(root, 'dist');
-const port = 4399;
+const port = Number(process.env.QA_PORT ?? 4399);
 const base = `http://127.0.0.1:${port}`;
 const scripts = process.argv.slice(2).length ? process.argv.slice(2) : ['a11y', 'nav'];
 
