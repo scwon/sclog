@@ -41,11 +41,11 @@ describe('searchPost line numbers', () => {
     expect(post.blocks.at(-1)).toMatchObject({ line: first, text: '첫 문단' });
   });
 
-  it('counts the AI notice as one line after the byline, before the body', () => {
-    const post = searchPost(source({ notice: 'AI가 작성한 글입니다.', body: '첫 문단' }));
+  it('counts the AI notice as one line after the byline, without text to match', () => {
+    const post = searchPost(source({ notice: true, body: '첫 문단' }));
     expect(lines(post).slice(5)).toEqual([
       [6, 'scwon · 2024.05.01 · 읽는 시간 1분'],
-      [7, 'AI가 작성한 글입니다.'],
+      [7, ''],
       [8, '첫 문단'],
     ]);
   });

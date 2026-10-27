@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { SearchIndex } from '@/design-system';
+import { SITE } from '@/site';
 import { aiWrittenDir, blogDir, built, dist } from './dist';
 
 const VOID = new Set([
@@ -106,6 +107,12 @@ describe.skipIf(!built)('build output', () => {
       expect(headingLines).toEqual(
         headingLines.map(({ id }) => ({ id, line: lines.indexOf(id ?? '') + 1 })),
       );
+    });
+
+    it('keeps the AI notice out of the searchable text', () => {
+      const texts = index?.posts.flatMap((post) => post.blocks.map(({ text }) => text)) ?? [];
+      expect(texts.length).toBeGreaterThan(0);
+      expect(texts.filter((text) => text.includes(SITE.aiWrittenNotice))).toEqual([]);
     });
 
     // 재검토 조건: 결정 티켓 `.scratch/blog-details/issues/01-search-options.md`, 연구 `docs/research/blog-search.md`.

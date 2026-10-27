@@ -8,7 +8,7 @@ import { SEARCH_INDEX_VERSION, type SearchIndex } from '@/design-system';
 import { SITE } from '../site';
 import { getPublishedPosts } from '../utils/blog';
 import { postFile } from '../utils/ide';
-import { postFolder } from '../utils/folder';
+import { FOLDER_ROUTES, postFolder } from '../utils/folder';
 import { searchPost } from '../utils/search-index';
 
 /** 색인 JSON을 만든다. */
@@ -29,7 +29,7 @@ export const GET: APIRoute = async () => {
           tags: post.data.tags,
           heroImage: post.data.heroImage,
           byline: `${SITE.author} · ${isoDate.replaceAll('-', '.')} · 읽는 시간 ${reading}분`,
-          notice: postFolder(post) === 'ai-written' ? SITE.aiWrittenNotice : undefined,
+          notice: FOLDER_ROUTES[postFolder(post)].notice !== null,
           body: post.body ?? '',
           headings,
         });

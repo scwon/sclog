@@ -1,30 +1,18 @@
 ---
-/** AI 글 화면 `/ai-written/<슬러그>/`. 글 화면은 직접 쓴 글과 같은 레이아웃이고, 폴더에 따라 문구·이동 줄이 갈린다. */
-import { getCollection, render, type CollectionEntry } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
-import Chapter from '../../components/blog/headings/Chapter.astro';
-import Section from '../../components/blog/headings/Section.astro';
-import Subsection from '../../components/blog/headings/Subsection.astro';
-import { buildOutline, chapterLinkTargets } from '../../utils/ide';
+/** AI 글 화면 `/ai-written/<슬러그>/`. 화면은 직접 쓴 글과 같은 `PostPage`이고, 폴더에 따라 문구·이동 줄이 갈린다. */
+import PostPage from '../../components/blog/PostPage.astro';
+import { postPaths, type BlogPost } from '../../utils/blog';
 
-export async function getStaticPaths() {
-  const posts = await getCollection('ai-written');
-  return posts.map((post) => ({
-    params: { slug: post.id },
-    props: { post },
-  }));
+/** AI 글(`ai-written`)의 발행 글마다 한 화면. 초안·예약 글은 화면이 없다. */
+export function getStaticPaths() {
+  return postPaths('ai-written');
 }
 
 interface Props {
-  post: CollectionEntry<'ai-written'>;
+  post: BlogPost;
 }
 
 const { post } = Astro.props;
-const { Content, headings } = await render(post);
-// 본문 제목 컴포넌트가 장 주소 복사 버튼을 넣을 제목(개요와 같은 규칙). 본문을 그리기 전에 채운다.
-Astro.locals.chapterLinks = chapterLinkTargets(buildOutline(headings));
 ---
 
-<BlogPost post={post} headings={headings}>
-  <Content components={{ h1: Chapter, h2: Section, h3: Subsection }} />
-</BlogPost>
+<PostPage post={post} />

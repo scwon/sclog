@@ -1,0 +1,26 @@
+---
+/**
+ * 글 화면 한 편(`/blog/<슬러그>/`, `/ai-written/<슬러그>/`): 본문을 그리고 글 화면 레이아웃에 넣는다.
+ * 두 폴더의 `[slug].astro`가 같이 쓰고, 폴더에 따라 갈리는 문구·이동 줄은 레이아웃이 글의 폴더로 정한다.
+ */
+import { render } from 'astro:content';
+import BlogPost from '../../layouts/BlogPost.astro';
+import Chapter from './headings/Chapter.astro';
+import Section from './headings/Section.astro';
+import Subsection from './headings/Subsection.astro';
+import type { BlogPost as Post } from '../../utils/blog';
+import { buildOutline, chapterLinkTargets } from '../../utils/ide';
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+// 본문 제목 컴포넌트가 장 주소 복사 버튼을 넣을 제목(개요와 같은 규칙). 본문을 그리기 전에 채운다.
+Astro.locals.chapterLinks = chapterLinkTargets(buildOutline(headings));
+---
+
+<BlogPost post={post} headings={headings}>
+  <Content components={{ h1: Chapter, h2: Section, h3: Subsection }} />
+</BlogPost>

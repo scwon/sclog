@@ -10,7 +10,7 @@ import {
 } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
-import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, type Folder } from './folder';
+import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, tagPathFolder, type Folder } from './folder';
 
 /** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). 개요는 따로 넘긴다. */
 export type IdeFile = Omit<EditorFile, 'outline'>;
@@ -38,7 +38,7 @@ export function tagUrl(folder: Folder, tag: string): string {
  * `ai-written/tags/`·`ai-written/tags/<태그>`. 태그를 빼면 태그 목록이다.
  */
 export function tagPath(folder: Folder, tag = ''): string {
-  return `${folder === 'posts' ? '' : `${folder}/`}tags/${tag}`;
+  return `${FOLDER_ROUTES[folder].tagPath}${tag}`;
 }
 
 /**
@@ -118,13 +118,13 @@ export interface Crumb {
 }
 
 /**
- * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, `tags`면 앞 조각 폴더의 태그 목록
- * (`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
+ * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
+ * 그 폴더의 태그 목록(`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
  */
-function sectionHref(label: string, previous: string | undefined): string | undefined {
+function sectionHref(label: string, upTo: string[]): string | undefined {
   if (isFolder(label)) return FOLDER_ROUTES[label].log.url;
-  if (label !== 'tags') return undefined;
-  return FOLDER_ROUTES[previous && isFolder(previous) ? previous : 'posts'].tags;
+  const folder = tagPathFolder(`${upTo.join('/')}/`);
+  return folder && FOLDER_ROUTES[folder].tags;
 }
 
 /**
@@ -140,7 +140,11 @@ export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
       : file.path.split('/').filter(Boolean);
   return segments.map((label, index) => {
     const current = index === segments.length - 1;
-    return { label, href: current ? undefined : sectionHref(label, segments[index - 1]), current };
+    return {
+      label,
+      href: current ? undefined : sectionHref(label, segments.slice(0, index + 1)),
+      current,
+    };
   });
 }
 

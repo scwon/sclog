@@ -1001,23 +1001,25 @@
     }
   }
 
+  /* 작성 정보와 그 아래 AI 글 고정 문구는 같은 흐린 한 줄 글자다 */
+  .doc-byline,
+  .doc-notice {
+    color: var(--text-muted);
+    font-size: 14px;
+    --lh: 28px;
+  }
+
   .doc-byline {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
     margin: 22px 0 0;
-    color: var(--text-muted);
-    font-size: 14px;
-    --lh: 28px;
   }
 
   /* AI 글 고정 문구: 작성 정보 아래 본문 한 줄. 대표 이미지·본문과 띄운다 */
   .doc-notice {
     margin: 0 0 36px;
-    color: var(--text-muted);
-    font-size: 14px;
-    --lh: 28px;
   }
 
   .doc-byline-author {
@@ -1237,7 +1239,7 @@
   }
 }
 
-/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수` */
+/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수`, 홈 AI 글 칸 머리(제목 `h2` 안의 링크) */
 @layer components {
   .flow-entry-link {
     transition: color var(--motion-fast) var(--motion-easing);

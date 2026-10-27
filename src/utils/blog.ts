@@ -24,6 +24,19 @@ export async function getPublishedPosts(folder?: Folder): Promise<BlogPost[]> {
 }
 
 /**
+ * 한 폴더 글 화면의 정적 경로(`getStaticPaths`): 발행 글마다 슬러그와 그 글. 초안·예약 글은 화면도
+ * 사이트맵 항목도 생기지 않는다.
+ */
+export async function postPaths(
+  folder: Folder,
+): Promise<{ params: { slug: string }; props: { post: BlogPost } }[]> {
+  return (await getPublishedPosts(folder)).map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+/**
  * 한 폴더의 모든 태그와 해당 글 수를 반환
  */
 export async function getAllTags(folder: Folder): Promise<Map<string, number>> {

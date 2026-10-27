@@ -8,7 +8,9 @@ import FlowLog from '../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../utils/blog';
 import { homeLines, loadFlows } from '../utils/flow';
 import { SITE } from '../site';
+import { FOLDER_ROUTES } from '../utils/folder';
 
+const { log } = FOLDER_ROUTES.posts;
 const posts = await getPublishedPosts('posts');
 const flows = await loadFlows(posts);
 const aiWritten = await loadFlows(await getPublishedPosts('ai-written'));
@@ -18,9 +20,9 @@ const aiWritten = await loadFlows(await getPublishedPosts('ai-written'));
   title="SCLOG - 개발 블로그"
   description="프론트엔드 개발자의 기술 블로그. 개발 경험과 인사이트를 공유합니다."
   file={{
-    title: 'posts.log',
-    path: 'posts.log',
-    url: '/',
+    title: log.name,
+    path: log.name,
+    url: log.url,
     kind: 'log',
     summary: `글 ${posts.length}편`,
   }}
