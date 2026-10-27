@@ -23,6 +23,7 @@ import {
   type PaletteCommandId,
 } from './palette.logic';
 import { SHORTCUT_KEYS, keyLabel, type Platform, type ShellCommand } from './shortcuts.logic';
+import { findSupported } from './shortcuts';
 import type { TreeYear } from './Shell';
 
 /** 창 틀이 팔레트에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 팔레트는 그 결과만 받는다. */
@@ -104,11 +105,13 @@ export function Palette({
   const rows = useMemo<PaletteRow[]>(
     () =>
       commandMode
-        ? paletteCommands(query, { hasNextFile, platform }).map((command) => ({
-            kind: 'command',
-            key: command.id,
-            ...command,
-          }))
+        ? paletteCommands(query, { hasNextFile, findSupported: findSupported(), platform }).map(
+            (command) => ({
+              kind: 'command',
+              key: command.id,
+              ...command,
+            }),
+          )
         : paletteFiles(tree, query).map((file) => ({ kind: 'file', key: file.url, ...file })),
     [commandMode, query, hasNextFile, platform, tree],
   );
