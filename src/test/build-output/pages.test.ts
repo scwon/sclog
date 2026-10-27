@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SITE } from '@/site';
-import { built, dist, pages, urlOf } from './dist';
+import { anchors, built, dist, pages, urlOf } from './dist';
 
 describe.skipIf(!built)('build output', () => {
   it.each([
@@ -30,6 +30,19 @@ describe.skipIf(!built)('build output', () => {
       expect(html.indexOf('</header>')).toBeLessThan(at);
       expect(at).toBeLessThan(html.indexOf('class="doc-prose"'));
     }
+  });
+
+  it('offers both logs among the places to go from 404', () => {
+    const html = existsSync(resolve(dist, '404.html'))
+      ? readFileSync(resolve(dist, '404.html'), 'utf8')
+      : '';
+    const main = html.slice(html.indexOf('<main'));
+    const links = anchors(main).map(({ href, inner }) => ({
+      href,
+      label: /(posts\.log|ai-written\.log)/.exec(inner)?.[1],
+    }));
+    expect(links).toContainEqual({ href: '/', label: 'posts.log' });
+    expect(links).toContainEqual({ href: '/ai-written/', label: 'ai-written.log' });
   });
 
   it('lists every page except 404 in the sitemap, with the same URLs', () => {
