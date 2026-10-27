@@ -176,6 +176,14 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
     };
   }, [editorId]);
 
+  // 위치 글자의 live 영역은 먼저 빈 채로 그리고 다음 프레임에 채운다. 내용과 함께 처음 그린 live 영역은 스크린 리더가
+  // 바뀜으로 알리지 않아, 마지막 검색어로 열 때 첫 `3/12`가 읽히지 않을 수 있다.
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setLive(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const focus = useCallback(() => {
     input.current?.focus();
     input.current?.select();
@@ -218,7 +226,7 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
         aria-live="polite"
         className="min-w-[4.5em] flex-none px-1 text-right text-[11.5px] whitespace-nowrap text-text-soft"
       >
-        {position}
+        {live ? position : ''}
       </span>
       <IconButton
         label="이전 일치"
