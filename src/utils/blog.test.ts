@@ -14,7 +14,13 @@ vi.mock('astro:content', () => ({
     entries.filter((e) => e.collection === name && (!filter || filter(e))),
 }));
 
-const { getReadingTime, getPublishedPosts, getAllTags, getPostsByTag } = await import('./blog');
+const { getReadingTime, getPublishedPosts, getAllTags, getPostsByTag, postPaths } =
+  await import('./blog');
+
+/** 글 화면 정적 경로의 [슬러그, 글 id] 쌍. */
+async function slugs(folder: 'posts' | 'ai-written') {
+  return (await postPaths(folder)).map(({ params, props }) => [params.slug, props.post.id]);
+}
 
 function makePost(
   id: string,
@@ -100,5 +106,13 @@ describe('published posts', () => {
   it('getPostsByTag returns published posts of one folder carrying the tag', async () => {
     expect((await getPostsByTag('posts', '회고')).map((p) => p.id)).toEqual(['new', 'old']);
     expect((await getPostsByTag('ai-written', '회고')).map((p) => p.id)).toEqual(['ai-mid']);
+  });
+
+  it('postPaths gives a page only to published posts of one folder, by slug', async () => {
+    expect(await slugs('posts')).toEqual([
+      ['new', 'new'],
+      ['old', 'old'],
+    ]);
+    expect(await slugs('ai-written')).toEqual([['ai-mid', 'ai-mid']]);
   });
 });
