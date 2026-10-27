@@ -93,6 +93,11 @@ export function toRange({ start, end }: FindMatch<Text>): Range {
   return range;
 }
 
+/** 두 범위의 시작 자리를 문서 순서로 견준다(`a`가 앞이면 음수). `resumeMatch`에 넘긴다. */
+export function compareStart(a: Range, b: Range): number {
+  return a.compareBoundaryPoints(Range.START_TO_START, b);
+}
+
 /**
  * 일치를 칠한다. 모든 일치는 `find-match`, 지금 일치(`current`)는 우선순위가 높은 `find-current`에 담는다. 다른 칠하기를
  * 지우지 않게 `CSS.highlights.clear()` 대신 두 이름만 바꾼다.

@@ -13,6 +13,7 @@ import { REDUCED_MOTION } from '../../media';
 import { $findQuery, setFindQuery } from '../../stores/find';
 import { IconButton } from '../IconButton/IconButton';
 import {
+  compareStart,
   horizontalArea,
   horizontalScroller,
   paint,
@@ -25,6 +26,7 @@ import {
   findInBlocks,
   findPosition,
   firstVisibleMatch,
+  resumeMatch,
   scrollToCenter,
   scrollToCenterX,
   stepMatch,
@@ -75,6 +77,12 @@ function useFinePointer(): boolean {
 }
 
 /**
+ * 보이는 글자를 바꾸는 속성. `open`은 `<details>`, `hidden`은 흐름 로그의 접힌 줄, `class`·`style`은 `display`를 바꾸는
+ * 스크립트다. 이 속성이 바뀌면 찾기 줄이 글자를 다시 모은다.
+ */
+const VISIBILITY_ATTRIBUTES = ['open', 'hidden', 'class', 'style'];
+
+/**
  * 지금 일치가 보이는 영역 밖이면 그 줄을 보이는 영역 가운데로 옮긴다. 움직임 줄이기 설정에서는 바로 옮긴다.
  * 가로로 넘치는 코드 블록 안에서 가로로 화면 밖이면 그 블록을 가로로도 옮겨 일치를 보이는 폭 가운데에 둔다.
  * 일치가 찾기 줄과 가로로 겹치면 찾기 줄 아래부터를 보이는 영역으로 본다(찾기 줄에 가린 일치도 옮긴다).
@@ -108,15 +116,23 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
   const widget = useRef<HTMLElement>(null);
   const fine = useFinePointer();
 
-  // 검색어가 바뀌면 다시 찾고, 화면 맨 위에 보이는 일치부터 시작한다. 찾기 줄은 브라우저에서만 그리므로 그릴 때 에디터
-  // 글자를 읽는다.
+  // 찾기 줄이 열린 채 에디터의 보이는 글자가 바뀐 때(`<details>` 열기, 흐름 로그 접기). 그때의 지금 일치(`anchor`)를
+  // 남겨 다시 모은 뒤에도 이어 간다. 검색어가 그 뒤 바뀌면(`query`가 다르면) 쓰지 않는다.
+  const [refresh, setRefresh] = useState<{ query: string; anchor: Range | undefined } | null>(null);
+  const currentRange = useRef<Range | undefined>(undefined);
+
+  // 검색어가 바뀌면 다시 찾고, 화면 맨 위에 보이는 일치부터 시작한다. 보이는 글자가 바뀌어 다시 찾으면(`resumed`) 앞
+  // 지금 일치와 같거나 그 뒤의 첫 일치에서 이어 간다. 찾기 줄은 브라우저에서만 그리므로 그릴 때 에디터 글자를 읽는다.
   const found = useMemo(() => {
     const root = document.getElementById(editorId);
-    if (!root || !query.trim()) return { root, ranges: [], start: -1 };
+    if (!root || !query.trim()) return { root, ranges: [], start: -1, resumed: false };
     const ranges = findInBlocks(visibleBlocks(root), query).map(toRange);
+    const anchor = refresh?.query === query ? refresh.anchor : undefined;
+    if (anchor)
+      return { root, ranges, start: resumeMatch(ranges, anchor, compareStart), resumed: true };
     const rects = ranges.map((range) => range.getBoundingClientRect());
-    return { root, ranges, start: firstVisibleMatch(rects, visibleArea(root).top) };
-  }, [editorId, query]);
+    return { root, ranges, start: firstVisibleMatch(rects, visibleArea(root).top), resumed: false };
+  }, [editorId, query, refresh]);
   const total = found.ranges.length;
   // 열 때 찾은 결과. `start`는 이 결과에만 쓰고, 검색어가 바뀐 뒤에는 화면 맨 위 일치부터 시작한다.
   const [opening] = useState(found);
@@ -126,12 +142,39 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
   const [picked, setPicked] = useState<{ found: typeof found; index: number } | null>(null);
   const current = picked?.found === found ? picked.index : begin;
 
-  // 칠하기와 스크롤은 지금 일치가 바뀔 때마다 맞춘다. 닫히면(언마운트) 칠한 것을 지운다.
+  // 칠하기와 스크롤은 지금 일치가 바뀔 때마다 맞춘다. 보이는 글자가 바뀌어 다시 모은 때는 칠하기만 맞추고 스크롤하지
+  // 않는다(독자가 연 `<details>` 자리를 지킨다). 닫히면(언마운트) 칠한 것을 지운다.
+  const stay = found.resumed && picked?.found !== found;
   useEffect(() => {
     paint(found.ranges, current);
-    if (found.root) reveal(found.ranges[current], found.root, widget.current);
-  }, [found, current]);
+    currentRange.current = found.ranges[current];
+    if (found.root && !stay) reveal(found.ranges[current], found.root, widget.current);
+  }, [found, current, stay]);
   useEffect(() => unpaint, []);
+
+  // 에디터의 보이는 글자가 바뀌면 다시 모은다. 바뀜은 한 프레임에 한 번만 센다.
+  useEffect(() => {
+    const root = document.getElementById(editorId);
+    if (!root) return;
+    let frame = 0;
+    const observer = new MutationObserver(() => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setRefresh({ query: $findQuery.get(), anchor: currentRange.current });
+      });
+    });
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributeFilter: VISIBILITY_ATTRIBUTES,
+    });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [editorId]);
 
   const focus = useCallback(() => {
     input.current?.focus();

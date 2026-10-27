@@ -3,6 +3,7 @@ import {
   findInBlocks,
   findPosition,
   firstVisibleMatch,
+  resumeMatch,
   scrollToCenter,
   scrollToCenterX,
   stepMatch,
@@ -189,5 +190,30 @@ describe('scrollToCenterX', () => {
 
   it('moves a match before the left edge to the centre (scrolls left)', () => {
     expect(scrollToCenterX({ left: 0, right: 40 }, view)).toBe(-580);
+  });
+});
+
+/** 일치를 문서 순서의 자리(숫자)로 둔 대역의 견주기. */
+const byPlace = (a: number, b: number) => a - b;
+
+describe('resumeMatch', () => {
+  it('keeps the same match when it is still there after re-collecting', () => {
+    expect(resumeMatch([10, 20, 30], 20, byPlace)).toBe(1);
+  });
+
+  it('moves to the next match when the current one disappeared (folded away)', () => {
+    expect(resumeMatch([10, 30, 40], 20, byPlace)).toBe(1);
+  });
+
+  it('stays on the right match when new matches appear before it (a details opened above)', () => {
+    expect(resumeMatch([5, 7, 10, 20], 20, byPlace)).toBe(3);
+  });
+
+  it('falls back to the last match when every match is before the old one', () => {
+    expect(resumeMatch([10, 20], 30, byPlace)).toBe(1);
+  });
+
+  it('has no match when nothing is found', () => {
+    expect(resumeMatch([], 20, byPlace)).toBe(-1);
   });
 });

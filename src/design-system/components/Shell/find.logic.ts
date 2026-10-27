@@ -67,6 +67,21 @@ export function stepMatch(current: number, total: number, delta: -1 | 1): number
   return (current + delta + total) % total;
 }
 
+/**
+ * 찾기 줄이 열린 채 보이는 글자가 바뀌어(`<details>` 열기, 흐름 로그 접기) 일치를 다시 모은 뒤 이어 갈 번호: 앞 지금
+ * 일치(`anchor`)와 같거나 그 뒤에 있는 첫 일치다. 모두 앞에 있으면 마지막 일치, 일치가 없으면 `-1`이다. `matches`는
+ * 문서 순서이고, `compare(a, b)`는 `a`가 `b`보다 앞이면 음수, 같으면 0, 뒤면 양수다.
+ */
+export function resumeMatch<T>(
+  matches: readonly T[],
+  anchor: T,
+  compare: (a: T, b: T) => number,
+): number {
+  if (matches.length === 0) return -1;
+  const index = matches.findIndex((match) => compare(match, anchor) >= 0);
+  return index === -1 ? matches.length - 1 : index;
+}
+
 /** 화면 위의 세로 자리(뷰포트 좌표). `DOMRect`를 그대로 넘긴다. */
 export interface VerticalSpan {
   top: number;
