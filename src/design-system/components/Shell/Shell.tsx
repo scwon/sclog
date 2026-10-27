@@ -14,6 +14,7 @@ import { REDUCED_MOTION } from '../../media';
 import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
+import { ToastHost } from '../Toast/ToastHost';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
 import { $statusNotice, clearStatusNotice } from '../../stores/notice';
@@ -39,6 +40,8 @@ import { toggleTheme } from '../../stores/theme';
 import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
 import { seedFindQuery } from '../../stores/find';
+import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
+import { dismissSelectionToolbar, focusSelectionToolbar } from '../SelectionToolbar/selection';
 import {
   BranchIcon,
   ExplorerIcon,
@@ -432,6 +435,7 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
  * 글 화면 스크립트가 이어 읽기(`$resume`)를 권하면, 그 글의 열기 요약이 사라지는 순간 상태줄 오른쪽에
  * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
+ * 토스트(`$toast`)가 처음 오면 `ToastHost`가 토스트 청크를 불러 상태줄 바로 위 가운데에 그린다.
  *
  * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 검색 화면(`SearchView`)은 처음 보일 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다. 마지막 화면이
@@ -688,6 +692,12 @@ export function Shell({
     [findOpen, openFind],
   );
 
+  // 찾기 줄이나 팔레트가 열리면 본문 선택 툴바를 걷는다(⌘F가 고른 글자를 검색어로 넣은 뒤다). 고른 글자는 남는다.
+  // 팔레트(모달) 뒤에 가려진 툴바에 Esc 한 번을 쓰지 않게 한다.
+  useEffect(() => {
+    if (findOpen || paletteOpen) dismissSelectionToolbar();
+  }, [findOpen, paletteOpen]);
+
   // 다른 파일로 옮기면 찾기 줄을 닫는다. 바꾸기 전에 바로 언마운트해 칠한 것을 지운다(포커스는 화면 이동이 맡는다).
   // 마지막 검색어(`$findQuery`)는 창 틀 메모리에 남는다.
   useEffect(() => {
@@ -756,6 +766,12 @@ export function Shell({
   // 단축키: 판정은 `shortcuts.logic.ts`, `document` 리스너는 `shortcuts.ts`가 맡고 여기서는 동작만 실행한다.
   const onShortcut = (action: ShortcutAction) => {
     switch (action) {
+      case 'close-selection-toolbar':
+        dismissSelectionToolbar();
+        break;
+      case 'focus-selection-toolbar':
+        focusSelectionToolbar();
+        break;
       case 'open-palette':
         paletteOpener.current =
           document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -791,7 +807,8 @@ export function Shell({
         runCommand(action);
     }
   };
-  useShortcuts({ paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
+  const toolbarOpen = useStore($selectionToolbarOpen);
+  useShortcuts({ toolbarOpen, paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
@@ -1099,6 +1116,8 @@ export function Shell({
           </span>
         )}
       </footer>
+
+      <ToastHost />
 
       {paletteOpen && platform && (
         <Suspense fallback={null}>

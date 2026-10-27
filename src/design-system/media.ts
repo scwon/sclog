@@ -10,6 +10,9 @@ export const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 /** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 팔레트·찾기 줄에 키 표기를 넣지 않는다. */
 export const FINE_POINTER = '(hover: hover) and (pointer: fine)';
 
+/** 손가락으로 고르는 화면. 선택 툴바는 OS 선택 메뉴와 겹치지 않게 여기서 띄우지 않는다. */
+export const COARSE_POINTER = '(pointer: coarse)';
+
 /**
  * 마우스를 쓰는 화면인가(`FINE_POINTER`). 팔레트·찾기 줄처럼 브라우저에서만 그리는 컴포넌트가 쓰므로 서버 값(`true`)은
  * 쓰이지 않는다.

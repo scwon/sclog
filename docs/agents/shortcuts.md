@@ -5,8 +5,8 @@
 ## 코드
 
 - 붙은 키: `src/design-system/components/Shell/shortcuts.logic.ts`의 `SHORTCUT_KEYS`(`palette`·`panel`·`search`·`find`·`findNext`·`findPrev`) 한곳이다. 판정, 팔레트 명령 목록(`palette.logic.ts`의 `paletteCommands`), 팔레트 맨 아래 안내, 활동 막대 툴팁이 모두 이 값을 읽는다. ⌘⇧F를 빼야 하면 `search`를 `null`로 바꾸면 된다. 키가 없어지고, 명령 목록의 키 칸이 비고, 안내 줄과 툴팁의 키도 빠진다.
-- 판정: `src/design-system/components/Shell/shortcuts.logic.ts`의 `shortcutFor(event, context)`. DOM을 모르는 순수 함수이고, 키 모양(`key`·`code`·수정 키·`isComposing`·`keyCode`·포커스 대상 종류)과 맥락(팔레트 열림·겹침 패널 열림·찾기 줄 열림·Highlight 지원 여부·플랫폼)을 받아 동작 하나나 `null`을 돌려준다. 규칙은 `shortcuts.test.ts`가 덮는다. Highlight 지원 여부는 `shortcuts.ts`의 `findSupported()`(`CSS.highlights`가 있는가)이고, 없으면 ⌘F·⌘G·⇧⌘G는 `null`이라 브라우저 찾기가 받는다. 팔레트 명령 목록의 `이 파일에서 찾기`도 이때 빠진다.
-- 바인딩: 같은 폴더 `shortcuts.ts`의 `useShortcuts`가 `document`에 keydown 리스너 하나만 걸고, 판정이 `null`이 아니면 기본 동작을 막고 `Shell.tsx`에 넘긴다. 키를 받는 리스너를 다른 곳에 더 걸지 않는다.
+- 판정: `src/design-system/components/Shell/shortcuts.logic.ts`의 `shortcutFor(event, context)`. DOM을 모르는 순수 함수이고, 키 모양(`key`·`code`·수정 키·`isComposing`·`keyCode`·포커스 대상 종류·포커스가 고른 글자를 품는가)과 맥락(선택 툴바 떠 있음·팔레트 열림·겹침 패널 열림·찾기 줄 열림·Highlight 지원 여부·플랫폼)을 받아 동작 하나나 `null`을 돌려준다. 규칙은 `shortcuts.test.ts`가 덮는다. Highlight 지원 여부는 `shortcuts.ts`의 `findSupported()`(`CSS.highlights`가 있는가)이고, 없으면 ⌘F·⌘G·⇧⌘G는 `null`이라 브라우저 찾기가 받는다. 팔레트 명령 목록의 `이 파일에서 찾기`도 이때 빠진다.
+- 바인딩: 같은 폴더 `shortcuts.ts`의 `useShortcuts`가 `document`에 keydown 리스너 하나만 걸고, 판정이 `null`이 아니면 기본 동작을 막고 `Shell.tsx`에 넘긴다. 키를 받는 리스너를 다른 곳에 더 걸지 않는다. Radix 부품이 스스로 거는 키 리스너는 꺼 둔다: 토스트(`Toast.tsx`)는 F8 단축키를 빈 배열로 끄고 Esc를 무시한다. 선택 툴바(`SelectionToolbar.tsx`)는 Radix 팝오버의 Esc·바깥 누름 닫기를 막고, Esc는 이 판정이 받는다.
 - 실행: 붙은 키의 동작(`toggle-panel`·`open-search`·`find-in-file`)과 팔레트 `>` 명령은 같은 이름의 창 틀 명령(`ShellCommand`)이고, `Shell.tsx`의 `runCommand` 하나가 실행한다. 새 명령은 `ShellCommand`에 더하고 `runCommand`에 한 갈래를 단다.
 - 키 표기: `keyLabel(combo, platform)`이 `⌘⇧F` / `Ctrl+Shift+F`를 만든다. 플랫폼은 `platformOf(navigator 플랫폼 이름)`로 브라우저에서 처음 쓸 때 정하고 서버 HTML에는 넣지 않는다. 팔레트 안의 키 표기와 안내의 `>` 부분은 `(hover: hover) and (pointer: fine)`일 때만 보인다.
 - 도움말: 팔레트에 `>`를 치면 나오는 명령 목록이 이 블로그의 단축키 도움말이다. 키를 붙이면 그 명령 줄에도 키를 단다.
@@ -24,9 +24,9 @@
 
 - 입력창·textarea·select·contenteditable에 포커스가 있을 때. 팔레트 입력창(`data-palette-input`)의 Esc·↑↓·Enter는 예외다. 검색 입력창(`data-search-input`)의 Esc도 예외라, ⌘⇧F로 좁은 화면의 겹침 패널과 함께 포커스를 받은 뒤 Esc로 겹침 패널을 닫는다. 겹침 패널이 없으면 Esc는 입력창이 받는다(글자 지우기, 찾기 줄은 닫지 않는다). 찾기 입력창(`data-find-input`)은 Enter(다음 일치)·Shift+Enter(이전 일치)·Esc·⌘F·⌘G·⇧⌘G를 받고 나머지 키는 입력창에 맡긴다. ⌘G·⇧⌘G는 검색 입력창에서는 받지 않는다. ⌘F는 검색 입력창과 찾기 입력창에서도 찾기 줄을 연다(찾기 입력창이면 글자를 모두 고른다). 댓글 같은 다른 입력창은 Esc도 ⌘F도 받지 않는다.
 - 한글을 조합하는 중(`isComposing`, 또는 `keyCode`가 229). Safari는 조합을 끝내는 Enter를 `isComposing`이 `false`인 채 229로 보낸다.
-- 팔레트가 열려 있을 때는 팔레트 키만 받는다. Esc는 닫기, ↑↓·Enter는 줄 고르기다. ⌘P·⌘F·⌘G·⇧⌘G와 Tab은 기본 동작만 막는다. ⌘P는 인쇄 창을, ⌘F·⌘G·⇧⌘G는 브라우저 찾기를 막으려고, Tab은 포커스가 대화상자 밖으로 나가지 않게 하려고 막는다.
+- 팔레트가 열려 있을 때는 팔레트 키만 받는다. 선택 툴바는 팔레트가 열릴 때 걷히므로 이때 Esc는 바로 팔레트를 닫는다. Esc는 닫기, ↑↓·Enter는 줄 고르기다. ⌘P·⌘F·⌘G·⇧⌘G와 Tab은 기본 동작만 막는다. ⌘P는 인쇄 창을, ⌘F·⌘G·⇧⌘G는 브라우저 찾기를 막으려고, Tab은 포커스가 대화상자 밖으로 나가지 않게 하려고 막는다.
 
-Esc는 맨 위 층 하나만 닫는다. 순서는 팔레트, 그다음 좁은 화면의 겹침 패널, 그다음 찾기 줄이다. 좁은 화면에서 겹침 패널이 열린 채 ⌘F를 누르면 겹침 패널을 닫고 찾기 줄을 연다. 넓은 화면에 붙은 패널은 ⌘B로 닫는다. 키 처리는 화면 폭과 상관없이 늘 켜 두고(키보드를 단 iPad), 터치 몸짓으로 대신하지 않는다.
+Esc는 맨 위 층 하나만 닫는다. 순서는 본문 선택 툴바, 그다음 팔레트, 그다음 좁은 화면의 겹침 패널, 그다음 찾기 줄이다. 선택 툴바는 포커스를 가져가지 않으므로 포커스가 어디 있든(다른 입력창 `text`만 빼고) 먼저 닫고, 고른 글자는 그대로 둔다. 떠 있는지는 `stores/selectionToolbar.ts`의 `$selectionToolbarOpen`으로 창 틀이 읽고, 걷는 일은 `dismissSelectionToolbar()`다. 찾기 줄이나 팔레트가 열려도 선택 툴바를 걷는다. 그래서 툴바와 팔레트가 함께 떠 있는 일은 없고, 모달 뒤에 가려진 툴바에 Esc를 쓰지 않는다. 선택 툴바는 글 요소 끝에 포털되어 DOM 순서로는 고른 자리에서 멀다. 그래서 툴바가 떠 있고 포커스가 고른 글자를 품은 요소(`body`, 글자를 누르면 포커스를 받는 에디터 루트)에 있으면 첫 Tab을 판정이 받아 툴바 첫 버튼으로 보낸다(`focusSelectionToolbar()`). 툴바 안과 그 뒤의 Tab, Shift+Tab은 브라우저가 받는다. 좁은 화면에서 겹침 패널이 열린 채 ⌘F를 누르면 겹침 패널을 닫고 찾기 줄을 연다. 넓은 화면에 붙은 패널은 ⌘B로 닫는다. 키 처리는 화면 폭과 상관없이 늘 켜 두고(키보드를 단 iPad), 터치 몸짓으로 대신하지 않는다.
 
 ## 지금 붙은 키
 
@@ -34,7 +34,8 @@ Esc는 맨 위 층 하나만 닫는다. 순서는 팔레트, 그다음 좁은 �
 | --- | --- | --- |
 | ⌘P / Ctrl+P | 명령 팔레트 열기 | 19 |
 | ⌘B / Ctrl+B | 패널 열고 닫기(마지막 패널 화면으로 열림) | 19 |
-| Esc | 맨 위 층 하나 닫기 | 19 |
+| Esc | 맨 위 층 하나 닫기 | 19, 선택 툴바 03(선택 툴바를 맨 앞에) |
+| Tab(선택 툴바가 떠 있고 포커스가 고른 자리) | 선택 툴바 첫 버튼으로 포커스 | 선택 툴바 리뷰 |
 | ⌘⇧F / Ctrl+Shift+F | 패널 검색 화면을 열고 입력창에 포커스 | 22 |
 | ⌘F / Ctrl+F | 찾기 줄을 열고 입력창에 포커스(열려 있으면 글자를 모두 고름). CSS Custom Highlight API가 없으면 브라우저 찾기 | 파일에서 찾기 01 |
 | Enter / Shift+Enter(찾기 입력창) | 다음·이전 일치. 끝에서 처음으로 돈다 | 파일에서 찾기 01 |

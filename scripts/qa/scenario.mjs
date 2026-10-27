@@ -155,13 +155,14 @@ export async function scenario(name) {
           (e.method === 'Runtime.consoleAPICalled' && e.params?.type === 'error') ||
           (e.method === 'Log.entryAdded' && e.params?.entry?.level === 'error'),
       )
-      .map((e) =>
-        (
-          e.params?.entry?.text ??
-          e.params?.exceptionDetails?.text ??
-          JSON.stringify(e.params)
-        ).slice(0, 160),
-      );
+      .map((e) => {
+        const exception = e.params?.exceptionDetails;
+        // `Uncaught (in promise)`처럼 text만으로는 무엇인지 모르므로 예외 설명을 붙인다.
+        const detail = exception
+          ? `${exception.text} ${exception.exception?.description ?? ''}`.trim()
+          : (e.params?.entry?.text ?? JSON.stringify(e.params));
+        return detail.slice(0, 240);
+      });
     check('콘솔 오류 없음', errors.length === 0, errors.join(' | '));
     await clearStorage();
     await task.finish({ keep: [] });

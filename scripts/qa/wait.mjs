@@ -68,7 +68,9 @@ export function waits(page) {
     /**
      * 화면 이동(`ClientRouter`)을 일으키는 동작을 하고 다음 `astro:page-load`까지 기다린다. 이 문서에서 받은
      * `astro:page-load` 수를 세어 두고 동작 뒤 그 수가 늘기를 본다. 레이아웃 스크립트의 리스너(펼침·읽기 위치)가
-     * 먼저 달려 있으므로 수가 늘면 그 일도 끝난 뒤다.
+     * 먼저 달려 있으므로 수가 늘면 그 일도 끝난 뒤다. 이어서 화면 전환 애니메이션이 끝나기(`html`의
+     * `data-astro-transition`이 걷히기)를 기다린다. 끝나기 전에 다음 이동을 하면 라우터가 앞 전환을 건너뛰고, 건너뛴
+     * 전환의 거부(`AbortError: Transition was skipped`)가 콘솔 오류로 남는다.
      */
     async navigate(label, action) {
       const before = await page.evaluate(() => {
@@ -81,10 +83,17 @@ export function waits(page) {
         return window.qaLoads;
       });
       await action();
-      return until(
+      const loaded = await until(
         `${label}: 화면 이동(astro:page-load)`,
         (count) => typeof window.qaLoads === 'number' && window.qaLoads > count,
         before,
+      );
+      return (
+        loaded &&
+        until(
+          `${label}: 화면 전환 끝`,
+          () => !document.documentElement.hasAttribute('data-astro-transition'),
+        )
       );
     },
   };

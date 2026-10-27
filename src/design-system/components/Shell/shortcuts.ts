@@ -42,6 +42,22 @@ export function focusTarget(target: EventTarget | null): FocusTarget {
   return 'other';
 }
 
+/**
+ * 키를 받은 요소가 지금 문서 선택을 품는가. 고른 글자를 누르면 포커스는 `body`나 그 위의 포커스 받는 요소(에디터 루트)에
+ * 있으므로 참이고, Tab으로 선택 툴바나 다른 링크로 옮긴 뒤에는 거짓이다. 선택이 없거나 접혔으면 거짓.
+ */
+export function holdsSelection(target: EventTarget | null): boolean {
+  const selection = document.getSelection();
+  if (
+    !(target instanceof Node) ||
+    !selection ||
+    selection.isCollapsed ||
+    selection.rangeCount === 0
+  )
+    return false;
+  return target.contains(selection.getRangeAt(0).commonAncestorContainer);
+}
+
 /** 브라우저의 플랫폼. 서버 HTML에는 넣지 않고, 키를 처음 받거나 키 표기를 처음 그릴 때 읽는다. */
 export function browserPlatform(): Platform {
   const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
@@ -69,6 +85,8 @@ export function usePlatform(): Platform | null {
 
 /** 판정에 쓰는 창 틀의 지금 맥락. */
 export interface ShortcutState {
+  /** 본문 선택 툴바가 떠 있는가. */
+  toolbarOpen: boolean;
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;
@@ -99,6 +117,7 @@ export function useShortcuts(state: ShortcutState, onAction: (action: ShortcutAc
           isComposing: event.isComposing,
           keyCode: event.keyCode,
           target: focusTarget(event.target),
+          atSelection: current.toolbarOpen && holdsSelection(event.target),
         },
         { ...current, findSupported: findSupported(), platform: browserPlatform() },
       );
