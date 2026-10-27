@@ -68,6 +68,16 @@ export {
   STATUS_NOTICE_MS,
   type StatusNotice,
 } from './stores/notice';
+export {
+  $toast,
+  dismissToast,
+  showToast,
+  TOAST_MS,
+  type ToastMessage,
+  type ToastTone,
+} from './stores/toast';
+export { browserPlatform } from './components/Shell/shortcuts';
+export { keyLabel, type Platform } from './components/Shell/shortcuts.logic';
 export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
 export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
 export {

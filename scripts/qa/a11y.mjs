@@ -6,6 +6,7 @@
  * 읽기 기록을 미리 넣어 탐색기 꼬리표(`✓`·`42%`)와 프로필의 읽기 기록 칸도 함께 본다. 꼬리표 종류는 폭·테마마다
  * 번갈아 넣어 두 테마가 두 꼬리표를 모두 거친다. 읽는 중으로 넣은 글은 개요의 첫 장을 위치로 다시 넣고 열어,
  * 상태줄에 이어 읽기 버튼이 뜬 화면도 본다(폭마다 한 테마씩, 세 폭 모두). 폭·테마마다 글에서 ⌘F로 연 찾기 줄(검색어 입력)도 본다.
+ * 이어서 선택 툴바로 복사해 띄운 토스트도 본다.
  * `run.mjs`가 `globalThis.QA = { base, pages, axe }`를 넣고 ego-browser에서 import한다.
  */
 /* global QA, taskSpace */
@@ -63,6 +64,58 @@ const seedHistory = (kind) =>
     },
     { urls: postUrls.map(decodeURI), mark: kind },
   );
+
+/**
+ * 선택 툴바에서 복사해 띄운 토스트를 본다. 본문 문단 앞 글자들을 골라 툴바를 띄우고 복사 버튼을 누른 뒤, 닫힘 시계를
+ * 멈춘 채 axe를 돌린다. 움직임 줄이기에서 전환 없이 뜨는지도 본다.
+ */
+const checkToast = async (where) => {
+  const picked = await page.evaluate(() => {
+    // 첫 글자 마디가 열두 자 넘는 문단에서 그 앞 열두 자를 고른다.
+    const text = [...document.querySelectorAll('#content > p')]
+      .map((p) => document.createTreeWalker(p, NodeFilter.SHOW_TEXT).nextNode())
+      .find((node) => (node?.textContent ?? '').trim().length > 12);
+    if (!text) return false;
+    const paragraph = text.parentElement.closest('p');
+    paragraph.scrollIntoView({ block: 'center' });
+    const range = document.createRange();
+    range.setStart(text, 0);
+    range.setEnd(text, 12);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    // 선택 툴바는 마우스를 놓을 때 그린다. 문단을 누르고 고른 뒤 놓은 것처럼 알린다.
+    paragraph.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+    paragraph.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }));
+    return true;
+  });
+  if (!picked) return failures.push(`${where} 토스트: 고를 문단이 없음`);
+  await page.waitForSelector('loc=css:[data-selection-toolbar] button[data-action="copy"]', {
+    state: 'visible',
+  });
+  await page.click('loc=css:[data-selection-toolbar] button[data-action="copy"]');
+  // 토스트 영역이 토스트를 센 뒤(앞뒤 포커스 대역이 생긴 뒤) 창이 포커스를 잃은 것처럼 알려 닫힘 시계를 멈춘다.
+  const paused = await until('토스트가 뜨면 닫힘 시계 멈춤', () => {
+    const region = document.querySelector('[data-slot="toast-viewport"]')?.parentElement;
+    if (!region?.querySelector(':scope > span[tabindex="0"]')) return false;
+    window.dispatchEvent(new Event('blur'));
+    return true;
+  });
+  if (!paused) return failures.push(`${where} 토스트: 뜨지 않음`);
+  // 선택을 풀어 선택 툴바를 걷고 토스트만 남긴다(툴바가 뜬 상태는 따로 본다).
+  await page.evaluate(() => {
+    getSelection()?.removeAllRanges();
+    return true;
+  });
+  await until('토스트만 남김', () => document.querySelector('[data-selection-toolbar]') === null);
+  const motion = await page.evaluate(() => {
+    const toast = document.querySelector('[data-slot="toast"]');
+    return toast ? getComputedStyle(toast).animationName : 'closed';
+  });
+  if (motion !== 'none') failures.push(`${where} 토스트: 움직임 줄이기에서 전환(${motion})`);
+  const toastViolations = await axeViolations();
+  runs++;
+  if (toastViolations.length) failures.push(`${where} 토스트: ${toastViolations.join('; ')}`);
+};
 
 await page.cdp('Emulation.setEmulatedMedia', {
   features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
@@ -180,6 +233,7 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
       if (findViolations.length)
         failures.push(`${width} ${theme} 찾기 줄: ${findViolations.join('; ')}`);
       await page.keyboard.press('Escape');
+      await checkToast(`${width} ${theme}`);
     }
   }
 }

@@ -14,6 +14,7 @@ import { REDUCED_MOTION } from '../../media';
 import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
+import { ToastHost } from '../Toast/ToastHost';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
 import { $statusNotice, clearStatusNotice } from '../../stores/notice';
@@ -419,6 +420,7 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
  * 글 화면 스크립트가 이어 읽기(`$resume`)를 권하면, 그 글의 열기 요약이 사라지는 순간 상태줄 오른쪽에
  * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
+ * 토스트(`$toast`)가 처음 오면 `ToastHost`가 토스트 청크를 불러 상태줄 바로 위 가운데에 그린다.
  *
  * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
  * 검색 화면(`SearchView`)은 처음 보일 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다. 마지막 화면이
@@ -1077,6 +1079,8 @@ export function Shell({
           </span>
         )}
       </footer>
+
+      <ToastHost />
 
       {paletteOpen && platform && (
         <Suspense fallback={null}>
