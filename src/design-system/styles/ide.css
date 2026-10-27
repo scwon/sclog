@@ -1242,3 +1242,19 @@
     }
   }
 }
+
+/*
+ * 찾기 줄(⌘F)의 칠하기. 창 틀의 찾기 줄이 CSS Custom Highlight API로 에디터 글자에 범위를 걸면 여기서 칠한다.
+ * 모든 일치는 검색 화면 발췌와 같은 형광 띠(글자색은 그대로), 지금 일치는 코랄 바탕과 그 위 글자색이다.
+ * 명암비는 tokens.test.ts가 두 테마에서 본다.
+ */
+@layer components {
+  ::highlight(find-match) {
+    background-color: var(--marker);
+  }
+
+  ::highlight(find-current) {
+    background-color: var(--accent);
+    color: var(--on-accent);
+  }
+}

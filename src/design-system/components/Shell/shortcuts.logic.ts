@@ -28,7 +28,7 @@ export function keyLabel({ letter, shift = false }: KeyCombo, platform: Platform
   return `Ctrl+${shift ? 'Shift+' : ''}${name}`;
 }
 
-/** 창 틀이 붙인 조합 키. `search`가 `null`이면 그 키가 없다. */
+/** 창 틀이 붙인 조합 키. `search`·`find`가 `null`이면 그 키가 없다. */
 export interface ShortcutKeys {
   /** 명령 팔레트 열기. */
   palette: KeyCombo;
@@ -36,6 +36,8 @@ export interface ShortcutKeys {
   panel: KeyCombo;
   /** 패널 검색 화면을 열고 입력창에 포커스. */
   search: KeyCombo | null;
+  /** 찾기 줄을 열고 입력창에 포커스. CSS Custom Highlight API가 없으면 판정이 브라우저에 맡긴다. */
+  find: KeyCombo | null;
 }
 
 /**
@@ -46,13 +48,14 @@ export const SHORTCUT_KEYS: ShortcutKeys = {
   palette: { letter: 'p' },
   panel: { letter: 'b' },
   search: { letter: 'f', shift: true },
+  find: { letter: 'f' },
 };
 
 /**
  * 키를 받은 포커스 대상의 종류. `text`는 입력창·textarea·contenteditable, `palette-input`은 팔레트 입력창,
- * `search-input`은 패널 검색 화면의 입력창이다.
+ * `search-input`은 패널 검색 화면의 입력창, `find-input`은 찾기 줄의 입력창이다.
  */
-export type FocusTarget = 'palette-input' | 'search-input' | 'text' | 'other';
+export type FocusTarget = 'palette-input' | 'search-input' | 'find-input' | 'text' | 'other';
 
 /** 판정에 쓰는 키 이벤트의 모양. `KeyboardEvent`에서 그대로 옮긴다. */
 export interface KeyShape {
@@ -72,15 +75,21 @@ export interface ShortcutContext {
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;
+  /** 찾기 줄이 열려 있는가. */
+  findOpen: boolean;
+  /** 브라우저에 CSS Custom Highlight API(`CSS.highlights`)가 있는가. 없으면 ⌘F는 브라우저 찾기다. */
+  findSupported: boolean;
   platform: Platform;
 }
 
 /**
  * 창 틀 명령. 단축키와 팔레트 명령 목록이 같은 이름으로 부르고, 창 틀의 실행 함수 하나가 실행한다.
- * `open-search`는 패널을 검색 화면으로 열고 입력창에 포커스를 준다.
+ * `open-search`는 패널을 검색 화면으로 열고 입력창에 포커스를 준다. `find-in-file`은 찾기 줄을 열고(열려 있으면 그대로)
+ * 입력창에 포커스를 주며 글자를 모두 고른다.
  */
 export type ShellCommand =
   | 'open-search'
+  | 'find-in-file'
   | 'toggle-panel'
   | 'show-explorer'
   | 'show-profile'
@@ -89,15 +98,19 @@ export type ShellCommand =
   | 'clear-history';
 
 /**
- * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`)과 팔레트·겹침 패널을 다루는 동작이다.
- * `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P, Tab).
+ * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`·`find-in-file`)과 팔레트·겹침 패널·찾기 줄을
+ * 다루는 동작이다. `find-next`·`find-prev`는 찾기 줄의 다음·이전 일치로 간다.
+ * `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P·⌘F, Tab).
  * `null`이 아닌 동작은 모두 기본 동작을 막는다.
  */
 export type ShortcutAction =
-  | Extract<ShellCommand, 'toggle-panel' | 'open-search'>
+  | Extract<ShellCommand, 'toggle-panel' | 'open-search' | 'find-in-file'>
   | 'open-palette'
   | 'close-palette'
   | 'close-overlay'
+  | 'close-find'
+  | 'find-next'
+  | 'find-prev'
   | 'palette-prev'
   | 'palette-next'
   | 'palette-pick'
@@ -138,11 +151,14 @@ export function shortcutFor(
     letter === combo.letter &&
     modOnly(event, context.platform, combo.shift ?? false);
 
+  // 찾기 줄은 CSS Custom Highlight API로 칠하므로, 없는 브라우저에서는 ⌘F를 브라우저 찾기에 맡긴다.
+  const find = context.findSupported ? keys.find : null;
+
   // 열린 팔레트는 대화상자라 그 창의 키만 받는다. 나머지 글자는 입력창이 받는다.
   if (context.paletteOpen) {
     if (event.key === 'Escape' && bare(event)) return 'close-palette';
     if (event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey) return 'swallow';
-    if (command(keys.palette)) return 'swallow';
+    if (command(keys.palette) || command(find)) return 'swallow';
     if (event.target !== 'palette-input' || !bare(event)) return null;
     if (event.key === 'ArrowUp') return 'palette-prev';
     if (event.key === 'ArrowDown') return 'palette-next';
@@ -150,10 +166,23 @@ export function shortcutFor(
     return null;
   }
 
-  // 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는 곳이라 Esc만 받는다. 겹침 패널이 없으면 Esc는 입력창이
-  // 받는다(글자 지우기). 다른 입력창은 모든 키를 입력창에 맡긴다.
-  if (event.key === 'Escape' && bare(event) && event.target !== 'text')
-    return context.overlayOpen ? 'close-overlay' : null;
+  // Esc는 맨 위 층 하나만 닫는다: 겹침 패널, 그다음 찾기 줄. 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는
+  // 곳이라 Esc를 받지만 찾기 줄은 닫지 않는다(겹침 패널이 없으면 입력창이 받아 글자를 지운다). 다른 입력창은 모든
+  // 키를 입력창에 맡긴다.
+  if (event.key === 'Escape' && bare(event) && event.target !== 'text') {
+    if (context.overlayOpen) return 'close-overlay';
+    return context.findOpen && event.target !== 'search-input' ? 'close-find' : null;
+  }
+  // ⌘F는 검색 입력창·찾기 입력창에서도 찾기 줄을 연다(찾기 입력창이면 글자를 모두 고른다).
+  if (event.target !== 'text' && command(find)) return 'find-in-file';
+  if (
+    event.target === 'find-input' &&
+    event.key === 'Enter' &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  )
+    return event.shiftKey ? 'find-prev' : 'find-next';
   if (event.target !== 'other') return null;
   if (command(keys.palette)) return 'open-palette';
   if (command(keys.panel)) return 'toggle-panel';

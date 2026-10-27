@@ -90,3 +90,30 @@ export function BranchIcon(props: IconProps) {
     </svg>
   );
 }
+
+/** 위 화살표(찾기 줄의 이전 일치). */
+export function ArrowUpIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 19V5m-6 6 6-6 6 6" />
+    </svg>
+  );
+}
+
+/** 아래 화살표(찾기 줄의 다음 일치). */
+export function ArrowDownIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 5v14m-6-6 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** 엑스(찾기 줄 닫기). */
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...base} strokeWidth={1.6} strokeLinecap="round" {...props}>
+      <path d="m6.5 6.5 11 11m0-11-11 11" />
+    </svg>
+  );
+}

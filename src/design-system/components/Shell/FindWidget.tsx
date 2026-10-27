@@ -1,0 +1,189 @@
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type Ref,
+} from 'react';
+import { useStore } from '@nanostores/react';
+import { REDUCED_MOTION } from '../../media';
+import { $findQuery, setFindQuery } from '../../stores/find';
+import { IconButton } from '../IconButton/IconButton';
+import { paint, toRange, unpaint, visibleArea, visibleBlocks } from './find';
+import {
+  findInBlocks,
+  findPosition,
+  firstVisibleMatch,
+  scrollToCenter,
+  stepMatch,
+} from './find.logic';
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from './icons';
+import type { Platform } from './shortcuts.logic';
+
+/** 창 틀이 찾기 줄에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 찾기 줄은 그 결과만 받는다. */
+export interface FindHandle {
+  /** 입력창에 포커스를 주고 글자를 모두 고른다. 열린 찾기 줄에서 ⌘F를 다시 누르면 부른다. */
+  focus: () => void;
+  /** 다음(`1`)·이전(`-1`) 일치로 간다. 끝에서 처음으로 돈다. */
+  move: (delta: -1 | 1) => void;
+}
+
+/** `FindWidget`의 props. */
+export interface FindWidgetProps {
+  /** 찾는 영역(에디터 루트)의 id. */
+  editorId: string;
+  /** 툴팁 키 표기를 고르는 플랫폼. */
+  platform: Platform;
+  /** 닫기 버튼을 눌렀다. 창 틀이 찾기 줄을 닫고 포커스를 연 자리로 돌려준다. */
+  onClose: () => void;
+  ref?: Ref<FindHandle>;
+}
+
+/** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 툴팁에 키를 넣지 않는다. */
+const FINE_POINTER = '(hover: hover) and (pointer: fine)';
+
+/** 마우스를 쓰는 화면인가. 찾기 줄은 브라우저에서만 그리므로 서버 값은 쓰이지 않는다. */
+function useFinePointer(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(FINE_POINTER);
+      query.addEventListener('change', onChange);
+      return () => query.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(FINE_POINTER).matches,
+    () => true,
+  );
+}
+
+/**
+ * 지금 일치가 보이는 영역 밖이면 그 줄을 보이는 영역 가운데로 옮긴다. 움직임 줄이기 설정에서는 바로 옮긴다.
+ * 일치가 찾기 줄과 가로로 겹치면 찾기 줄 아래부터를 보이는 영역으로 본다(찾기 줄에 가린 일치도 옮긴다).
+ */
+function reveal(range: Range | undefined, editor: HTMLElement, widget: HTMLElement | null): void {
+  if (!range) return;
+  const rect = range.getBoundingClientRect();
+  const view = visibleArea(editor);
+  const cover = widget?.getBoundingClientRect();
+  if (cover && rect.right > cover.left && rect.left < cover.right)
+    view.top = Math.max(view.top, cover.bottom);
+  const distance = scrollToCenter(rect, view);
+  if (distance === 0) return;
+  const instant = window.matchMedia(REDUCED_MOTION).matches;
+  window.scrollBy({ top: distance, behavior: instant ? 'instant' : 'smooth' });
+}
+
+/**
+ * 찾기 줄. 에디터에 연 파일 안에서 화면에 보이는 글자를 찾아, 모든 일치를 형광 띠로, 지금 일치를 코랄로 칠하고
+ * `3/12`로 위치를 보인다. 칠하기는 CSS Custom Highlight API라 본문 DOM을 건드리지 않는다. 일치 규칙은 검색 화면과
+ * 같다(`find.logic.ts`). 창 틀이 ⌘F로 처음 열 때 불러오는 청크라 `React.lazy`로만 가져온다. 열리면 입력창에 포커스를
+ * 주고 글자를 모두 고르며, 닫히면(언마운트) 칠한 것을 지운다. Enter·Shift+Enter·Esc는 창 틀의 단축키 리스너가 받아
+ * `FindHandle`로 넘긴다.
+ */
+export function FindWidget({ editorId, platform, onClose, ref }: FindWidgetProps) {
+  const query = useStore($findQuery);
+  const input = useRef<HTMLInputElement>(null);
+  const widget = useRef<HTMLElement>(null);
+  const fine = useFinePointer();
+
+  // 검색어가 바뀌면 다시 찾고, 화면 맨 위에 보이는 일치부터 시작한다. 찾기 줄은 브라우저에서만 그리므로 그릴 때 에디터
+  // 글자를 읽는다.
+  const found = useMemo(() => {
+    const root = document.getElementById(editorId);
+    if (!root || !query.trim()) return { root, ranges: [], start: -1 };
+    const ranges = findInBlocks(visibleBlocks(root), query).map(toRange);
+    const rects = ranges.map((range) => range.getBoundingClientRect());
+    return { root, ranges, start: firstVisibleMatch(rects, visibleArea(root).top) };
+  }, [editorId, query]);
+  // 다음·이전으로 고른 일치. 그 뒤 검색어가 바뀌면(`found`가 바뀌면) 버리고 시작 일치로 돌아간다.
+  const [picked, setPicked] = useState<{ found: typeof found; index: number } | null>(null);
+  const current = picked?.found === found ? picked.index : found.start;
+  const total = found.ranges.length;
+
+  // 칠하기와 스크롤은 지금 일치가 바뀔 때마다 맞춘다. 닫히면(언마운트) 칠한 것을 지운다.
+  useEffect(() => {
+    paint(found.ranges, current);
+    if (found.root) reveal(found.ranges[current], found.root, widget.current);
+  }, [found, current]);
+  useEffect(() => unpaint, []);
+
+  const focus = useCallback(() => {
+    input.current?.focus();
+    input.current?.select();
+  }, []);
+  useEffect(focus, [focus]);
+
+  const move = (delta: -1 | 1) => {
+    const next = stepMatch(current, total, delta);
+    if (next >= 0) setPicked({ found, index: next });
+  };
+  useImperativeHandle(ref, () => ({ focus, move }));
+
+  const keys = {
+    prev: platform === 'mac' ? '⇧Enter' : 'Shift+Enter',
+    next: 'Enter',
+    close: 'Esc',
+  };
+  const tip = (label: string, key: string) => (fine ? `${label} (${key})` : undefined);
+  const position = findPosition(query, current, total);
+
+  return (
+    <search
+      ref={widget}
+      aria-label="파일에서 찾기"
+      className="fixed top-[calc(var(--editor-top)+var(--bar-height-sm))] right-4 z-25 flex h-9.5 w-[min(360px,calc(100vw-var(--editor-left)-32px))] items-center gap-1 rounded-b-(--corner-md) border border-t-0 border-border-strong bg-surface-raised pr-1 pl-2 font-mono shadow-[0_10px_28px_-10px_var(--scrim)] max-[759px]:right-2 max-[759px]:w-[calc(100vw-var(--editor-left)-16px)]"
+    >
+      <input
+        ref={input}
+        data-find-input=""
+        type="search"
+        value={query}
+        onChange={(event) => setFindQuery(event.target.value)}
+        placeholder="파일에서 찾기"
+        aria-label="파일에서 찾기"
+        autoComplete="off"
+        spellCheck={false}
+        className="h-6.5 min-w-0 flex-1 rounded-sm border border-border bg-surface px-2 text-[12.5px] text-text outline-none placeholder:text-text-muted focus:border-accent [&::-webkit-search-cancel-button]:hidden"
+      />
+      <span
+        aria-live="polite"
+        className="min-w-[4.5em] flex-none px-1 text-right text-[11.5px] whitespace-nowrap text-text-soft"
+      >
+        {position}
+      </span>
+      <IconButton
+        label="이전 일치"
+        title={tip('이전 일치', keys.prev)}
+        disabled={total === 0}
+        // 누르는 동안 포커스가 입력창을 떠나지 않게 해 이어서 Enter로 옮길 수 있게 한다.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => move(-1)}
+        className="size-7 flex-none [&_svg]:size-4"
+      >
+        <ArrowUpIcon />
+      </IconButton>
+      <IconButton
+        label="다음 일치"
+        title={tip('다음 일치', keys.next)}
+        disabled={total === 0}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => move(1)}
+        className="size-7 flex-none [&_svg]:size-4"
+      >
+        <ArrowDownIcon />
+      </IconButton>
+      <IconButton
+        label="찾기 닫기"
+        title={tip('찾기 닫기', keys.close)}
+        onClick={onClose}
+        className="size-7 flex-none [&_svg]:size-4"
+      >
+        <CloseIcon />
+      </IconButton>
+    </search>
+  );
+}
+
+export default FindWidget;
