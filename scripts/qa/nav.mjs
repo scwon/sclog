@@ -46,6 +46,21 @@ const tabs = () =>
 const panelView = () =>
   page.evaluate(() => document.getElementById('panel')?.getAttribute('aria-label'));
 const statusLine = () => page.evaluate(() => document.querySelector('footer')?.textContent ?? '');
+/**
+ * 페이지 안의 조건이 참이 될 때까지 기다린다(최대 3초). 처음 쓸 때 불러오는 청크(팔레트·검색 화면·찾기 줄)와 다음
+ * 프레임에 주는 포커스는 자동화 탭의 프레임이 느려 고정 대기로는 가끔 늦는다. 시간 안에 참이 되면 `true`다.
+ */
+const until = (condition, arg) =>
+  page.waitForFunction(condition, arg, { timeout: 3000 }).then(
+    () => true,
+    () => false,
+  );
+/** 검색 입력창에 포커스가 올 때까지 기다린다. */
+const searchFocused = () =>
+  until(() => document.activeElement?.matches('#panel input[type=search]') === true);
+/** 팔레트가 열려 입력창에 포커스가 올 때까지 기다린다. */
+const paletteFocused = () =>
+  until(() => document.activeElement?.hasAttribute('data-palette-input') === true);
 
 await page.cdp('Runtime.enable');
 await page.cdp('Log.enable');
@@ -151,7 +166,7 @@ await page.waitForTimeout(1500);
 check('팔레트 전: 홈', (await editor()).url === '/');
 await focusEditor();
 await page.keyboard.press('ControlOrMeta+P');
-await page.waitForTimeout(800);
+await paletteFocused();
 const opened = await palette();
 check('⌘P로 팔레트가 열림', opened.open && opened.inputFocused, JSON.stringify(opened));
 const fileName = post.url.split('/').filter(Boolean).pop() ?? '';
@@ -166,7 +181,7 @@ check('창 틀 유지(팔레트)', await shellKept());
 
 check('에디터에 포커스', await focusEditor());
 await page.keyboard.press('ControlOrMeta+P');
-await page.waitForTimeout(500);
+await paletteFocused();
 check('다시 열림', (await palette()).open);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
@@ -176,15 +191,11 @@ check(
   await page.evaluate(() => document.activeElement?.id === 'editor'),
 );
 
-// ⌘⇧F(Ctrl+Shift+F): 검색 화면을 열고 입력창에 포커스(검색 화면은 처음 쓸 때 불러오는 청크라 조금 기다린다).
+// ⌘⇧F(Ctrl+Shift+F): 검색 화면을 열고 입력창에 포커스(검색 화면은 처음 쓸 때 불러오는 청크라 포커스를 기다린다).
 await page.keyboard.press('ControlOrMeta+Shift+F');
-await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
-await page.waitForTimeout(300);
+const searchFocusedByKey = await searchFocused();
 check('⌘⇧F로 검색 화면이 열림', (await panelView()) === '검색');
-check(
-  '⌘⇧F로 검색 입력창에 포커스',
-  await page.evaluate(() => document.activeElement?.matches('#panel input[type=search]') === true),
-);
+check('⌘⇧F로 검색 입력창에 포커스', searchFocusedByKey);
 // 입력창에 포커스가 있으면 단축키가 꺼지므로 ⌘B 전에 에디터로 옮긴다.
 check('에디터에 포커스(⌘B 전)', await focusEditor());
 
@@ -481,18 +492,6 @@ const searchInput = () =>
     const input = document.querySelector('#panel input[type=search]');
     return input ? { value: input.value, focused: document.activeElement === input } : null;
   });
-/** 검색 입력창에 포커스가 올 때까지 기다린다. 포커스는 다음 프레임에 주는데 자동화 탭은 프레임이 느리다. */
-const searchFocused = () =>
-  page
-    .waitForFunction(
-      () => document.activeElement?.matches('#panel input[type=search]') === true,
-      undefined,
-      { timeout: 3000 },
-    )
-    .then(
-      () => true,
-      () => false,
-    );
 check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
 // 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
 await page.evaluate(() => {
@@ -646,8 +645,9 @@ const findValue = () =>
       : null;
   });
 await page.keyboard.press('ControlOrMeta+G');
-await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
-await page.waitForTimeout(300);
+await until(() =>
+  /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+);
 const reopened = await findState();
 check(
   '찾기: 닫힌 채 ⌘G로 마지막 검색어로 열림',
@@ -732,8 +732,15 @@ check(
 );
 await focusEditor();
 await page.keyboard.press('ControlOrMeta+F');
-await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
-await page.waitForTimeout(300);
+await until(() => {
+  const input = document.querySelector('[data-find-input]');
+  return (
+    input instanceof HTMLInputElement &&
+    document.activeElement === input &&
+    input.value !== '' &&
+    input.selectionEnd === input.value.length
+  );
+});
 const remembered = await findValue();
 check(
   '찾기: 옮긴 뒤 ⌘F에 마지막 검색어가 들어 있음',
