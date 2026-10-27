@@ -1,8 +1,16 @@
-import { CheckIcon, CopyIcon, type SelectionAction } from '@/design-system';
+import {
+  browserPlatform,
+  CheckIcon,
+  CopyIcon,
+  keyLabel,
+  showToast,
+  type SelectionAction,
+} from '@/design-system';
 
 /**
  * 고른 글자를 평문 그대로 클립보드에 넣는다. 앞뒤에 출처·링크를 붙이지 않는다.
- * 클립보드가 막히면(권한 거부 등) 거짓을 돌려주어 버튼이 됐다는 표시로 바뀌지 않는다.
+ * 되면 "복사했어요" 토스트를 띄운다. 클립보드가 막히면(권한 거부 등) 플랫폼의 복사 키(⌘C·Ctrl+C)를 쓰라는
+ * 토스트를 띄우고 거짓을 돌려주어 버튼이 됐다는 표시로 바뀌지 않는다.
  */
 export const copySelection: SelectionAction = {
   id: 'copy',
@@ -13,8 +21,11 @@ export const copySelection: SelectionAction = {
   async run({ text }) {
     try {
       await navigator.clipboard.writeText(text);
+      showToast('복사했어요', 'success');
       return true;
     } catch {
+      const copyKey = keyLabel({ letter: 'c' }, browserPlatform());
+      showToast(`클립보드에 넣지 못했어요. ${copyKey}로 복사하세요`, 'error');
       return false;
     }
   },

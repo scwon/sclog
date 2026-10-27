@@ -11,7 +11,7 @@
  * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다. 이어서 글에서 ⌘F로 찾기 줄을 열어
  * 위치 글자·칠하기·Enter·Esc를 보고, 닫힌 채 ⌘G로 마지막 검색어로 열기, 찾기 줄 밖의 ⌘G·⇧⌘G, 고른 글자로 ⌘F, 화면을 옮기면
  * 닫히고 다시 ⌘F에 마지막 검색어가 남는지 본다. 이어서 글 본문을 드래그해 선택 툴바(상자와 복사 버튼)가 뜨고, 복사하면
- * 체크로 바뀌며, 선택이 접히거나 화면을 옮기면 걷히는지 본다.
+ * 체크로 바뀌고 토스트가 떴다 저절로 닫히며, 선택이 접히거나 화면을 옮기면 걷히는지 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -973,6 +973,39 @@ if (plan) {
   check(
     '선택 툴바: 복사한 뒤에도 선택과 툴바가 남음',
     copied.text === shown.text && copied.toolbars === 1,
+  );
+  // 토스트: 복사하면 화면 아래 가운데에 `복사했어요`(클립보드가 막히면 ⌘C 안내)가 뜨고 저절로 닫힌다.
+  await until('토스트: 복사하면 뜸', () => document.querySelector('[data-slot="toast"]') !== null);
+  const toast = await page.evaluate(() => {
+    const element = document.querySelector('[data-slot="toast"]');
+    const box = element?.getBoundingClientRect();
+    return {
+      text: element?.textContent ?? '',
+      tone: element?.getAttribute('data-tone') ?? null,
+      region: element?.closest('[role="region"]')?.getAttribute('aria-label') ?? null,
+      centered: box ? Math.abs(box.left + box.width / 2 - innerWidth / 2) < 2 : false,
+      aboveStatusBar: box
+        ? box.bottom <= (document.querySelector('footer')?.getBoundingClientRect().top ?? 0)
+        : false,
+    };
+  });
+  check(
+    '토스트: 복사 결과(`복사했어요` 또는 ⌘C 안내)',
+    (toast.text === '복사했어요' && toast.tone === 'success') ||
+      (/⌘C|Ctrl\+C/.test(toast.text) && toast.tone === 'error'),
+    JSON.stringify(toast),
+  );
+  check(
+    '토스트: 이름 있는 영역 안, 상태줄 위 가운데',
+    toast.region === '알림' && toast.centered && toast.aboveStatusBar,
+    JSON.stringify(toast),
+  );
+  check(
+    '토스트: 저절로 닫힘',
+    await until(
+      '토스트: 저절로 닫힘',
+      () => document.querySelector('[data-slot="toast"]') === null,
+    ),
   );
 
   // 빈 곳(문단 왼쪽 여백 가운데)을 누르면 선택이 접혀 걷힌다.

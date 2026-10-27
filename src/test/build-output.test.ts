@@ -538,6 +538,31 @@ describe.skipIf(!built)('build output', () => {
     });
   });
 
+  describe('toast chunk', () => {
+    const scripts = files('.js').map((path) => ({ path, js: readFileSync(path, 'utf8') }));
+    const chunk = scripts.find(({ path }) => /[\\/]Toast\.[\w-]+\.js$/.test(path));
+    const name = chunk?.path.split(/[\\/]/).at(-1) ?? 'Toast.js';
+
+    it('is split into its own chunk loaded by a dynamic import', () => {
+      expect(chunk).toBeDefined();
+      const loaders = scripts.filter(({ js }) => js.includes(`import(\`./${name}\`)`));
+      expect(loaders.map(({ path }) => path)).not.toEqual([]);
+    });
+
+    it('is not loaded or preloaded by any page', () => {
+      expect(
+        pages.filter(({ html }) => html.includes(name)).map(({ path }) => urlOf(path)),
+      ).toEqual([]);
+    });
+
+    it('is only imported dynamically', () => {
+      const staticImport = new RegExp(
+        String.raw`(?:from\s*|import\s*)["'\x60][^"'\x60]*${name.replace('.', '\\.')}`,
+      );
+      expect(scripts.filter(({ js }) => staticImport.test(js)).map(({ path }) => path)).toEqual([]);
+    });
+  });
+
   describe('doc end lines', () => {
     const posts = pages
       .map(({ html }) => ({
