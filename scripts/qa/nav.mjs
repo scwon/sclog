@@ -8,7 +8,9 @@
  * 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
  * 글 가운데 장에서 홈으로 떠났다가 돌아오면 열기 요약 뒤 이어 읽기 버튼이 뜨고, 누르면 그 장으로 가며 사라지는지 본다.
  * 그다음 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
- * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다.
+ * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다. 이어서 글에서 ⌘F로 찾기 줄을 열어
+ * 위치 글자·칠하기·Enter·Esc를 보고, 닫힌 채 ⌘G로 마지막 검색어로 열기, 찾기 줄 밖의 ⌘G·⇧⌘G, 고른 글자로 ⌘F, 화면을 옮기면
+ * 닫히고 다시 ⌘F에 마지막 검색어가 남는지 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -44,6 +46,21 @@ const tabs = () =>
 const panelView = () =>
   page.evaluate(() => document.getElementById('panel')?.getAttribute('aria-label'));
 const statusLine = () => page.evaluate(() => document.querySelector('footer')?.textContent ?? '');
+/**
+ * 페이지 안의 조건이 참이 될 때까지 기다린다(최대 3초). 처음 쓸 때 불러오는 청크(팔레트·검색 화면·찾기 줄)와 다음
+ * 프레임에 주는 포커스는 자동화 탭의 프레임이 느려 고정 대기로는 가끔 늦는다. 시간 안에 참이 되면 `true`다.
+ */
+const until = (condition, arg) =>
+  page.waitForFunction(condition, arg, { timeout: 3000 }).then(
+    () => true,
+    () => false,
+  );
+/** 검색 입력창에 포커스가 올 때까지 기다린다. */
+const searchFocused = () =>
+  until(() => document.activeElement?.matches('#panel input[type=search]') === true);
+/** 팔레트가 열려 입력창에 포커스가 올 때까지 기다린다. */
+const paletteFocused = () =>
+  until(() => document.activeElement?.hasAttribute('data-palette-input') === true);
 
 await page.cdp('Runtime.enable');
 await page.cdp('Log.enable');
@@ -149,7 +166,7 @@ await page.waitForTimeout(1500);
 check('팔레트 전: 홈', (await editor()).url === '/');
 await focusEditor();
 await page.keyboard.press('ControlOrMeta+P');
-await page.waitForTimeout(800);
+await paletteFocused();
 const opened = await palette();
 check('⌘P로 팔레트가 열림', opened.open && opened.inputFocused, JSON.stringify(opened));
 const fileName = post.url.split('/').filter(Boolean).pop() ?? '';
@@ -164,7 +181,7 @@ check('창 틀 유지(팔레트)', await shellKept());
 
 check('에디터에 포커스', await focusEditor());
 await page.keyboard.press('ControlOrMeta+P');
-await page.waitForTimeout(500);
+await paletteFocused();
 check('다시 열림', (await palette()).open);
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
@@ -174,15 +191,11 @@ check(
   await page.evaluate(() => document.activeElement?.id === 'editor'),
 );
 
-// ⌘⇧F(Ctrl+Shift+F): 검색 화면을 열고 입력창에 포커스(검색 화면은 처음 쓸 때 불러오는 청크라 조금 기다린다).
+// ⌘⇧F(Ctrl+Shift+F): 검색 화면을 열고 입력창에 포커스(검색 화면은 처음 쓸 때 불러오는 청크라 포커스를 기다린다).
 await page.keyboard.press('ControlOrMeta+Shift+F');
-await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
-await page.waitForTimeout(300);
+const searchFocusedByKey = await searchFocused();
 check('⌘⇧F로 검색 화면이 열림', (await panelView()) === '검색');
-check(
-  '⌘⇧F로 검색 입력창에 포커스',
-  await page.evaluate(() => document.activeElement?.matches('#panel input[type=search]') === true),
-);
+check('⌘⇧F로 검색 입력창에 포커스', searchFocusedByKey);
 // 입력창에 포커스가 있으면 단축키가 꺼지므로 ⌘B 전에 에디터로 옮긴다.
 check('에디터에 포커스(⌘B 전)', await focusEditor());
 
@@ -479,18 +492,6 @@ const searchInput = () =>
     const input = document.querySelector('#panel input[type=search]');
     return input ? { value: input.value, focused: document.activeElement === input } : null;
   });
-/** 검색 입력창에 포커스가 올 때까지 기다린다. 포커스는 다음 프레임에 주는데 자동화 탭은 프레임이 느리다. */
-const searchFocused = () =>
-  page
-    .waitForFunction(
-      () => document.activeElement?.matches('#panel input[type=search]') === true,
-      undefined,
-      { timeout: 3000 },
-    )
-    .then(
-      () => true,
-      () => false,
-    );
 check('검색 화면을 열기 전에는 색인 요청이 없음', !(await indexRequested()));
 // 앞 단계에서 새로고침했으므로 창 틀 요소를 다시 잡는다.
 await page.evaluate(() => {
@@ -562,6 +563,192 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {
   deviceScaleFactor: 1,
   mobile: false,
 });
+
+// ⌘F(Ctrl+F) 찾기 줄: 글에서 열어 입력창에 포커스 → 검색어 입력 → 위치 글자와 칠한 범위 수 → Enter로 다음 →
+// Esc로 닫히고 칠한 것이 사라지며 포커스가 에디터로 돌아온다(찾기 줄은 처음 쓸 때 불러오는 청크라 조금 기다린다).
+const findState = () =>
+  page.evaluate(() => {
+    const input = document.querySelector('[data-find-input]');
+    return {
+      open: input !== null,
+      focused: document.activeElement === input && input !== null,
+      role: input
+        ? (input.getAttribute('role') ?? (input.type === 'search' ? 'searchbox' : ''))
+        : '',
+      position: document.querySelector('search [aria-live="polite"]')?.textContent ?? '',
+      matches: CSS.highlights.get('find-match')?.size ?? 0,
+      current: CSS.highlights.get('find-current')?.size ?? 0,
+    };
+  });
+await page.goto(QA.base + post.url);
+await page.waitForTimeout(1500);
+check('찾기 전: 에디터에 포커스', await focusEditor());
+await page.keyboard.press('ControlOrMeta+F');
+await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
+await page
+  .waitForFunction(() => document.activeElement?.matches('[data-find-input]') === true, undefined, {
+    timeout: 3000,
+  })
+  .catch(() => {});
+const findOpened = await findState();
+check(
+  '⌘F로 찾기 줄이 열리고 입력창에 포커스',
+  findOpened.open && findOpened.focused && findOpened.role === 'searchbox',
+  JSON.stringify(findOpened),
+);
+await page.keyboard.type('개발');
+await page
+  .waitForFunction(
+    () =>
+      /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+    undefined,
+    { timeout: 3000 },
+  )
+  .catch(() => {});
+const typed = await findState();
+const [at, total] = typed.position.split('/').map(Number);
+check(
+  '찾기: 위치 글자와 칠한 범위 수가 맞음',
+  total > 0 && typed.matches === total && typed.current === 1 && at >= 1,
+  JSON.stringify(typed),
+);
+await page.keyboard.press('Enter');
+await page.waitForTimeout(300);
+const stepped = await findState();
+check(
+  '찾기: Enter로 다음 일치',
+  stepped.position === `${(at % total) + 1}/${total}` && stepped.focused,
+  `${typed.position} → ${stepped.position}`,
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+const findClosed = await findState();
+check(
+  '찾기: Esc로 닫히고 칠한 것이 사라짐',
+  !findClosed.open && findClosed.matches === 0 && findClosed.current === 0,
+  JSON.stringify(findClosed),
+);
+check(
+  '찾기: 닫으면 에디터로 포커스',
+  await page.evaluate(() => document.activeElement?.id === 'editor'),
+);
+
+// ⌘G·⇧⌘G: 닫힌 찾기 줄은 마지막 검색어로 열리고, 열린 찾기 줄은 입력창 밖(에디터)에서도 다음·이전 일치로 간다.
+const findValue = () =>
+  page.evaluate(() => {
+    const input = document.querySelector('[data-find-input]');
+    return input instanceof HTMLInputElement
+      ? {
+          value: input.value,
+          all: input.selectionStart === 0 && input.selectionEnd === input.value.length,
+        }
+      : null;
+  });
+await page.keyboard.press('ControlOrMeta+G');
+await until(() =>
+  /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+);
+const reopened = await findState();
+check(
+  '찾기: 닫힌 채 ⌘G로 마지막 검색어로 열림',
+  reopened.open &&
+    (await findValue())?.value === '개발' &&
+    reopened.matches === total &&
+    reopened.current === 1,
+  JSON.stringify(reopened),
+);
+check('찾기 줄 밖에서 ⌘G 전: 에디터에 포커스', await focusEditor());
+await page.keyboard.press('ControlOrMeta+G');
+await page.waitForTimeout(300);
+const [from] = reopened.position.split('/').map(Number);
+const nextByG = await findState();
+check(
+  '찾기: 찾기 줄 밖에서 ⌘G로 다음 일치',
+  nextByG.position === `${(from % total) + 1}/${total}` && !nextByG.focused,
+  `${reopened.position} → ${nextByG.position}`,
+);
+await page.keyboard.press('ControlOrMeta+Shift+G');
+await page.waitForTimeout(300);
+check('찾기: ⇧⌘G로 이전 일치', (await findState()).position === reopened.position);
+
+// 에디터에서 고른 한 줄 글자가 ⌘F로 검색어가 된다(찾기 줄이 열려 있어도).
+const picked = await page.evaluate(() => {
+  const walker = document.createTreeWalker(
+    document.querySelector('#editor #content') ?? document.getElementById('editor'),
+    NodeFilter.SHOW_TEXT,
+  );
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const word = /[가-힣A-Za-z]{2,}/.exec(node.textContent ?? '');
+    if (!word) continue;
+    const range = document.createRange();
+    range.setStart(node, word.index);
+    range.setEnd(node, word.index + word[0].length);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    return word[0];
+  }
+  return '';
+});
+await page.keyboard.press('ControlOrMeta+F');
+// 열린 찾기 줄은 다음 프레임에 포커스를 준다(ego 탭은 프레임이 느리다).
+await page
+  .waitForFunction(
+    (word) => {
+      const input = document.querySelector('[data-find-input]');
+      return (
+        input instanceof HTMLInputElement &&
+        document.activeElement === input &&
+        input.value === word &&
+        input.selectionEnd === word.length
+      );
+    },
+    picked,
+    { timeout: 3000 },
+  )
+  .catch(() => {});
+const seeded = await findValue();
+check(
+  '찾기: 에디터에서 고른 글자가 ⌘F로 검색어가 되고 모두 선택됨',
+  picked !== '' && seeded?.value === picked && seeded.all && (await findState()).focused,
+  `${picked} → ${JSON.stringify(seeded)}`,
+);
+
+// 다른 화면으로 옮기면 찾기 줄이 닫히고 칠한 것이 사라진다. 다시 ⌘F를 누르면 마지막 검색어가 들어 있다.
+// 위에서 글을 새로 불러왔으므로 창 틀 아일랜드를 다시 적어 둔다.
+await page.evaluate(() => {
+  window.qaShell = document.getElementById('panel')?.closest('astro-island');
+});
+await page.click("loc=css:header a[href='/']", { label: '찾기 줄을 연 채 홈으로' });
+await page.waitForTimeout(1500);
+const afterSwap = await findState();
+check(
+  '찾기: 화면을 옮기면 찾기 줄이 닫히고 칠한 것이 사라짐',
+  (await editor()).url === '/' &&
+    !afterSwap.open &&
+    afterSwap.matches === 0 &&
+    afterSwap.current === 0 &&
+    (await shellKept()),
+  JSON.stringify(afterSwap),
+);
+await focusEditor();
+await page.keyboard.press('ControlOrMeta+F');
+await until(() => {
+  const input = document.querySelector('[data-find-input]');
+  return (
+    input instanceof HTMLInputElement &&
+    document.activeElement === input &&
+    input.value !== '' &&
+    input.selectionEnd === input.value.length
+  );
+});
+const remembered = await findValue();
+check(
+  '찾기: 옮긴 뒤 ⌘F에 마지막 검색어가 들어 있음',
+  remembered?.value === picked && remembered.all,
+  JSON.stringify(remembered),
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
 
 const events = await page.events();
 const errors = events

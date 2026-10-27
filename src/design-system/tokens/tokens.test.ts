@@ -135,6 +135,22 @@ const selectedPairs: [foreground: string, background: string][] = ['--text', '--
   (fg) => ['--surface-panel', '--surface-raised'].map((bg): [string, string] => [fg, bg]),
 );
 
+/**
+ * 찾기 줄(⌘F)의 칠하기(`ide.css`의 `::highlight(name)`)가 쓰는 글자색·바탕 토큰. 칠한 글자는 본문 글자색(강조·코드
+ * 색·흐린 글자)과 상관없이 늘 이 글자색이어야 하므로 규칙에서 바로 읽는다.
+ */
+function highlightTokens(name: string): { color: string | null; background: string | null } {
+  const body =
+    new RegExp(String.raw`::highlight\(${name}\)\s*\{([^}]*)\}`).exec(
+      read('../styles/ide.css'),
+    )?.[1] ?? '';
+  const token = (property: string) =>
+    new RegExp(String.raw`(?:^|[\s;])${property}\s*:\s*var\((--[\w-]+)\)`).exec(body)?.[1] ?? null;
+  return { color: token('color'), background: token('background-color') };
+}
+const findMatch = highlightTokens('find-match');
+const findCurrent = highlightTokens('find-current');
+
 describe('contrast', () => {
   it('matches known WCAG ratios', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
@@ -146,6 +162,25 @@ describe('contrast', () => {
       expect(contrast(resolveColor(tokens, fg), resolveColor(tokens, bg))).toBeGreaterThanOrEqual(
         minimum,
       );
+    });
+
+    // 모든 일치(`find-match`)는 에디터 바탕(`--surface`) 위에 겹친 반투명 형광 띠다.
+    it('find-match: its own text color on its band over --surface is at least 4.5:1', () => {
+      expect(findMatch).toEqual({ color: expect.any(String), background: expect.any(String) });
+      const { color, background } = findMatch;
+      const marked = over(
+        resolveColor(tokens, background ?? ''),
+        resolveColor(tokens, '--surface'),
+      );
+      expect(contrast(resolveColor(tokens, color ?? ''), marked)).toBeGreaterThanOrEqual(BODY);
+    });
+
+    it('find-current: its text color on its background is at least 4.5:1', () => {
+      expect(findCurrent).toEqual({ color: expect.any(String), background: expect.any(String) });
+      const { color, background } = findCurrent;
+      expect(
+        contrast(resolveColor(tokens, color ?? ''), resolveColor(tokens, background ?? '')),
+      ).toBeGreaterThanOrEqual(BODY);
     });
 
     it.each(selectedPairs)('%s on --state-selected over %s is at least 4.5:1', (fg, bg) => {

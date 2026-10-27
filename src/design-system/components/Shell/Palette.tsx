@@ -4,17 +4,9 @@
  * 바깥 막은 장식이라 역할이 없다.
  */
 /* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
-import {
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type Ref,
-} from 'react';
+import { useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react';
 import { cn } from '@/lib/utils';
+import { useFinePointer } from '../../media';
 import { FileGlyph } from './icons';
 import {
   isCommandQuery,
@@ -23,6 +15,7 @@ import {
   type PaletteCommandId,
 } from './palette.logic';
 import { SHORTCUT_KEYS, keyLabel, type Platform, type ShellCommand } from './shortcuts.logic';
+import { findSupported } from './shortcuts';
 import type { TreeYear } from './Shell';
 
 /** 창 틀이 팔레트에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 팔레트는 그 결과만 받는다. */
@@ -50,25 +43,9 @@ export interface PaletteProps {
   ref?: Ref<PaletteHandle>;
 }
 
-/** 키 표기를 보일 수 있는 포인터(마우스·트랙패드). 터치 화면에서는 키 표기와 안내의 키 부분을 숨긴다. */
-const FINE_POINTER = '(hover: hover) and (pointer: fine)';
-
 /** 키 표기 모양. 마우스를 쓰는 화면에서만 보인다. */
 const kbd =
   'hidden rounded-[4px] border border-border bg-surface-sunken px-1.5 py-px font-mono text-[11px] text-text-muted [@media(hover:hover)_and_(pointer:fine)]:inline';
-
-/** 마우스를 쓰는 화면인가. 팔레트는 브라우저에서만 그리므로 서버 값은 쓰이지 않는다. */
-function useFinePointer(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = window.matchMedia(FINE_POINTER);
-      query.addEventListener('change', onChange);
-      return () => query.removeEventListener('change', onChange);
-    },
-    () => window.matchMedia(FINE_POINTER).matches,
-    () => true,
-  );
-}
 
 /** 팔레트 목록의 한 줄: 글이거나 명령이다. */
 type PaletteRow =
@@ -104,11 +81,13 @@ export function Palette({
   const rows = useMemo<PaletteRow[]>(
     () =>
       commandMode
-        ? paletteCommands(query, { hasNextFile, platform }).map((command) => ({
-            kind: 'command',
-            key: command.id,
-            ...command,
-          }))
+        ? paletteCommands(query, { hasNextFile, findSupported: findSupported(), platform }).map(
+            (command) => ({
+              kind: 'command',
+              key: command.id,
+              ...command,
+            }),
+          )
         : paletteFiles(tree, query).map((file) => ({ kind: 'file', key: file.url, ...file })),
     [commandMode, query, hasNextFile, platform, tree],
   );

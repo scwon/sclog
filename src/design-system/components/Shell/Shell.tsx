@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { REDUCED_MOTION } from '../../media';
 import { Button } from '../Button/Button';
@@ -37,6 +38,7 @@ import { openTab } from '../../stores/tabs';
 import { toggleTheme } from '../../stores/theme';
 import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
+import { seedFindQuery } from '../../stores/find';
 import {
   BranchIcon,
   CodeIcon,
@@ -62,6 +64,7 @@ import {
   type PanelView,
 } from './panel.logic';
 import { readPanelView, writePanelView } from './panel';
+import type { FindHandle, FindStart } from './FindWidget';
 import type { PaletteHandle } from './Palette';
 import { usePlatform, useShortcuts } from './shortcuts';
 import {
@@ -79,6 +82,9 @@ const Palette = lazy(() => import('./Palette'));
 
 /** 검색 화면은 처음 열 때 불러오는 청크다(첫 화면 JS에 넣지 않는다). */
 const SearchView = lazy(() => import('./SearchView'));
+
+/** 찾기 줄은 ⌘F로 처음 열 때 불러오는 청크다(첫 화면 JS에 넣지 않는다). */
+const FindWidget = lazy(() => import('./FindWidget'));
 
 /** 탐색기 트리의 글 파일 하나. */
 export interface TreeFile {
@@ -422,8 +428,12 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
  * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
  *
  * 단축키는 `document`의 keydown 리스너 하나(`shortcuts.ts`)가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
- * ⌘B(Ctrl+B) 패널 열고 닫기, ⌘⇧F(Ctrl+Shift+F) 검색 화면을 열고 입력창에 포커스, Esc 맨 위 층(팔레트, 그다음 좁은
- * 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는 처음 열 때 불러오는 청크이고, `>` 명령 모드의 명령은 단축키와
+ * ⌘B(Ctrl+B) 패널 열고 닫기, ⌘⇧F(Ctrl+Shift+F) 검색 화면을 열고 입력창에 포커스, ⌘F(Ctrl+F) 에디터 오른쪽 위에 찾기 줄
+ * (`FindWidget.tsx`, 처음 열 때 불러오는 청크)을 열고 입력창에 포커스(CSS Custom Highlight API가 없으면 브라우저 찾기),
+ * 찾기 입력창의 Enter·Shift+Enter와 어디서나 ⌘G·⇧⌘G 다음·이전 일치(찾기 줄이 닫혀 있으면 마지막 검색어로 연다),
+ * Esc 맨 위 층(팔레트, 그다음 좁은 화면의 겹침 패널, 그다음 찾기 줄) 닫기. ⌘F를 누를 때 에디터에서 고른 글자가 한 줄이면
+ * 검색어로 넣는다. 찾기 줄의 검색어는 `stores/find.ts`의 메모리에만 두고, 화면을 옮기면(`astro:before-swap`) 찾기 줄을
+ * 닫는다. 명령 팔레트(`Palette.tsx`)는 처음 열 때 불러오는 청크이고, `>` 명령 모드의 명령은 단축키와
  * 같은 이름의 창 틀 명령(`ShellCommand`)이라 실행 함수 하나(`runCommand`)가 실행한다. 붙은 키는 `SHORTCUT_KEYS` 하나가 정하고, 활동 막대 툴팁(`검색 (⌘⇧F)`)도 그 값을 읽는다.
  */
 export function Shell({
@@ -615,14 +625,87 @@ export function Shell({
     },
     [closePalette],
   );
+  const [findOpen, setFindOpen] = useState(false);
+  // 찾기 줄을 열 때 고를 일치(⇧⌘G로 열면 화면 맨 위 일치의 앞).
+  const [findStart, setFindStart] = useState<FindStart>('next');
+  const findRef = useRef<FindHandle>(null);
+  // 찾기 줄을 열 때 포커스가 있던 자리. 닫으면 여기로, 없거나 보이지 않으면 에디터로 돌려준다.
+  const findOpener = useRef<HTMLElement | null>(null);
+
+  /**
+   * 찾기 줄을 열고 입력창에 포커스를 주며 글자를 모두 고른다. 이미 열려 있으면 포커스만 준다. 좁은 화면의 겹침 패널이
+   * 열려 있으면 닫는다(닫히며 패널을 연 자리로 돌아가는 포커스보다 뒤에 주도록 다음 프레임에 준다). `fromSelection`이면
+   * 에디터 안에서 고른 한 줄 글자를 검색어로 넣는다(⌘F). `start`는 새로 열 때 고를 일치다.
+   */
+  const openFind = useCallback(
+    ({ fromSelection = true, start = 'next' }: { fromSelection?: boolean; start?: FindStart }) => {
+      updatePanel((state, wide) => (wide ? state : dismissPanel(state, wide)));
+      const selection = window.getSelection();
+      const editor = document.getElementById(EDITOR_ID);
+      if (
+        fromSelection &&
+        selection &&
+        !selection.isCollapsed &&
+        editor?.contains(selection.anchorNode) &&
+        editor.contains(selection.focusNode)
+      )
+        seedFindQuery(selection.toString());
+      if (findOpen) {
+        requestAnimationFrame(() => findRef.current?.focus());
+        return;
+      }
+      const active = document.activeElement;
+      findOpener.current =
+        active instanceof HTMLElement && active !== document.body ? active : null;
+      setFindStart(start);
+      setFindOpen(true);
+    },
+    [findOpen, updatePanel],
+  );
+
+  /**
+   * ⌘G·⇧⌘G(찾기 입력창이면 Enter·Shift+Enter). 찾기 줄이 열려 있으면 다음·이전 일치로 간다. 닫혀 있으면 마지막
+   * 검색어로 열고 화면 맨 위 일치(⇧⌘G는 그 앞)를 고르며, 마지막 검색어가 없으면 찾기 줄만 연다.
+   */
+  const stepFind = useCallback(
+    (delta: -1 | 1) => {
+      if (findOpen) findRef.current?.move(delta);
+      else openFind({ fromSelection: false, start: delta === 1 ? 'next' : 'prev' });
+    },
+    [findOpen, openFind],
+  );
+
+  // 다른 파일로 옮기면 찾기 줄을 닫는다. 바꾸기 전에 바로 언마운트해 칠한 것을 지운다(포커스는 화면 이동이 맡는다).
+  // 마지막 검색어(`$findQuery`)는 창 틀 메모리에 남는다.
+  useEffect(() => {
+    const onSwap = () => {
+      findOpener.current = null;
+      flushSync(() => setFindOpen(false));
+    };
+    document.addEventListener('astro:before-swap', onSwap);
+    return () => document.removeEventListener('astro:before-swap', onSwap);
+  }, []);
+
+  /** 찾기 줄을 닫는다. 칠한 것은 찾기 줄이 언마운트하며 지운다. */
+  const closeFind = useCallback(() => {
+    setFindOpen(false);
+    const opener = findOpener.current;
+    findOpener.current = null;
+    const shownOpener = opener?.isConnected && opener.checkVisibility?.() !== false;
+    (shownOpener ? opener : document.getElementById(EDITOR_ID))?.focus();
+  }, []);
+
   // 다음 파일이 없으면(글이 아니거나 폴더의 가장 새 글) 팔레트가 `다음 파일 열기`를 보이지 않는다.
   const next = shown ? nextFile(tree, shown.url) : null;
-  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F)와 팔레트 명령 목록이 같이 쓴다. */
+  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F·⌘F)와 팔레트 명령 목록이 같이 쓴다. */
   const runCommand = useCallback(
     (command: ShellCommand) => {
       switch (command) {
         case 'open-search':
           openSearch();
+          break;
+        case 'find-in-file':
+          openFind({});
           break;
         case 'toggle-panel':
           updatePanel(togglePanel);
@@ -646,7 +729,7 @@ export function Shell({
           break;
       }
     },
-    [next, openSearch, updatePanel],
+    [next, openFind, openSearch, updatePanel],
   );
   /** 팔레트에서 명령을 골랐다. 팔레트를 닫고 실행한다. */
   const runFromPalette = useCallback(
@@ -680,13 +763,22 @@ export function Shell({
       case 'palette-pick':
         paletteRef.current?.pick();
         break;
+      case 'close-find':
+        closeFind();
+        break;
+      case 'find-next':
+        stepFind(1);
+        break;
+      case 'find-prev':
+        stepFind(-1);
+        break;
       case 'swallow':
         break;
       default:
         runCommand(action);
     }
   };
-  useShortcuts({ paletteOpen, overlayOpen: overlay }, onShortcut);
+  useShortcuts({ paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
@@ -924,6 +1016,18 @@ export function Shell({
         onNavigate={navigateLikeLink}
         className="fixed top-(--bar-height) right-0 left-(--editor-left) z-30"
       />
+
+      {findOpen && platform && (
+        <Suspense fallback={null}>
+          <FindWidget
+            ref={findRef}
+            editorId={EDITOR_ID}
+            platform={platform}
+            start={findStart}
+            onClose={closeFind}
+          />
+        </Suspense>
+      )}
 
       <footer className="fixed inset-x-0 bottom-0 z-50 flex h-(--bar-height-xs) items-center overflow-hidden bg-accent font-mono text-xs leading-none font-medium whitespace-nowrap text-on-accent">
         <span

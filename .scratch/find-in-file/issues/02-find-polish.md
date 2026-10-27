@@ -1,0 +1,43 @@
+# 02: 찾기 줄 다듬기와 팔레트 명령
+
+**What to build:** 에디터에서 글자를 고른 채 ⌘F를 누르면 그 글자가 검색어로 들어간다. ⌘G·⇧⌘G(Ctrl+G·Ctrl+Shift+G)로 찾기 줄 밖에서도 다음·이전 일치로 간다. 다른 파일로 옮기면 찾기 줄이 닫히고, 다시 ⌘F를 누르면 마지막 검색어가 들어 있다. 팔레트 `>` 목록에 `이 파일에서 찾기 ⌘F`가 생긴다.
+
+**Blocked by:** 01 (⌘F 찾기 줄)
+
+**Status:** done
+
+참고: 스펙 [파일에서 찾기](../spec.md) "키"·"찾기 줄"·"화면 이동과 기억"·"명령 팔레트".
+
+- [x] 열 때 에디터 안에서 고른 글자가 한 줄이면 검색어로 넣는다. 없으면 마지막 검색어를 넣고 모두 선택한다
+- [x] `SHORTCUT_KEYS`에 ⌘G·⇧⌘G가 있고 판정이 다음·이전 동작을 돌려준다. 찾기 줄이 닫혀 있으면 마지막 검색어로 열고 이동한다. 마지막 검색어가 없으면 찾기 줄만 연다. 지원하지 않는 브라우저에서는 `null`이다. 단위 테스트가 덮는다
+- [x] `astro:before-swap`에서 찾기 줄을 닫고 칠한 것을 지운다. 마지막 검색어는 창 틀 메모리에만 남고 새로고침하면 비워진다
+- [x] 창 틀 명령 `find-in-file`이 `ShellCommand`에 있고 `runCommand`가 실행한다. 팔레트 명령 목록에서 `파일 열기` 바로 다음에 `이 파일에서 찾기 ⌘F`가 있다. 지원하지 않는 브라우저에서는 빠진다. 단위 테스트가 자리와 키 칸을 본다
+- [x] `docs/agents/shortcuts.md`의 지금 붙은 키·겹침 확인표에 ⌘G·⇧⌘G를 더한다. 블로그 디테일 1차 스펙 Comments에 이 스펙이 스토리 35를 대신한다는 한 줄을 남긴다
+- [x] `pnpm qa`: 찾기 줄을 열어 검색어를 넣고 다른 글·화면으로 옮기면 닫히고, 다시 ⌘F를 누르면 마지막 검색어가 들어 있다. 찾기 줄 밖에서 ⌘G로 다음 일치로 간다
+- [x] `pnpm verify`·`pnpm qa` 통과
+
+## Comments
+
+### 2026-10-27 구현 (브랜치 `find-in-file/02-find-polish`)
+
+**결정**
+
+- 키: `SHORTCUT_KEYS`에 `findNext`(⌘G)·`findPrev`(⇧⌘G)를 더했다. 판정은 둘 다 기존 `find-next`·`find-prev`를 돌려주고, 찾기 입력창과 입력창 밖(`other`)에서만 받는다. 검색 입력창에서는 ⌘F와 달리 브라우저에 맡겼다(스펙이 검색 입력창 예외를 ⌘F에만 두었다). 열린 팔레트에서는 기본 동작만 막고, Highlight API가 없으면 `null`이다.
+- ⌘G로 닫힌 찾기 줄 열기: 창 틀의 `stepFind(delta)`가 열려 있으면 `findRef.current.move`를, 닫혀 있으면 `openFind({ fromSelection: false, start })`를 부른다. 지난 일치 번호는 기억하지 않으므로 ⌘G는 검색어가 바뀔 때와 같은 시작 일치(화면 맨 위에 보이는 일치)를 고르고, ⇧⌘G는 그 바로 앞 일치를 고른다(`FindWidget`의 새 prop `start: FindStart = 'next' | 'prev'`, 연 뒤 첫 결과에만 쓴다). 마지막 검색어가 비면 찾기 줄만 열린다. ⌘G로 열 때는 고른 글자를 검색어로 넣지 않는다.
+- 고른 글자: `stores/find.ts`의 `seedFindQuery(selected)`가 앞뒤 공백을 지운 글자가 한 줄일 때만 검색어로 넣는다(세 번 눌러 고른 문단 끝 줄바꿈도 지운다). 창 틀은 선택의 양 끝이 모두 `#editor` 안일 때만 넘긴다. 찾기 줄이 이미 열려 있어도 ⌘F마다 넣는다. 찾기 규칙(`find.logic.ts`)을 창 틀 번들에 끌어오지 않으려고 메모리 스토어에 두었다.
+- 화면 이동: 창 틀이 `astro:before-swap`에서 `flushSync`로 찾기 줄을 언마운트해, 바꾸기 전에 칠한 것(`find-match`·`find-current`)을 지운다. 연 자리(`findOpener`)는 버리고 포커스는 화면 이동에 맡긴다. 검색어는 창 틀 메모리(`$findQuery`)에 남는다.
+- 팔레트: `paletteCommands` 맥락에 `findSupported`를 더했다. `Palette.tsx`가 `shortcuts.ts`의 `findSupported()`를 넘긴다. `>파일`·`>찾기`에도 `이 파일에서 찾기`가 걸린다.
+- 블로그 디테일 1차 스펙에는 Comments 절이 없어서 맨 아래에 새로 만들어 한 줄을 남겼다. `docs/agents/shortcuts.md`는 지금 붙은 키·겹침 확인표 말고도 기준 5번(가로채는 키), 끄는 때(찾기 입력창이 받는 키, 열린 팔레트가 막는 키), 판정 설명의 `null` 대상을 ⌘G·⇧⌘G에 맞췄다.
+- `pnpm qa`는 지침대로 돌리지 않고 `scripts/qa/run.mjs`의 포트만 4342로 바꿔(커밋하지 않음) `nav`·`a11y`를 돌렸다. `nav`에 닫힌 채 ⌘G, 에디터 포커스에서 ⌘G·⇧⌘G, 고른 글자로 ⌘F, 찾기 줄을 연 채 홈으로 옮기기 → 닫힘·칠함 0 → ⌘F에 마지막 검색어를 더했다. 열린 찾기 줄의 ⌘F는 다음 프레임에 포커스를 주므로 고정 대기 대신 조건을 기다린다. 위 단계는 `page.goto`로 다시 불러온 뒤라 옮기기 전에 `window.qaShell`을 다시 적는다.
+
+**측정값**
+
+- `nav` 통과(`pro-developer-2023-days`에서 `개발` 77개, 닫힌 채 ⌘G → `1/77`, 에디터에서 ⌘G → `2/77`, ⇧⌘G → `1/77`). `a11y` 85회 위반 0.
+- 찾기 줄 청크 `FindWidget.*.js` 5,600B(압축 전, 01은 5,399B).
+
+### 2026-10-27 리뷰 수정
+
+- Safari 조합 끝 Enter: `KeyShape`에 `keyCode`를 더하고, 229면 `isComposing`처럼 조합 중으로 본다. 찾기 입력창의 Enter·Shift+Enter와 팔레트 Enter를 단위 테스트가 덮는다.
+- QA 대기: `nav.mjs`에 `until`(조건을 3초까지 기다림) 도우미를 두었다. ⌘⇧F 검색 입력창 포커스 단계를 이것으로 바꿨고, 같은 꼴의 고정 대기였던 ⌘P 팔레트 열기 두 곳, 닫힌 채 ⌘G, 옮긴 뒤 ⌘F도 함께 바꿨다. 포트만 4343으로 바꿔(커밋하지 않음) `a11y`·`nav`를 한 번, `nav`를 두 번 더 돌렸고 모두 통과했다(axe 85회 위반 0).
+- `docs/agents/shortcuts.md`: ⌘F·⌘G 칸은 `.scratch/find-in-file/spec.md`를, ⌘⇧F 칸은 `.scratch/blog-details/issues/19-shortcuts-and-palette.md` Comments를 가리키게 줄였다. 끄는 때에 `keyCode` 229를 적었다.
+- `shortcuts.logic.ts`: ⌘·Ctrl·Alt 검사는 `unmodified` 하나로 모았고, 찾기 키 셋은 `findSupported`에 따라 `keys`와 `NO_FIND_KEYS` 가운데 한 번에 고른다.
