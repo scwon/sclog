@@ -1,6 +1,7 @@
 ---
 /**
- * 홈: `posts.log` 흐름 로그. 줄 번호·장 흐름·첫 문장은 모두 글 파일에서 읽는다.
+ * 홈: `posts.log` 흐름 로그. 직접 쓴 글을 쌓고 맨 아래 AI 글 칸을 둔다.
+ * 줄 번호·장 흐름·첫 문장은 모두 글 파일에서 읽는다.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import FlowLog from '../components/flow/FlowLog.astro';
@@ -10,6 +11,7 @@ import { SITE } from '../site';
 
 const posts = await getPublishedPosts('posts');
 const flows = await loadFlows(posts);
+const aiWritten = await loadFlows(await getPublishedPosts('ai-written'));
 ---
 
 <BaseLayout
@@ -23,5 +25,5 @@ const flows = await loadFlows(posts);
     summary: `글 ${posts.length}편`,
   }}
 >
-  <FlowLog lines={homeLines(flows, SITE)} />
+  <FlowLog lines={homeLines(flows, SITE, aiWritten)} />
 </BaseLayout>
