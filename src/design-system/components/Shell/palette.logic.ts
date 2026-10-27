@@ -15,6 +15,7 @@ import {
   type ShortcutKeys,
 } from './shortcuts.logic';
 import type { TreeRoot } from './Shell';
+import { treeYears } from './tree.logic';
 
 /** 팔레트 목록의 글 한 줄. */
 export interface PaletteFile {
@@ -28,19 +29,17 @@ export interface PaletteFile {
 
 /** 트리를 트리 순서(루트 순서, 그 안은 최신 먼저)의 글 줄로 편다. */
 function rows(tree: TreeRoot[]): PaletteFile[] {
-  return tree
-    .flatMap(({ years }) => years)
-    .flatMap(({ files }) =>
-      files.map(({ url, title, path }) => {
-        const name = fileName(path);
-        return {
-          url,
-          title,
-          name,
-          folder: path.slice(0, Math.max(path.length - name.length - 1, 0)),
-        };
-      }),
-    );
+  return treeYears(tree).flatMap(({ files }) =>
+    files.map(({ url, title, path }) => {
+      const name = fileName(path);
+      return {
+        url,
+        title,
+        name,
+        folder: path.slice(0, Math.max(path.length - name.length - 1, 0)),
+      };
+    }),
+  );
 }
 
 /** 줄의 순위. 작을수록 위다. 맞지 않으면 `null`. */
