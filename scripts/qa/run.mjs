@@ -44,6 +44,7 @@ function run(command, args, timeoutMs = 10 * 60 * 1000) {
   return new Promise((done) => {
     // ego-browser nodejs는 stdin으로도 스크립트를 받으므로 stdin을 넘기면 입력을 기다리며 멈출 수 있다.
     const child = spawn(command, args, { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] });
+    // oxlint-disable-next-line no-restricted-globals -- 대기가 아니라 멈춘 자식 프로세스를 끝내는 제한 시간이다.
     const timer = setTimeout(() => {
       console.error(`${timeoutMs / 1000}초가 지나 멈춘 것으로 보고 끝낸다`);
       child.kill();

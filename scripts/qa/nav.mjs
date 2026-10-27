@@ -15,8 +15,11 @@
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
 /* global QA, taskSpace */
+import { waits } from './wait.mjs';
+
 const task = await taskSpace('sclog qa nav');
 const page = task.page('p1');
+const { until, navigate, goto, reload } = waits(page);
 const failures = [];
 
 function check(label, ok, detail = '') {
@@ -46,21 +49,48 @@ const tabs = () =>
 const panelView = () =>
   page.evaluate(() => document.getElementById('panel')?.getAttribute('aria-label'));
 const statusLine = () => page.evaluate(() => document.querySelector('footer')?.textContent ?? '');
-/**
- * 페이지 안의 조건이 참이 될 때까지 기다린다(최대 3초). 처음 쓸 때 불러오는 청크(팔레트·검색 화면·찾기 줄)와 다음
- * 프레임에 주는 포커스는 자동화 탭의 프레임이 느려 고정 대기로는 가끔 늦는다. 시간 안에 참이 되면 `true`다.
- */
-const until = (condition, arg) =>
-  page.waitForFunction(condition, arg, { timeout: 3000 }).then(
-    () => true,
-    () => false,
+/** 패널이 그 화면(`aria-label`)이 될 때까지 기다린다. */
+const panelIs = (label) =>
+  until(
+    `패널이 ${label}`,
+    (view) => document.getElementById('panel')?.getAttribute('aria-label') === view,
+    label,
+  );
+/** 열린 파일 탭이 그 수가 될 때까지 기다린다. */
+const tabCount = (count) =>
+  until(
+    `열린 파일 탭 ${count}개`,
+    (n) => document.querySelectorAll("nav[aria-label='열린 파일'] a").length === n,
+    count,
   );
 /** 검색 입력창에 포커스가 올 때까지 기다린다. */
 const searchFocused = () =>
-  until(() => document.activeElement?.matches('#panel input[type=search]') === true);
+  until(
+    '검색 입력창에 포커스',
+    () => document.activeElement?.matches('#panel input[type=search]') === true,
+  );
 /** 팔레트가 열려 입력창에 포커스가 올 때까지 기다린다. */
 const paletteFocused = () =>
-  until(() => document.activeElement?.hasAttribute('data-palette-input') === true);
+  until(
+    '팔레트 입력창에 포커스',
+    () => document.activeElement?.hasAttribute('data-palette-input') === true,
+  );
+/** 명령 팔레트가 닫힐 때까지 기다린다. */
+const paletteClosed = () =>
+  until(
+    '팔레트가 닫힘',
+    () => document.querySelector("[role='dialog'][aria-label='명령 팔레트']") === null,
+  );
+/** 패널이 보이거나(`true`) 숨을(`false`) 때까지 기다린다. */
+const panelShownIs = (shown) =>
+  until(
+    `패널이 ${shown ? '보임' : '숨음'}`,
+    (want) => {
+      const panel = document.getElementById('panel');
+      return (panel ? getComputedStyle(panel).display !== 'none' : false) === want;
+    },
+    shown,
+  );
 
 await page.cdp('Runtime.enable');
 await page.cdp('Log.enable');
@@ -70,13 +100,13 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {
   deviceScaleFactor: 1,
   mobile: false,
 });
-await page.goto(`${QA.base}/`);
+await goto(`${QA.base}/`);
 await page.evaluate(() => {
   for (const key of ['theme', 'read', 'position']) localStorage.removeItem(key);
   sessionStorage.clear();
 });
-await page.reload();
-await page.waitForTimeout(1500);
+await reload();
+await panelIs('프로필');
 await page.events();
 await page.evaluate(() => {
   window.qaShell = document.getElementById('panel')?.closest('astro-island');
@@ -84,8 +114,9 @@ await page.evaluate(() => {
 check('홈이 posts.log', (await editor()).url === '/');
 check('홈은 패널이 프로필', (await panelView()) === '프로필');
 
-await page.click('loc=css:.flow-link', { label: '첫 글 열기' });
-await page.waitForTimeout(2000);
+await navigate('첫 글 열기', () => page.click('loc=css:.flow-link', { label: '첫 글 열기' }));
+await panelIs('탐색기');
+await tabCount(2);
 const post = await editor();
 check('글로 이동', post.kind === 'post', post.url);
 check('창 틀 유지(홈 → 글)', await shellKept());
@@ -107,38 +138,46 @@ if (last) {
   await page.click(`loc=css:nav[aria-label='글 개요'] a[href='#${last.id}']`, {
     label: '마지막 장',
   });
-  await page.waitForTimeout(1500);
+  await until(
+    '상태줄이 마지막 장',
+    (label) => document.querySelector('footer')?.textContent?.includes(label) === true,
+    `${last.no} ${last.text}`,
+  );
   const status = await statusLine();
   check('상태줄이 마지막 장', status.includes(`${last.no} ${last.text}`), status);
 }
 
 await page.evaluate(() => history.back());
-await page.waitForTimeout(800);
-await page.evaluate(() => history.back());
-await page.waitForTimeout(1500);
+// 같은 글 안의 해시만 걷히는 뒤로 가기는 화면 이동(`astro:page-load`)이 없다.
+await until('뒤로: 해시가 걷힘', () => location.hash === '');
+await navigate('뒤로: 홈', () => page.evaluate(() => history.back()));
+await panelIs('프로필');
 check('뒤로 두 번이면 홈', (await editor()).url === '/');
 check('창 틀 유지(뒤로)', await shellKept());
 check('홈으로 오면 프로필', (await panelView()) === '프로필');
 
 await page.click(`loc=css:button[aria-label='${post.title} 닫기']`, { label: '글 탭 닫기' });
-await page.waitForTimeout(800);
+await tabCount(1);
 check('글 탭이 닫힘', (await tabs()).length === 1, (await tabs()).join(', '));
 
 const themeBefore = await page.evaluate(() => document.documentElement.dataset.theme);
 await page.click('loc=css:header button[aria-pressed]', { label: '테마 전환' });
-await page.waitForTimeout(500);
+await until(
+  '테마가 바뀜',
+  (before) => document.documentElement.dataset.theme !== before,
+  themeBefore,
+);
 const themeAfter = await page.evaluate(() => document.documentElement.dataset.theme);
 check('테마가 바뀜', themeBefore !== themeAfter, `${themeBefore} → ${themeAfter}`);
 
-await page.click('loc=css:.flow-link', { label: '글 다시 열기' });
-await page.waitForTimeout(2000);
+await navigate('글 다시 열기', () => page.click('loc=css:.flow-link', { label: '글 다시 열기' }));
 check('다시 글', (await editor()).url === post.url);
 check('창 틀 유지(다시 글)', await shellKept());
 
 await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
   label: '프로필 열기',
 });
-await page.waitForTimeout(300);
+await panelIs('프로필');
 check('글에서도 프로필을 열 수 있음', (await panelView()) === '프로필');
 check(
   '테마가 이동 뒤에도 유지',
@@ -161,8 +200,7 @@ const focusEditor = () =>
     return document.activeElement?.id === 'editor';
   });
 
-await page.click("loc=css:header a[href='/']", { label: '홈으로' });
-await page.waitForTimeout(1500);
+await navigate('홈으로', () => page.click("loc=css:header a[href='/']", { label: '홈으로' }));
 check('팔레트 전: 홈', (await editor()).url === '/');
 await focusEditor();
 await page.keyboard.press('ControlOrMeta+P');
@@ -171,10 +209,14 @@ const opened = await palette();
 check('⌘P로 팔레트가 열림', opened.open && opened.inputFocused, JSON.stringify(opened));
 const fileName = post.url.split('/').filter(Boolean).pop() ?? '';
 await page.keyboard.type(fileName.slice(0, 6));
-await page.waitForTimeout(300);
+await until(
+  '팔레트 입력창에 입력이 들어감',
+  (text) => document.querySelector('[data-palette-input]')?.value === text,
+  fileName.slice(0, 6),
+);
 check('입력으로 글이 걸러짐', (await palette()).options >= 1);
-await page.keyboard.press('Enter');
-await page.waitForTimeout(2000);
+await navigate('팔레트에서 Enter', () => page.keyboard.press('Enter'));
+await paletteClosed();
 check('Enter로 글이 열림', (await editor()).url === post.url);
 check('고르면 팔레트가 닫힘', !(await palette()).open);
 check('창 틀 유지(팔레트)', await shellKept());
@@ -184,7 +226,7 @@ await page.keyboard.press('ControlOrMeta+P');
 await paletteFocused();
 check('다시 열림', (await palette()).open);
 await page.keyboard.press('Escape');
-await page.waitForTimeout(300);
+await paletteClosed();
 check('Esc로 닫힘', !(await palette()).open);
 check(
   '닫으면 연 자리로 포커스',
@@ -206,16 +248,16 @@ const panelShown = () =>
   });
 check('⌘B 전: 패널이 보임', await panelShown());
 await page.keyboard.press('ControlOrMeta+B');
-await page.waitForTimeout(300);
+await panelShownIs(false);
 check('⌘B로 패널이 닫힘', !(await panelShown()));
 await page.keyboard.press('ControlOrMeta+B');
-await page.waitForTimeout(300);
+await panelShownIs(true);
 check('⌘B로 패널이 다시 열림', await panelShown());
 // 팔레트로 글을 열어 패널이 탐색기가 됐다. 아래 마지막 패널 화면 단계는 프로필을 고른 상태에서 시작한다.
 await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
   label: '프로필 다시 고르기',
 });
-await page.waitForTimeout(300);
+await panelIs('프로필');
 check('팔레트 뒤 프로필을 다시 고름', (await panelView()) === '프로필');
 // 마지막 패널 화면은 세션 동안 남는다. 글에서 고른 프로필이 새로 불러온 태그 화면에 남고, 태그 화면에서
 // 탐색기 → 프로필을 골라 새로고침할 때마다 고른 화면이 남는다.
@@ -224,12 +266,12 @@ const pickAndReload = async (label) => {
   await page.click(`loc=css:nav[aria-label='활동 막대'] button[aria-label='${label}']`, {
     label: `${label} 고르기`,
   });
-  await page.waitForTimeout(300);
-  await page.reload();
-  await page.waitForTimeout(1500);
+  await panelIs(label);
+  await reload();
+  // 서버 HTML은 세션의 마지막 화면을 모르므로 하이드레이션 뒤 다시 그려질 때까지 기다린다.
+  await panelIs(label);
 };
-await page.goto(`${QA.base}/blog/tags/`);
-await page.waitForTimeout(1500);
+await goto(`${QA.base}/blog/tags/`);
 const tagUrl = await page.evaluate(
   () =>
     [...document.querySelectorAll('#editor a[href^="/blog/tags/"]')]
@@ -238,8 +280,8 @@ const tagUrl = await page.evaluate(
 );
 check('태그 화면 링크가 있음', tagUrl !== null);
 if (tagUrl) {
-  await page.goto(tagUrl);
-  await page.waitForTimeout(1500);
+  await goto(tagUrl);
+  await panelIs('프로필');
   check('새로 불러온 태그 화면에 마지막 화면(프로필)', (await panelView()) === '프로필');
   await pickAndReload('탐색기');
   check('태그 화면에서 고른 탐색기가 새로고침 뒤 남음', (await panelView()) === '탐색기');
@@ -249,12 +291,14 @@ if (tagUrl) {
 
 // 펼침은 탭이 새로 생겨 처음 보일 때만 일어난다. 처음 열기 → 다른 탭 → 돌아오기 → 닫기 → 다시 열기가
 // 펼침/펼침/없음/없음/펼침이고, 홈(`posts.log`)과 뒤로 가기는 펼치지 않는다.
-async function unfoldStep(label, action, expected = null) {
+// 펼침 표시는 `astro:page-load`에서 바로 붙으므로 그 화면 이동이 끝나기를 기다린다. `prepare`는 같은 기록 안에서
+// 먼저 하는 화면 이동이다.
+async function unfoldStep(label, action, expected = null, prepare = null) {
   await page.evaluate(() => {
     window.qaUnfolds = [];
   });
-  await action();
-  await page.waitForTimeout(2000);
+  if (prepare) await prepare();
+  await navigate(`펼침 ${label}`, action);
   const got = await page.evaluate(() => window.qaUnfolds.slice());
   const ok = expected ? got.length === 1 && got[0] === expected : got.length === 0;
   check(`펼침 ${label}`, ok, got.length ? got.join(', ') : '없음');
@@ -294,26 +338,23 @@ const openUrls = await page.evaluate(() =>
 const [first, second] = [...new Set(tagLinks)].filter((href) => !openUrls.includes(href));
 check('펼침 확인용 태그 화면 두 개', Boolean(first && second), `${first}, ${second}`);
 if (first && second) {
-  const openFromPost = async (url) => {
-    await clickTab(post.url);
-    await page.waitForTimeout(1500);
-    await page.click(`loc=css:#editor a[href='${url}']`, { label: `${url} 열기` });
-  };
-  await unfoldStep('처음 열기', () => openFromPost(first), first);
+  const backToPost = () => navigate('글 탭으로', () => clickTab(post.url));
+  const openFromPost = (url) =>
+    page.click(`loc=css:#editor a[href='${url}']`, { label: `${url} 열기` });
+  await unfoldStep('처음 열기', () => openFromPost(first), first, backToPost);
   const firstTitle = (await editor()).title;
-  await unfoldStep('다른 탭', () => openFromPost(second), second);
+  await unfoldStep('다른 탭', () => openFromPost(second), second, backToPost);
   await unfoldStep('돌아오기(탭)', () => clickTab(first));
   await unfoldStep('없음(뒤로)', () => page.evaluate(() => history.back()));
   await unfoldStep('없음(앞으로)', () => page.evaluate(() => history.forward()));
   await unfoldStep('닫기', () =>
     page.click(`loc=css:button[aria-label='${firstTitle} 닫기']`, { label: '탭 닫기' }),
   );
-  await unfoldStep('다시 열기', () => openFromPost(first), first);
+  await unfoldStep('다시 열기', () => openFromPost(first), first, backToPost);
 }
 
 // 장 주소: 버튼을 키보드로 눌러 상태줄 알림·해시·강조를 보고, 그 주소로 들어와 강조를 본다.
-await page.goto(`${QA.base}${post.url}`);
-await page.waitForTimeout(1500);
+await goto(`${QA.base}${post.url}`);
 const chapters = await page.evaluate(() =>
   JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]').map(({ id }) => id),
 );
@@ -323,7 +364,14 @@ if (copyId) {
   const button = `[data-chapter-link="${copyId}"]`;
   await page.focus(button);
   await page.press(button, 'Enter');
-  await page.waitForTimeout(300);
+  await until(
+    '장 주소 복사: 해시와 상태줄 알림',
+    (id) =>
+      decodeURIComponent(location.hash.slice(1)) === id &&
+      document.querySelector('.is-linked') !== null &&
+      (document.querySelector('footer [aria-live]')?.textContent ?? '') !== '',
+    copyId,
+  );
   const copied = await page.evaluate(() => ({
     hash: decodeURIComponent(location.hash.slice(1)),
     linked: [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
@@ -339,9 +387,9 @@ if (copyId) {
   check('장 주소 복사: 그 장이 강조됨', copied.linked.join() === copyId, copied.linked.join());
   check('장 주소 복사: 화면 이동 기록 유지', copied.routerState);
 
-  await page.goto(`${QA.base}/`);
-  await page.goto(`${QA.base}${post.url}#${encodeURIComponent(arriveId)}`);
-  await page.waitForTimeout(1500);
+  await goto(`${QA.base}/`);
+  await goto(`${QA.base}${post.url}#${encodeURIComponent(arriveId)}`);
+  await until('장 주소로 들어오면 강조', () => document.querySelector('.is-linked') !== null);
   const arrived = await page.evaluate(() =>
     [...document.querySelectorAll('.is-linked')].map((heading) => heading.id),
   );
@@ -349,32 +397,40 @@ if (copyId) {
 }
 
 // 이어 읽기: 글 중간(가운데 장)에서 떠났다가 돌아오면 열기 요약 뒤 상태줄에 버튼이 뜨고, 누르면 그 장으로 가며 사라진다.
-await page.goto(`${QA.base}/`);
+await goto(`${QA.base}/`);
 await page.evaluate(() => {
   for (const key of ['read', 'position']) localStorage.removeItem(key);
   return true;
 });
 // 기록 스토어는 처음 한 번만 저장소를 읽으므로 새로고침해 빈 기록에서 시작한다.
-await page.reload();
-await page.waitForTimeout(800);
+await reload();
 await page.evaluate(() => {
   window.qaShell = document.getElementById('panel')?.closest('astro-island');
   return true;
 });
-await page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 열기' });
-await page.waitForTimeout(1500);
-const middle = await page.evaluate(() => {
+await navigate('글 열기', () =>
+  page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 열기' }),
+);
+const middleChapter = await page.evaluate(() => {
   const outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');
-  const chapter = outline[Math.floor(outline.length / 2)];
+  const index = Math.floor(outline.length / 2);
+  const chapter = outline[index];
   if (!chapter || outline.length < 2) return null;
   document.getElementById(chapter.id)?.scrollIntoView();
   window.scrollBy(0, 40);
-  return chapter.id;
+  return { id: chapter.id, label: `${String(index + 1).padStart(2, '0')} ${chapter.text}` };
 });
-if (middle) {
-  await page.waitForTimeout(1500);
-  await page.click("loc=css:header a[href='/']", { label: '홈으로' });
-  await page.waitForTimeout(800);
+const middle = middleChapter?.id ?? null;
+if (middleChapter) {
+  // 상태줄의 장과 읽기 기록은 같은 갱신에서 바뀌므로 상태줄이 가운데 장이면 위치도 기록됐다.
+  await until(
+    '이어 읽기: 상태줄이 가운데 장',
+    (label) => document.querySelector('footer')?.textContent?.includes(label) === true,
+    middleChapter.label,
+  );
+  await navigate('이어 읽기: 홈으로', () =>
+    page.click("loc=css:header a[href='/']", { label: '홈으로' }),
+  );
   // 글이 열린 때(`astro:page-load`)와 버튼이 뜬 때를 페이지 시계로 잰다. 자동화 탭은 화면 이동이 느릴 수 있어
   // 클릭부터 고정 시간을 기다리지 않고, 버튼을 기다린 뒤 열기 요약(약 2.2초)이 끝난 다음에 떴는지 본다.
   await page.evaluate(() => {
@@ -392,17 +448,15 @@ if (middle) {
     if (footer) observer.observe(footer, { childList: true, subtree: true });
     return true;
   });
-  await page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 다시 열기' });
-  await page.waitForTimeout(1000);
+  await navigate('이어 읽기: 글 다시 열기', () =>
+    page.click(`loc=css:.flow-link[href="${post.url}"]`, { label: '글 다시 열기' }),
+  );
+  // 글이 막 열린 때는 열기 요약 동안이다(약 2.2초). 버튼이 뜬 시각은 아래에서 페이지 시계로 따로 본다.
   check(
     '이어 읽기: 열기 요약 동안은 버튼이 없음',
     !(await page.evaluate(() => !!document.querySelector('footer button'))),
   );
-  try {
-    await page.waitForSelector('loc=css:footer button', { state: 'visible', timeout: 6000 });
-  } catch {
-    // 아래 확인이 실패로 남긴다.
-  }
+  await until('이어 읽기 버튼이 뜸', () => document.querySelector('footer button') !== null);
   const offered = await statusLine();
   const timing = await page.evaluate(() => ({ ...window.qaResume }));
   const after = timing.open && timing.offered ? Math.round(timing.offered - timing.open) : null;
@@ -413,7 +467,13 @@ if (middle) {
     after === null ? '' : `글이 열리고 ${after}ms`,
   );
   await page.click('loc=css:footer button', { label: '이어 읽기 누르기' });
-  await page.waitForTimeout(800);
+  await until(
+    '이어 읽기: 그 장으로 가고 버튼이 사라짐',
+    (id) =>
+      decodeURIComponent(location.hash.slice(1)) === id &&
+      document.querySelector('footer button') === null,
+    middle,
+  );
   const resumed = await page.evaluate(() => ({
     hash: decodeURIComponent(location.hash.slice(1)),
     button: !!document.querySelector('footer button'),
@@ -440,29 +500,43 @@ const showExplorer = async () => {
     await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='탐색기']", {
       label: '탐색기 고르기',
     });
-  await page.waitForTimeout(300);
+  await panelIs('탐색기');
 };
-await page.goto(QA.base + post.url);
-await page.waitForTimeout(1500);
+/** 탐색기의 그 글 줄 꼬리표가 `mark`가 될 때까지 기다린다. */
+const explorerMarkIs = (url, mark) =>
+  until(
+    `탐색기 꼬리표가 '${mark}'`,
+    ({ href, want }) =>
+      (document.querySelector(`#panel a[href="${href}"] .sr-only`)?.textContent?.trim() ?? '') ===
+      want,
+    { href: url, want: mark },
+  );
+await goto(QA.base + post.url);
 await page.evaluate(() => {
   window.scrollTo(0, document.documentElement.scrollHeight);
   return true;
 });
-await page.waitForTimeout(800);
 await showExplorer();
+await explorerMarkIs(post.url, '읽음');
 check('글 끝까지 읽으면 탐색기에 ✓', (await explorerMark(post.url)) === '읽음');
-await page.reload();
-await page.waitForTimeout(1500);
+await reload();
 await showExplorer();
+await explorerMarkIs(post.url, '읽음');
 check('읽은 글 표시가 새로고침 뒤에도 남음', (await explorerMark(post.url)) === '읽음');
 await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='프로필']", {
   label: '프로필 열기',
 });
-await page.waitForTimeout(300);
+await panelIs('프로필');
 await page.click("loc=css:section[aria-labelledby='profile-history'] button", {
   label: '기록 지우기',
 });
-await page.waitForTimeout(300);
+await until(
+  '기록 지우기 뒤 안내',
+  () =>
+    document
+      .querySelector("section[aria-labelledby='profile-history'] p")
+      ?.textContent?.includes('남은 읽기 기록이 없습니다') === true,
+);
 const historyText = await page.evaluate(
   () => document.querySelector("section[aria-labelledby='profile-history'] p")?.textContent ?? '',
 );
@@ -477,6 +551,7 @@ check(
   stored.join(', '),
 );
 await showExplorer();
+await explorerMarkIs(post.url, '');
 check('지우면 탐색기 꼬리표가 사라짐', (await explorerMark(post.url)) === '');
 
 // 검색 화면: 열기 전에는 색인을 받지 않는다. 결과를 누르면 글이 열리고 패널은 검색 화면에 남으며, 새로고침 뒤에도
@@ -501,13 +576,12 @@ await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검
   label: '검색 화면 열기',
 });
 await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
+await panelIs('검색');
 check('패널이 검색 화면', (await panelView()) === '검색');
 check('검색 입력창에 포커스', await searchFocused());
 await page.fill('loc=css:#panel input[type=search]', '개발');
-await page.waitForFunction(
-  () => /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
-  undefined,
-  { timeout: 5000 },
+await until('검색 요약(n개 파일, n줄)', () =>
+  /\d+개 파일, \d+줄/.test(document.getElementById('search-summary')?.textContent ?? ''),
 );
 check('검색 화면을 열면 색인을 받음', await indexRequested());
 const hit = await page.evaluate(
@@ -515,14 +589,20 @@ const hit = await page.evaluate(
 );
 check('검색 결과 링크가 있음', hit !== null, hit ?? '');
 if (hit) {
-  await page.click("css=#panel ul[aria-label='검색 결과'] a >> nth=0", { label: '첫 결과 열기' });
-  await page.waitForTimeout(2000);
+  await navigate('첫 검색 결과 열기', () =>
+    page.click("css=#panel ul[aria-label='검색 결과'] a >> nth=0", { label: '첫 결과 열기' }),
+  );
   check('결과를 누르면 그 글이 열림', (await editor()).url === hit.split('#')[0], hit);
   check('창 틀 유지(검색 결과)', await shellKept());
   check('결과를 연 뒤에도 패널이 검색 화면', (await panelView()) === '검색');
   check('결과를 연 뒤에도 검색어가 남음', (await searchInput())?.value === '개발');
-  await page.reload();
-  await page.waitForTimeout(1500);
+  await reload();
+  await panelIs('검색');
+  // 검색 화면은 처음 쓸 때 불러오는 청크라 입력창이 늦게 그려진다.
+  await until(
+    '새로고침 뒤 검색 입력창',
+    () => document.querySelector('#panel input[type=search]') !== null,
+  );
   check('새로고침 뒤에도 검색 화면', (await panelView()) === '검색');
   check('새로고침하면 검색어가 비워짐', (await searchInput())?.value === '');
 }
@@ -536,15 +616,14 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {
   deviceScaleFactor: 1,
   mobile: false,
 });
-await page.reload();
-await page.waitForTimeout(1500);
+await reload();
 check('좁은 화면: 패널이 닫혀 있음', !(await panelShown()));
 check('좁은 화면: 닫힌 검색 화면은 색인을 받지 않음', !(await indexRequested()));
 check('에디터에 포커스(좁은 화면 ⌘⇧F 전)', await focusEditor());
 await page.keyboard.press('ControlOrMeta+Shift+F');
 check('좁은 화면: ⌘⇧F로 검색 입력창에 포커스', await searchFocused());
 await page.keyboard.press('Escape');
-await page.waitForTimeout(300);
+await panelShownIs(false);
 check('좁은 화면: 검색 입력창에서 Esc로 겹침 패널이 닫힘', !(await panelShown()));
 for (const round of ['처음', '두 번째']) {
   await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
@@ -554,7 +633,7 @@ for (const round of ['처음', '두 번째']) {
   await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']", {
     label: `검색 버튼으로 닫기(${round})`,
   });
-  await page.waitForTimeout(300);
+  await panelShownIs(false);
 }
 check('좁은 화면: 검색 버튼으로 닫힘', !(await panelShown()));
 await page.cdp('Emulation.setDeviceMetricsOverride', {
@@ -580,16 +659,14 @@ const findState = () =>
       current: CSS.highlights.get('find-current')?.size ?? 0,
     };
   });
-await page.goto(QA.base + post.url);
-await page.waitForTimeout(1500);
+await goto(QA.base + post.url);
 check('찾기 전: 에디터에 포커스', await focusEditor());
 await page.keyboard.press('ControlOrMeta+F');
 await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
-await page
-  .waitForFunction(() => document.activeElement?.matches('[data-find-input]') === true, undefined, {
-    timeout: 3000,
-  })
-  .catch(() => {});
+await until(
+  '찾기 입력창에 포커스',
+  () => document.activeElement?.matches('[data-find-input]') === true,
+);
 const findOpened = await findState();
 check(
   '⌘F로 찾기 줄이 열리고 입력창에 포커스',
@@ -597,14 +674,9 @@ check(
   JSON.stringify(findOpened),
 );
 await page.keyboard.type('개발');
-await page
-  .waitForFunction(
-    () =>
-      /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
-    undefined,
-    { timeout: 3000 },
-  )
-  .catch(() => {});
+await until('찾기 위치 글자(n/m)', () =>
+  /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+);
 const typed = await findState();
 const [at, total] = typed.position.split('/').map(Number);
 check(
@@ -612,8 +684,18 @@ check(
   total > 0 && typed.matches === total && typed.current === 1 && at >= 1,
   JSON.stringify(typed),
 );
+/** 찾기 위치 글자가 `position`이 될 때까지 기다린다. */
+const findPositionIs = (label, position) =>
+  until(
+    `${label}: 위치 글자 ${position}`,
+    (want) => document.querySelector('search [aria-live="polite"]')?.textContent === want,
+    position,
+  );
+/** 찾기 줄이 닫힐 때까지 기다린다. */
+const findClosedWait = () =>
+  until('찾기 줄이 닫힘', () => document.querySelector('[data-find-input]') === null);
 await page.keyboard.press('Enter');
-await page.waitForTimeout(300);
+await findPositionIs('찾기 Enter', `${(at % total) + 1}/${total}`);
 const stepped = await findState();
 check(
   '찾기: Enter로 다음 일치',
@@ -621,7 +703,7 @@ check(
   `${typed.position} → ${stepped.position}`,
 );
 await page.keyboard.press('Escape');
-await page.waitForTimeout(300);
+await findClosedWait();
 const findClosed = await findState();
 check(
   '찾기: Esc로 닫히고 칠한 것이 사라짐',
@@ -645,7 +727,7 @@ const findValue = () =>
       : null;
   });
 await page.keyboard.press('ControlOrMeta+G');
-await until(() =>
+await until('닫힌 채 ⌘G: 찾기 위치 글자(n/m)', () =>
   /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
 );
 const reopened = await findState();
@@ -658,9 +740,9 @@ check(
   JSON.stringify(reopened),
 );
 check('찾기 줄 밖에서 ⌘G 전: 에디터에 포커스', await focusEditor());
-await page.keyboard.press('ControlOrMeta+G');
-await page.waitForTimeout(300);
 const [from] = reopened.position.split('/').map(Number);
+await page.keyboard.press('ControlOrMeta+G');
+await findPositionIs('찾기 줄 밖 ⌘G', `${(from % total) + 1}/${total}`);
 const nextByG = await findState();
 check(
   '찾기: 찾기 줄 밖에서 ⌘G로 다음 일치',
@@ -668,7 +750,7 @@ check(
   `${reopened.position} → ${nextByG.position}`,
 );
 await page.keyboard.press('ControlOrMeta+Shift+G');
-await page.waitForTimeout(300);
+await findPositionIs('⇧⌘G', reopened.position);
 check('찾기: ⇧⌘G로 이전 일치', (await findState()).position === reopened.position);
 
 // 에디터에서 고른 한 줄 글자가 ⌘F로 검색어가 된다(찾기 줄이 열려 있어도).
@@ -691,21 +773,19 @@ const picked = await page.evaluate(() => {
 });
 await page.keyboard.press('ControlOrMeta+F');
 // 열린 찾기 줄은 다음 프레임에 포커스를 준다(ego 탭은 프레임이 느리다).
-await page
-  .waitForFunction(
-    (word) => {
-      const input = document.querySelector('[data-find-input]');
-      return (
-        input instanceof HTMLInputElement &&
-        document.activeElement === input &&
-        input.value === word &&
-        input.selectionEnd === word.length
-      );
-    },
-    picked,
-    { timeout: 3000 },
-  )
-  .catch(() => {});
+await until(
+  '고른 글자로 ⌘F: 검색어가 들어가고 포커스',
+  (word) => {
+    const input = document.querySelector('[data-find-input]');
+    return (
+      input instanceof HTMLInputElement &&
+      document.activeElement === input &&
+      input.value === word &&
+      input.selectionEnd === word.length
+    );
+  },
+  picked,
+);
 const seeded = await findValue();
 check(
   '찾기: 에디터에서 고른 글자가 ⌘F로 검색어가 되고 모두 선택됨',
@@ -718,8 +798,9 @@ check(
 await page.evaluate(() => {
   window.qaShell = document.getElementById('panel')?.closest('astro-island');
 });
-await page.click("loc=css:header a[href='/']", { label: '찾기 줄을 연 채 홈으로' });
-await page.waitForTimeout(1500);
+await navigate('찾기 줄을 연 채 홈으로', () =>
+  page.click("loc=css:header a[href='/']", { label: '찾기 줄을 연 채 홈으로' }),
+);
 const afterSwap = await findState();
 check(
   '찾기: 화면을 옮기면 찾기 줄이 닫히고 칠한 것이 사라짐',
@@ -732,7 +813,7 @@ check(
 );
 await focusEditor();
 await page.keyboard.press('ControlOrMeta+F');
-await until(() => {
+await until('옮긴 뒤 ⌘F: 마지막 검색어가 들어가고 포커스', () => {
   const input = document.querySelector('[data-find-input]');
   return (
     input instanceof HTMLInputElement &&
@@ -748,7 +829,7 @@ check(
   JSON.stringify(remembered),
 );
 await page.keyboard.press('Escape');
-await page.waitForTimeout(300);
+await findClosedWait();
 
 const events = await page.events();
 const errors = events
