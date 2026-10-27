@@ -3,7 +3,7 @@ import type { BlogPost } from './blog';
 
 vi.mock('astro:content', () => ({ render: async () => ({ headings: [] }) }));
 
-const { flowPost, listLines } = await import('./flow');
+const { flowPost, homeLines, listLines } = await import('./flow');
 
 function makePost(collection: 'blog' | 'ai-written', id: string, pubDate: string): BlogPost {
   return {
@@ -40,6 +40,8 @@ function shape(lines: ReturnType<typeof listLines>) {
         return `${line.no} step ${line.step.href}`;
       case 'folded':
         return `folded ${line.post.id}`;
+      case 'entry':
+        return `${line.no} entry ${line.label} -> ${line.href} (${line.note})`;
       case 'end':
         return `${line.no} end ${line.label}`;
       default:
@@ -90,5 +92,50 @@ describe('listLines with steps (ai-written.log)', () => {
       '5 log /blog/x/',
       '6 end 글 1편',
     ]);
+  });
+});
+
+const site = { brand: 'sclog', author: 'scwon', githubUrl: 'https://github.com/scwon' };
+
+describe('homeLines AI 글 칸', () => {
+  it('stacks own posts, then an exit line to ai-written.log and AI log lines, ending with the own post count', () => {
+    const lines = homeLines([entry('blog', 'x', '2023-04-30', 1)], site, [
+      entry('ai-written', 'b', '2026-10-01', 2),
+      entry('ai-written', 'a', '2025-01-01', 0),
+    ]);
+    expect(shape(lines)).toEqual([
+      '1 banner sclog',
+      '2 comment scwon ·',
+      '3 blank',
+      '4 dir 2023 (1)',
+      '5 log /blog/x/ foldable',
+      '6 step /blog/x/#ch-1',
+      'folded x',
+      '7 entry ai-written.log -> /ai-written/ (글 2편)',
+      '8 log /ai-written/b/',
+      '9 log /ai-written/a/',
+      '10 end 글 1편',
+    ]);
+  });
+
+  it('shows at most five AI posts while the exit line counts all of them', () => {
+    const ai = ['f', 'e', 'd', 'c', 'b', 'a'].map((id, index) =>
+      entry('ai-written', id, `2026-0${9 - index}-01`, 1),
+    );
+    const lines = homeLines([entry('blog', 'x', '2023-04-30')], site, ai);
+    expect(shape(lines).slice(5)).toEqual([
+      '6 entry ai-written.log -> /ai-written/ (글 6편)',
+      '7 log /ai-written/f/',
+      '8 log /ai-written/e/',
+      '9 log /ai-written/d/',
+      '10 log /ai-written/c/',
+      '11 log /ai-written/b/',
+      '12 end 글 1편',
+    ]);
+  });
+
+  it('leaves the section out entirely when there are no AI posts', () => {
+    const lines = homeLines([entry('blog', 'x', '2023-04-30')], site, []);
+    expect(shape(lines).slice(3)).toEqual(['4 dir 2023 (1)', '5 log /blog/x/', '6 end 글 1편']);
   });
 });
