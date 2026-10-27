@@ -1,22 +1,23 @@
 ---
 /**
- * 글 화면: 에디터에 연 파일. frontmatter(코드 색) → 제목·작성 정보 → 대표 이미지(코랄 매트) → 본문 → 꼬리.
+ * 글 화면: 에디터에 연 파일. frontmatter(코드 색) → 제목·작성 정보 → (AI 글만) 고정 문구 → 대표 이미지(코랄 매트)
+ * → 본문 → 꼬리. 글 끝 이동 줄의 다음 파일·로그는 글의 폴더(`posts`·`ai-written`) 안에서 정한다.
  * 모든 블록에 줄 번호가 있고(2층 ide.css의 CSS 카운터), 아래 스크립트가 읽는 위치를 `reading` 스토어에 쓴다.
  * 두 번째 스크립트는 장·절 제목의 장 주소 복사 버튼(`ChapterLink.astro`)을 드러내고 누름과 들어왔을 때 강조를 맡는다.
  * MDX 원본과 글 URL은 바꾸지 않는다.
  */
-import type { CollectionEntry } from 'astro:content';
 import type { MarkdownHeading } from 'astro';
 import BaseLayout from './BaseLayout.astro';
 import CodeBlock from '../components/blog/CodeBlock.astro';
 import Comments from '../components/blog/Comments.astro';
 import { Badge, nextFile } from '@/design-system';
 import { SITE } from '../site';
-import { getPublishedPosts } from '../utils/blog';
+import { getPublishedPosts, type BlogPost } from '../utils/blog';
+import { postFolder } from '../utils/folder';
 import { buildOutline, buildTree, docEndLinks, postFile } from '../utils/ide';
 
 interface Props {
-  post: CollectionEntry<'blog'>;
+  post: BlogPost;
   headings?: MarkdownHeading[];
 }
 
@@ -25,7 +26,11 @@ const { title, description, pubDate, updatedDate, heroImage, tags } = post.data;
 const file = postFile(post);
 const isoDate = pubDate.toISOString().slice(0, 10);
 const quote = (value: string) => JSON.stringify(value);
-const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file.url));
+const folder = postFolder(post);
+const endLinks = docEndLinks(
+  folder,
+  nextFile(buildTree(await getPublishedPosts(folder)), file.url),
+);
 ---
 
 <BaseLayout
@@ -105,6 +110,8 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
         <span>읽는 시간 {file.reading}분</span>
       </p>
     </header>
+
+    {folder === 'ai-written' && <p class="doc-notice">{SITE.aiWrittenNotice}</p>}
 
     {heroImage && (
       <figure class="doc-hero">
@@ -205,7 +212,9 @@ const endLinks = docEndLinks(nextFile(buildTree(await getPublishedPosts()), file
     const doc = document.querySelector<HTMLElement>('[data-doc]');
     if (!doc) return;
     const blocks = [
-      ...doc.querySelectorAll<HTMLElement>('.doc-fm-line, .doc-title, .doc-byline, .doc-prose > *'),
+      ...doc.querySelectorAll<HTMLElement>(
+        '.doc-fm-line, .doc-title, .doc-byline, .doc-notice, .doc-prose > *',
+      ),
     ];
     const symbol = document.querySelector<HTMLElement>('[data-reading-symbol]');
     let outline: OutlineItem[] = [];

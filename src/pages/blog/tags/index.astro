@@ -5,7 +5,7 @@ import FlowLog from '../../../components/flow/FlowLog.astro';
 import { getAllTags } from '../../../utils/blog';
 import { linkLines } from '../../../utils/flow';
 
-const tags = [...(await getAllTags()).entries()].toSorted((a, b) => b[1] - a[1]);
+const tags = [...(await getAllTags('posts')).entries()].toSorted((a, b) => b[1] - a[1]);
 ---
 
 <BaseLayout

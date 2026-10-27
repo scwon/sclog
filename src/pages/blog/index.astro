@@ -5,7 +5,7 @@ import FlowLog from '../../components/flow/FlowLog.astro';
 import { getPublishedPosts } from '../../utils/blog';
 import { listLines, loadFlows } from '../../utils/flow';
 
-const posts = await getPublishedPosts();
+const posts = await getPublishedPosts('posts');
 const flows = await loadFlows(posts);
 ---
 

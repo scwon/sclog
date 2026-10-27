@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Entry = {
   id: string;
+  collection: 'blog' | 'ai-written';
   body?: string;
   data: { title: string; pubDate: Date; tags: string[]; draft: boolean; description: string };
 };
@@ -9,14 +10,24 @@ type Entry = {
 const entries: Entry[] = [];
 
 vi.mock('astro:content', () => ({
-  getCollection: async (_name: string, filter?: (e: Entry) => boolean) =>
-    filter ? entries.filter(filter) : entries,
+  getCollection: async (name: string, filter?: (e: Entry) => boolean) =>
+    entries.filter((e) => e.collection === name && (!filter || filter(e))),
 }));
 
 const { getReadingTime, getPublishedPosts, getAllTags, getPostsByTag } = await import('./blog');
 
-function makePost(id: string, pubDate: string, tags: string[] = [], draft = false): Entry {
-  return { id, data: { title: id, pubDate: new Date(pubDate), tags, draft, description: id } };
+function makePost(
+  id: string,
+  pubDate: string,
+  tags: string[] = [],
+  draft = false,
+  collection: Entry['collection'] = 'blog',
+): Entry {
+  return {
+    id,
+    collection,
+    data: { title: id, pubDate: new Date(pubDate), tags, draft, description: id },
+  };
 }
 
 describe('getReadingTime', () => {
@@ -50,6 +61,9 @@ describe('published posts', () => {
       makePost('new', '2026-01-01', ['회고', '커리어']),
       makePost('draft', '2026-02-01', [], true),
       makePost('future', '2027-01-01'),
+      makePost('ai-mid', '2025-06-01', ['회고', 'AI'], false, 'ai-written'),
+      makePost('ai-draft', '2026-03-01', [], true, 'ai-written'),
+      makePost('ai-future', '2027-02-01', [], false, 'ai-written'),
     );
   });
 
@@ -57,19 +71,34 @@ describe('published posts', () => {
     vi.useRealTimers();
   });
 
-  it('getPublishedPosts drops drafts and future posts, newest first', async () => {
-    const posts = await getPublishedPosts();
+  it('getPublishedPosts of the posts folder drops drafts and future posts, newest first', async () => {
+    const posts = await getPublishedPosts('posts');
     expect(posts.map((p) => p.id)).toEqual(['new', 'old']);
   });
 
-  it('getAllTags counts tags across published posts only', async () => {
-    expect([...(await getAllTags()).entries()]).toEqual([
+  it('getPublishedPosts of the ai-written folder applies the same draft and date rules', async () => {
+    const posts = await getPublishedPosts('ai-written');
+    expect(posts.map((p) => p.id)).toEqual(['ai-mid']);
+  });
+
+  it('getPublishedPosts without a folder merges both folders, newest first', async () => {
+    const posts = await getPublishedPosts();
+    expect(posts.map((p) => p.id)).toEqual(['new', 'ai-mid', 'old']);
+  });
+
+  it('getAllTags counts tags of one folder only', async () => {
+    expect([...(await getAllTags('posts')).entries()]).toEqual([
       ['회고', 2],
       ['커리어', 1],
     ]);
+    expect([...(await getAllTags('ai-written')).entries()]).toEqual([
+      ['회고', 1],
+      ['AI', 1],
+    ]);
   });
 
-  it('getPostsByTag returns published posts carrying the tag', async () => {
-    expect((await getPostsByTag('커리어')).map((p) => p.id)).toEqual(['new']);
+  it('getPostsByTag returns published posts of one folder carrying the tag', async () => {
+    expect((await getPostsByTag('posts', '회고')).map((p) => p.id)).toEqual(['new', 'old']);
+    expect((await getPostsByTag('ai-written', '회고')).map((p) => p.id)).toEqual(['ai-mid']);
   });
 });

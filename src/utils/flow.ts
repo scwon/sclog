@@ -141,16 +141,19 @@ export function homeLines(
   return write.lines;
 }
 
-/** 글 목록·태그별 글: 이름·주석·빈 줄 → 연도별 글 카드(장 흐름 없음) → 끝 줄. */
+/**
+ * 이름·주석·빈 줄 → 연도별 글 카드 → 끝 줄 `글 N편`. 글 목록·태그별 글은 장 흐름 없이,
+ * 폴더의 로그(`ai-written.log`)는 `steps`를 켜 홈처럼 장 흐름까지 그린다.
+ */
 export function listLines(
   posts: FlowEntry[],
-  { title, comment }: { title: string; comment: string },
+  { title, comment, steps = false }: { title: string; comment: string; steps?: boolean },
 ): FlowLine[] {
   const write = lineWriter();
   write.add({ kind: 'banner', text: title });
   write.add({ kind: 'comment', text: comment });
   write.add({ kind: 'blank' });
-  addPosts(write, posts, false);
+  addPosts(write, posts, steps);
   write.add({ kind: 'end', label: `글 ${posts.length}편` });
   return write.lines;
 }

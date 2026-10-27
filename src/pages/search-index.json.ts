@@ -12,7 +12,7 @@ import { searchPost } from '../utils/search-index';
 
 /** 색인 JSON을 만든다. */
 export const GET: APIRoute = async () => {
-  const posts = await getPublishedPosts();
+  const posts = await getPublishedPosts('posts');
   const index: SearchIndex = {
     v: SEARCH_INDEX_VERSION,
     posts: await Promise.all(
