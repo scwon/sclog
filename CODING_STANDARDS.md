@@ -1,6 +1,6 @@
 # Coding Standards
 
-리뷰(`/code-review`의 Standards 축)가 diff에 적용하는 판단 규칙이다. 기계로 잡을 수 있는 규칙은 여기 두지 않고 검사로 둔다: 타입·`any`(oxlint), import 경계(`.oxlintrc.json`의 `no-restricted-imports`), 포맷(oxfmt), 토큰 구조·명암비(`tokens.test.ts`), 빌드 결과물(`src/test/build-output.test.ts`), 화면 이동·접근성(`pnpm qa`).
+리뷰(`/code-review`의 Standards 축)가 diff에 적용하는 판단 규칙이다. 기계로 잡을 수 있는 규칙은 여기 두지 않고 검사로 둔다: 타입·`any`(oxlint), import 경계(`.oxlintrc.json`의 `no-restricted-imports`), 포맷(oxfmt), 토큰 구조·명암비(`tokens.test.ts`), 빌드 결과물(`src/test/build-output/*.test.ts`), 화면 이동·접근성(`pnpm qa`).
 
 함께 읽을 원본: `CLAUDE.md`의 Coding Conventions, `GLOSSARY.md`, `docs/adr/`, 작업 중인 `.scratch/<feature>/spec.md`.
 
