@@ -13,7 +13,7 @@ import Comments from '../components/blog/Comments.astro';
 import { Badge, nextFile } from '@/design-system';
 import { SITE } from '../site';
 import { getPublishedPosts, type BlogPost } from '../utils/blog';
-import { postFolder } from '../utils/folder';
+import { FOLDER_ROUTES, postFolder } from '../utils/folder';
 import { buildOutline, buildTree, docEndLinks, postFile, tagUrl } from '../utils/ide';
 
 interface Props {
@@ -27,6 +27,7 @@ const file = postFile(post);
 const isoDate = pubDate.toISOString().slice(0, 10);
 const quote = (value: string) => JSON.stringify(value);
 const folder = postFolder(post);
+const { notice } = FOLDER_ROUTES[folder];
 const endLinks = docEndLinks(
   folder,
   nextFile(buildTree(await getPublishedPosts(folder)), file.url),
@@ -111,7 +112,7 @@ const endLinks = docEndLinks(
       </p>
     </header>
 
-    {folder === 'ai-written' && <p class="doc-notice">{SITE.aiWrittenNotice}</p>}
+    {notice && <p class="doc-notice">{notice}</p>}
 
     {heroImage && (
       <figure class="doc-hero">

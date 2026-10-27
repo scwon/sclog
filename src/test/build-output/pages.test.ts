@@ -32,17 +32,21 @@ describe.skipIf(!built)('build output', () => {
     }
   });
 
-  it('offers both logs among the places to go from 404', () => {
+  it('offers both logs, the post list and both tag lists as places to go from 404', () => {
     const html = existsSync(resolve(dist, '404.html'))
       ? readFileSync(resolve(dist, '404.html'), 'utf8')
       : '';
     const main = html.slice(html.indexOf('<main'));
-    const links = anchors(main).map(({ href, inner }) => ({
-      href,
-      label: /(posts\.log|ai-written\.log)/.exec(inner)?.[1],
-    }));
-    expect(links).toContainEqual({ href: '/', label: 'posts.log' });
-    expect(links).toContainEqual({ href: '/ai-written/', label: 'ai-written.log' });
+    const links = anchors(main)
+      .filter(({ attributes }) => attributes.includes('flow-entry-link'))
+      .map(({ href, inner }) => ({ href, label: inner.replace(/<[^>]*>/g, '').trim() }));
+    expect(links).toEqual([
+      { href: '/', label: 'posts.log' },
+      { href: '/ai-written/', label: 'ai-written.log' },
+      { href: '/blog/', label: 'posts/' },
+      { href: '/blog/tags/', label: 'tags/' },
+      { href: '/ai-written/tags/', label: 'ai-written/tags/' },
+    ]);
   });
 
   it('lists every page except 404 in the sitemap, with the same URLs', () => {
