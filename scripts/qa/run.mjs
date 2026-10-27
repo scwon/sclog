@@ -1,10 +1,12 @@
 /**
  * 빌드된 사이트(`dist/`)를 Astro `preview()` API로 띄우고 ego-browser로 화면 확인 스크립트를 돌린다.
  * 테스트(Vitest)가 볼 수 없는 화면 이동·접근성을 맡는다. CI에는 없고 로컬에서 `pnpm qa`로 쓴다.
+ * 이동 시나리오는 하나씩 따로 ego-browser 프로세스에서 돌고, 저마다 알려진 상태에서 시작한다(`scenario.mjs`).
  *
- *   node scripts/qa/run.mjs            a11y.mjs와 nav.mjs 모두
- *   node scripts/qa/run.mjs nav        하나만
- *   QA_PORT=4313 pnpm qa               포트 바꾸기(기본 4399). 작업 트리 여럿에서 함께 돌릴 때 쓴다
+ *   node scripts/qa/run.mjs              a11y.mjs와 nav/의 이동 시나리오 모두
+ *   node scripts/qa/run.mjs nav          이동 시나리오(nav/*.mjs)만, 이름 순으로
+ *   node scripts/qa/run.mjs nav/find     이동 시나리오 하나만(nav/find.mjs). 여럿을 이어 적어도 된다
+ *   QA_PORT=4313 pnpm qa                 포트 바꾸기(기본 4399). 작업 트리 여럿에서 함께 돌릴 때 쓴다
  */
 import { spawn } from 'node:child_process';
 import { readdirSync } from 'node:fs';
@@ -18,7 +20,25 @@ const root = resolve(here, '../..');
 const dist = join(root, 'dist');
 const port = Number(process.env.QA_PORT ?? 4399);
 const base = `http://127.0.0.1:${port}`;
-const scripts = process.argv.slice(2).length ? process.argv.slice(2) : ['a11y', 'nav'];
+const requested = process.argv.slice(2).length ? process.argv.slice(2) : ['a11y', 'nav'];
+
+/** 이동 시나리오 이름들(`nav/<이름>`), 이름 순. */
+const navScenarios = () =>
+  readdirSync(join(here, 'nav'))
+    .filter((name) => name.endsWith('.mjs'))
+    .map((name) => `nav/${name.slice(0, -'.mjs'.length)}`)
+    .toSorted();
+
+/** 인자 하나를 돌릴 스크립트 이름들로 편다: `nav`는 시나리오 모두, 그 밖은 그대로(`a11y`, `nav/find`). */
+const scripts = requested
+  .map((arg) => arg.replace(/\.mjs$/, ''))
+  .flatMap((arg) => (arg === 'nav' ? navScenarios() : [arg]));
+const known = ['a11y', ...navScenarios()];
+const unknown = scripts.filter((name) => !known.includes(name));
+if (unknown.length) {
+  console.error(`없는 스크립트: ${unknown.join(', ')} (고를 수 있는 것: nav, ${known.join(', ')})`);
+  process.exit(1);
+}
 
 /** dist의 모든 HTML 페이지 URL(퍼센트 인코딩). ego-browser `-e`에는 ASCII만 넘긴다. */
 function pageUrls() {
@@ -81,5 +101,7 @@ try {
 } finally {
   await server.stop();
 }
-console.log(failed ? `\n✗ qa 실패 ${failed}개` : '\n✓ qa 통과');
+console.log(
+  failed ? `\n✗ qa 실패 ${failed}/${scripts.length}개` : `\n✓ qa 통과(${scripts.length}개)`,
+);
 process.exit(failed ? 1 : 0);
