@@ -1,7 +1,7 @@
 /**
  * 찾기 줄(⌘F)의 규칙. DOM을 모르고, 에디터 글자를 블록(문단)마다 텍스트 노드 목록으로 받아 일치를 노드·오프셋 쌍으로
  * 돌려준다. 일치 규칙은 검색 화면과 같은 `match.logic.ts`의 `matchRanges`다(NFD 부분 일치, 대소문자 무시, 음절 넓히기).
- * 글자 모으기·칠하기·스크롤은 `FindWidget.tsx`가 맡는다.
+ * 글자 모으기·칠하기는 `find.ts`, 스크롤과 찾기 줄 상태는 `FindWidget.tsx`가 맡는다.
  */
 import { matchRanges } from './match.logic';
 

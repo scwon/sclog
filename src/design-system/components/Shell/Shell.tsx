@@ -697,7 +697,7 @@ export function Shell({
 
   // 다음 파일이 없으면(글이 아니거나 폴더의 가장 새 글) 팔레트가 `다음 파일 열기`를 보이지 않는다.
   const next = shown ? nextFile(tree, shown.url) : null;
-  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F)와 팔레트 명령 목록이 같이 쓴다. */
+  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F·⌘F)와 팔레트 명령 목록이 같이 쓴다. */
   const runCommand = useCallback(
     (command: ShellCommand) => {
       switch (command) {

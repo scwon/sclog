@@ -107,8 +107,8 @@ function reveal(range: Range | undefined, editor: HTMLElement, widget: HTMLEleme
  * 찾기 줄. 에디터에 연 파일 안에서 화면에 보이는 글자를 찾아, 모든 일치를 형광 띠로, 지금 일치를 코랄로 칠하고
  * `3/12`로 위치를 보인다. 칠하기는 CSS Custom Highlight API라 본문 DOM을 건드리지 않는다. 일치 규칙은 검색 화면과
  * 같다(`find.logic.ts`). 창 틀이 ⌘F로 처음 열 때 불러오는 청크라 `React.lazy`로만 가져온다. 열리면 입력창에 포커스를
- * 주고 글자를 모두 고르며, 닫히면(언마운트) 칠한 것을 지운다. Enter·Shift+Enter·Esc는 창 틀의 단축키 리스너가 받아
- * `FindHandle`로 넘긴다.
+ * 주고 글자를 모두 고르며, 닫히면(언마운트) 칠한 것을 지운다. 키는 창 틀의 단축키 리스너가 받는다. Enter·Shift+Enter와
+ * ⌘G·⇧⌘G는 `FindHandle.move`로 넘기고, Esc는 `close-find`로 창 틀이 찾기 줄을 닫는다(이 컴포넌트는 언마운트될 뿐이다).
  */
 export function FindWidget({ editorId, platform, start = 'next', onClose, ref }: FindWidgetProps) {
   const query = useStore($findQuery);
