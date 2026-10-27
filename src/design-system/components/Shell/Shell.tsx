@@ -44,10 +44,12 @@ import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
 import { dismissSelectionToolbar, focusSelectionToolbar } from '../SelectionToolbar/selection';
 import {
   BranchIcon,
-  CodeIcon,
   ExplorerIcon,
   ExternalIcon,
   FileGlyph,
+  GitHubIcon,
+  LinkedInIcon,
+  MailIcon,
   MenuIcon,
   ProfileIcon,
   SearchIcon,
@@ -308,6 +310,16 @@ function RailButton({
   );
 }
 
+/** 연락처 주소에 맞는 아이콘. GitHub·LinkedIn은 호스트로, 이메일은 `mailto:`로 고르고 그 밖의 주소는 아이콘이 없다. */
+function ContactIcon({ url }: { url: string }) {
+  const className = 'mr-1 size-3.5 flex-none';
+  if (url.startsWith('mailto:')) return <MailIcon className={className} />;
+  const host = URL.canParse(url) ? new URL(url).hostname.replace(/^www\./, '') : '';
+  if (host === 'github.com') return <GitHubIcon className={className} />;
+  if (host === 'linkedin.com') return <LinkedInIcon className={className} />;
+  return null;
+}
+
 /** 패널 줄 링크(연락처) 모양. */
 const panelLink =
   'flex h-7.5 items-center gap-1 pr-3 pl-6.5 font-mono text-xs text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2';
@@ -402,6 +414,7 @@ function ProfileView({ profile, history }: { profile: Profile; history: string |
           {profile.links.map((link) => (
             <li key={link.url}>
               <a href={link.url} className={panelLink}>
+                <ContactIcon url={link.url} />
                 {link.label}
                 {link.url.startsWith('http') && <ExternalIcon className="size-[0.95em]" />}
               </a>
@@ -857,8 +870,17 @@ export function Shell({
             {VIEWS[view].icon}
           </RailButton>
         ))}
-        <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
-          <CodeIcon />
+        {/* 패널 화면 버튼이 아니라 사이트 밖으로 나가는 링크라, 막대 맨 아래로 떼고 ↗ 표시를 달아 새 탭에서 연다. */}
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="이 블로그의 소스 (GitHub, 새 탭에서 열림)"
+          title="이 블로그의 소스 — GitHub (새 탭)"
+          className={cn(railItem, 'group mt-auto')}
+        >
+          <GitHubIcon className="size-[21px]!" />
+          <ExternalIcon className="absolute top-2.5 right-1.5 size-[11px]! text-text-muted transition-[translate,color] duration-(--motion-fast) ease-standard group-hover:text-accent-text motion-safe:group-hover:translate-x-px motion-safe:group-hover:-translate-y-px" />
         </a>
       </nav>
 
