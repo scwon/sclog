@@ -95,6 +95,26 @@ export function findPosition(query: string, current: number, total: number): str
  * 안에 다 들어 있으면 0이고, 아니면 그 줄의 가운데가 보이는 영역 가운데에 오는 거리다.
  */
 export function scrollToCenter(match: VerticalSpan, view: VerticalSpan): number {
-  if (match.top >= view.top && match.bottom <= view.bottom) return 0;
-  return (match.top + match.bottom) / 2 - (view.top + view.bottom) / 2;
+  return centerDistance(match.top, match.bottom, view.top, view.bottom);
+}
+
+/** 화면 위의 가로 자리(뷰포트 좌표). `DOMRect`를 그대로 넘긴다. */
+export interface HorizontalSpan {
+  left: number;
+  right: number;
+}
+
+/**
+ * 가로로 넘치는 스크롤 컨테이너(코드 블록 등) 안의 지금 일치를 보이려고 그 컨테이너를 가로로 스크롤할 거리(px,
+ * 오른쪽으로 양수). `view`는 컨테이너의 보이는 폭이다. 다 들어 있으면 0이고, 아니면 일치의 가운데가 보이는 폭
+ * 가운데에 오는 거리다.
+ */
+export function scrollToCenterX(match: HorizontalSpan, view: HorizontalSpan): number {
+  return centerDistance(match.left, match.right, view.left, view.right);
+}
+
+/** 한 축에서 `[start, end]`가 `[viewStart, viewEnd]` 안이면 0, 아니면 두 가운데 사이 거리. */
+function centerDistance(start: number, end: number, viewStart: number, viewEnd: number): number {
+  if (start >= viewStart && end <= viewEnd) return 0;
+  return (start + end) / 2 - (viewStart + viewEnd) / 2;
 }

@@ -4,6 +4,7 @@ import {
   findPosition,
   firstVisibleMatch,
   scrollToCenter,
+  scrollToCenterX,
   stepMatch,
   type FindBlock,
 } from './find.logic';
@@ -169,5 +170,24 @@ describe('scrollToCenter', () => {
   it('moves a match hidden under the top bars to the centre', () => {
     expect(scrollToCenter({ top: 100, bottom: 120 }, view)).toBe(-382);
     expect(scrollToCenter({ top: -500, bottom: -480 }, view)).toBe(-982);
+  });
+});
+
+describe('scrollToCenterX', () => {
+  // 가로로 넘치는 코드 블록의 보이는 폭: 300px부터 900px까지(가운데 600).
+  const view = { left: 300, right: 900 };
+
+  it('does not move when the match is inside the visible width', () => {
+    expect(scrollToCenterX({ left: 320, right: 360 }, view)).toBe(0);
+  });
+
+  it('moves a match past the right edge to the centre (scrolls right)', () => {
+    expect(scrollToCenterX({ left: 1380, right: 1420 }, view)).toBe(800);
+    // 오른쪽 끝에 걸쳐 일부만 보이는 일치도 옮긴다.
+    expect(scrollToCenterX({ left: 880, right: 920 }, view)).toBe(300);
+  });
+
+  it('moves a match before the left edge to the centre (scrolls left)', () => {
+    expect(scrollToCenterX({ left: 0, right: 40 }, view)).toBe(-580);
   });
 });

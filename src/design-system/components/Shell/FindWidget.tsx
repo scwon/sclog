@@ -12,12 +12,21 @@ import { useStore } from '@nanostores/react';
 import { REDUCED_MOTION } from '../../media';
 import { $findQuery, setFindQuery } from '../../stores/find';
 import { IconButton } from '../IconButton/IconButton';
-import { paint, toRange, unpaint, visibleArea, visibleBlocks } from './find';
+import {
+  horizontalArea,
+  horizontalScroller,
+  paint,
+  toRange,
+  unpaint,
+  visibleArea,
+  visibleBlocks,
+} from './find';
 import {
   findInBlocks,
   findPosition,
   firstVisibleMatch,
   scrollToCenter,
+  scrollToCenterX,
   stepMatch,
 } from './find.logic';
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from './icons';
@@ -67,19 +76,23 @@ function useFinePointer(): boolean {
 
 /**
  * 지금 일치가 보이는 영역 밖이면 그 줄을 보이는 영역 가운데로 옮긴다. 움직임 줄이기 설정에서는 바로 옮긴다.
+ * 가로로 넘치는 코드 블록 안에서 가로로 화면 밖이면 그 블록을 가로로도 옮겨 일치를 보이는 폭 가운데에 둔다.
  * 일치가 찾기 줄과 가로로 겹치면 찾기 줄 아래부터를 보이는 영역으로 본다(찾기 줄에 가린 일치도 옮긴다).
  */
 function reveal(range: Range | undefined, editor: HTMLElement, widget: HTMLElement | null): void {
   if (!range) return;
+  const behavior = window.matchMedia(REDUCED_MOTION).matches ? 'instant' : 'smooth';
   const rect = range.getBoundingClientRect();
+  // 가로 먼저: 부드러운 스크롤은 아직 움직이지 않았으므로 찾기 줄과 겹치는지는 옮긴 뒤 자리(`shift`만큼)로 본다.
+  const scroller = horizontalScroller(range, editor);
+  const shift = scroller ? scrollToCenterX(rect, horizontalArea(scroller)) : 0;
+  if (scroller && shift !== 0) scroller.scrollBy({ left: shift, behavior });
   const view = visibleArea(editor);
   const cover = widget?.getBoundingClientRect();
-  if (cover && rect.right > cover.left && rect.left < cover.right)
+  if (cover && rect.right - shift > cover.left && rect.left - shift < cover.right)
     view.top = Math.max(view.top, cover.bottom);
   const distance = scrollToCenter(rect, view);
-  if (distance === 0) return;
-  const instant = window.matchMedia(REDUCED_MOTION).matches;
-  window.scrollBy({ top: distance, behavior: instant ? 'instant' : 'smooth' });
+  if (distance !== 0) window.scrollBy({ top: distance, behavior });
 }
 
 /**
