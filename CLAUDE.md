@@ -13,7 +13,7 @@ pnpm test             # Vitest 단발 실행 (watch: pnpm test:watch)
 pnpm lint             # Oxlint
 pnpm format           # Oxfmt로 포맷 적용 (검사만: pnpm format:check)
 pnpm verify           # CI와 같은 다섯 검사(lint·format:check·build·test·build-storybook). 커밋 전 훅은 lint·format:check만 돈다
-pnpm qa               # 빌드 뒤 ego-browser로 접근성(모든 페이지×두 테마×세 폭)과 화면 이동 시나리오 확인. 화면·이동을 바꿨으면 돌린다
+pnpm qa               # 빌드 뒤 ego-browser로 접근성(모든 페이지×두 테마×세 폭)과 화면 이동 시나리오 확인. 화면·이동을 바꿨으면 돌린다. 작업 트리 여럿에서 함께 돌리면 `QA_PORT=43NN pnpm qa`
 uv run scripts/subset-maruburi.py  # 마루 부리 서브셋 재생성 (빌드에 포함 안 함, 글꼴을 바꿀 때만)
 ```
 
