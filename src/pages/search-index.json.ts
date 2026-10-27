@@ -29,7 +29,7 @@ export const GET: APIRoute = async () => {
           tags: post.data.tags,
           heroImage: post.data.heroImage,
           byline: `${SITE.author} · ${isoDate.replaceAll('-', '.')} · 읽는 시간 ${reading}분`,
-          notice: postFolder(post) === 'ai-written' ? SITE.aiWrittenNotice : undefined,
+          notice: postFolder(post) === 'ai-written',
           body: post.body ?? '',
           headings,
         });
