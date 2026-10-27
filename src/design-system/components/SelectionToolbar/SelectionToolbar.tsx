@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import { IconButton } from '../IconButton/IconButton';
 import { Popover, PopoverAnchor, PopoverContent } from '../Popover/Popover';
@@ -34,7 +35,7 @@ export interface SelectionToolbarProps {
   label: string;
   /**
    * 버튼 묶음을 포털할 요소(소비자가 고른 글 요소). 랜드마크(`main`) 안에 두어 axe `region`을 지킨다. DOM 순서로는
-   * 글 끝이라, 고른 자리에서 누른 첫 Tab은 창 틀이 툴바로 보낸다(`focusSelectionToolbar`). 없으면 `document.body`.
+   * 글 끝이라, 창 틀이 Tab 순서를 고른 자리 바로 뒤에 놓인 것처럼 잇는다(`selection.ts`). 없으면 `document.body`.
    */
   container?: HTMLElement | null;
 }
@@ -171,6 +172,7 @@ let mounted: { host: HTMLElement; layer: HTMLElement; root: Root } | null = null
 /**
  * `host`(소비자가 고른 글 요소, `position: relative`) 맨 앞에 층을 두고 선택 툴바를 그린다. 버튼 묶음은 `host` 끝으로 포털한다. 층은 `position: absolute`라
  * 레이아웃에 끼지 않고, 본문(`.doc-prose`) 안에는 넣지 않는다(줄 번호·읽는 위치 블록이 바뀐다).
+ * 그리기를 마친 뒤 돌아온다: 그리는 중에 누른 Tab이 돌아오자마자 첫 버튼을 찾는다.
  */
 export function showSelectionToolbar(host: HTMLElement, props: SelectionToolbarProps): void {
   if (mounted?.host !== host) {
@@ -182,7 +184,10 @@ export function showSelectionToolbar(host: HTMLElement, props: SelectionToolbarP
     mounted = { host, layer, root: createRoot(layer) };
   }
   // 고른 글자가 바뀌면 버튼의 됐다는 표시도 처음으로 돌린다.
-  mounted.root.render(<SelectionToolbar key={props.context.text} container={host} {...props} />);
+  const { root } = mounted;
+  flushSync(() =>
+    root.render(<SelectionToolbar key={props.context.text} container={host} {...props} />),
+  );
 }
 
 /** 상자와 버튼을 걷는다. 층은 다음 선택을 위해 남긴다. */

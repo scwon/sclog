@@ -291,3 +291,59 @@ export function toolbarPlacement({
   const inset = box.right + TOOLBAR_GAP + toolbar.width > screen.right;
   return { box, line, inset, anchor: buttonAnchor({ box, line, inset, screen, toolbar }) };
 }
+
+/** 툴바에서 Tab으로 나갈 곳을 고를 때 보는 요소 하나. 문서 순서대로 넘긴다. */
+export interface TabStop {
+  /** 요소의 `tabIndex`. 음수면 Tab 순서에 없다. */
+  tabIndex: number;
+  /** 문서 순서로 선택 끝 뒤에서 시작하는가. 선택 끝을 품은 요소(끝이 걸친 링크)는 앞으로 친다. */
+  afterSelection: boolean;
+  /** 선택 툴바 안인가. 툴바는 글 끝에 포털되어 선택 뒤에 있지만 나갈 곳이 아니다. */
+  inToolbar: boolean;
+  /** 보이고 쓸 수 있는가(숨김·`inert`·`disabled`가 아님). */
+  usable: boolean;
+}
+
+/**
+ * 툴바 마지막 버튼에서 Tab을 누르면 갈 곳: 문서 순서로 선택 끝 뒤에 오는 첫 Tab 대상(툴바 밖)의 자리. 툴바를 고른 자리
+ * 바로 뒤에 놓인 것처럼 보이게 한다. 없으면 -1이고, 그때는 브라우저에 맡긴다.
+ */
+export function tabStopAfterSelection(stops: readonly TabStop[]): number {
+  return stops.findIndex(
+    (stop) => stop.tabIndex >= 0 && stop.afterSelection && !stop.inToolbar && stop.usable,
+  );
+}
+
+/** 선택의 두 끝. 노드는 같은 것인지만 본다. */
+export interface SelectionEnds<N> {
+  startNode: N;
+  startOffset: number;
+  endNode: N;
+  endOffset: number;
+}
+
+/** 툴바를 그리는 중에 고른 자리에서 누른 Tab. 그리기를 마치면 첫 버튼에 포커스를 줄지 `focusDueOnShow`가 정한다. */
+export interface PendingFocus<N> {
+  /** Tab을 누를 때 포커스가 있던 요소. */
+  from: N;
+  /** Tab을 누를 때의 선택. */
+  selection: SelectionEnds<N>;
+}
+
+/**
+ * 툴바를 그린 뒤 기다리던 Tab의 포커스를 첫 버튼에 줄 것인가. 그 사이에 선택이 바뀌었거나, 툴바가 걷혔거나(`open`이
+ * 거짓), 포커스가 다른 곳으로 옮겨 갔으면 주지 않는다. 같은 선택을 다시 그린 것(늦게 온 `selectionchange`)은 바뀐 것이 아니다.
+ */
+export function focusDueOnShow<N>(
+  pending: PendingFocus<N> | null,
+  shown: { open: boolean; focus: N; selection: SelectionEnds<N> | null },
+): boolean {
+  if (!pending || !shown.open || !shown.selection || pending.from !== shown.focus) return false;
+  const [was, now] = [pending.selection, shown.selection];
+  return (
+    was.startNode === now.startNode &&
+    was.startOffset === now.startOffset &&
+    was.endNode === now.endNode &&
+    was.endOffset === now.endOffset
+  );
+}

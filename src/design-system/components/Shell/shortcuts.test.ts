@@ -51,6 +51,8 @@ function key(shape: Partial<KeyShape> & Pick<KeyShape, 'key'>): KeyShape {
     keyCode: 0,
     target: 'other',
     atSelection: false,
+    toolbarButton: null,
+    stopAfterSelection: false,
     ...shape,
   };
 }
@@ -238,6 +240,55 @@ describe('shortcutFor: Tab으로 선택 툴바에 들어간다', () => {
   it('leaves Tab to the browser when no toolbar is shown or a text field has focus', () => {
     expect(shortcutFor(key({ key: 'Tab', atSelection: true }), closed)).toBeNull();
     expect(shortcutFor(key({ key: 'Tab', atSelection: true, target: 'text' }), toolbar)).toBeNull();
+  });
+});
+
+describe('shortcutFor: Tab으로 선택 툴바에서 나간다', () => {
+  const toolbar: ShortcutContext = { ...closed, toolbarOpen: true };
+  const only = { first: true, last: true };
+  const first = { first: true, last: false };
+  const middle = { first: false, last: false };
+  const last = { first: false, last: true };
+
+  it('moves Tab from the last button to the first tab stop after the selection', () => {
+    expect(
+      shortcutFor(key({ key: 'Tab', toolbarButton: last, stopAfterSelection: true }), toolbar),
+    ).toBe('leave-selection-toolbar');
+    expect(
+      shortcutFor(key({ key: 'Tab', toolbarButton: only, stopAfterSelection: true }), toolbar),
+    ).toBe('leave-selection-toolbar');
+  });
+
+  it('leaves Tab from the last button to the browser when nothing follows the selection', () => {
+    expect(shortcutFor(key({ key: 'Tab', toolbarButton: last }), toolbar)).toBeNull();
+  });
+
+  it('moves Shift+Tab from the first button back to the selection', () => {
+    expect(shortcutFor(key({ key: 'Tab', shiftKey: true, toolbarButton: first }), toolbar)).toBe(
+      'return-to-selection',
+    );
+    expect(shortcutFor(key({ key: 'Tab', shiftKey: true, toolbarButton: only }), toolbar)).toBe(
+      'return-to-selection',
+    );
+  });
+
+  it('leaves Tab between the buttons to the browser (no focus trap)', () => {
+    const between = { key: 'Tab', stopAfterSelection: true };
+    expect(shortcutFor(key({ ...between, toolbarButton: first }), toolbar)).toBeNull();
+    expect(shortcutFor(key({ ...between, toolbarButton: middle }), toolbar)).toBeNull();
+    expect(
+      shortcutFor(key({ ...between, shiftKey: true, toolbarButton: last }), toolbar),
+    ).toBeNull();
+    expect(
+      shortcutFor(key({ ...between, shiftKey: true, toolbarButton: middle }), toolbar),
+    ).toBeNull();
+  });
+
+  it('leaves modified Tab and a closed toolbar to the browser', () => {
+    const out = { key: 'Tab', toolbarButton: only, stopAfterSelection: true };
+    expect(shortcutFor(key({ ...out, altKey: true }), toolbar)).toBeNull();
+    expect(shortcutFor(key({ ...out, metaKey: true, shiftKey: true }), toolbar)).toBeNull();
+    expect(shortcutFor(key(out), closed)).toBeNull();
   });
 });
 

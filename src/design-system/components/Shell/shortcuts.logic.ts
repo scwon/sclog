@@ -84,6 +84,13 @@ export interface KeyShape {
    * 요소). 선택 툴바 안이나 그 뒤로 Tab을 옮긴 뒤에는 거짓이다. 선택 툴바가 떠 있을 때 첫 Tab을 툴바로 보낼지 정한다.
    */
   atSelection: boolean;
+  /**
+   * 포커스가 선택 툴바 버튼에 있으면 그 버튼이 첫 버튼인가·마지막 버튼인가(버튼이 하나면 둘 다 참). 툴바 밖이면 `null`.
+   * 툴바 끝에서 누른 Tab·Shift+Tab을 고른 자리 앞뒤로 보낼지 정한다.
+   */
+  toolbarButton: { first: boolean; last: boolean } | null;
+  /** 문서 순서로 선택 끝 뒤에 툴바 밖 Tab 대상이 있는가. 없으면 마지막 버튼의 Tab은 브라우저가 받는다. */
+  stopAfterSelection: boolean;
 }
 
 /** 지금 창 틀의 맥락. */
@@ -119,6 +126,8 @@ export type ShellCommand =
  * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`·`find-in-file`)과 선택 툴바·팔레트·겹침 패널·
  * 찾기 줄을 다루는 동작이다. `find-next`·`find-prev`는 찾기 줄의 다음·이전 일치로 간다(찾기 입력창의 Enter·Shift+Enter, 어디서나
  * ⌘G·⇧⌘G). 찾기 줄이 닫혀 있으면 창 틀이 마지막 검색어로 열고, 마지막 검색어가 없으면 찾기 줄만 연다.
+ * `focus-selection-toolbar`·`leave-selection-toolbar`·`return-to-selection`은 선택 툴바를 고른 자리 바로 뒤에 놓인
+ * 것처럼 Tab 순서를 잇는다(툴바 첫 버튼으로, 선택 뒤 첫 Tab 대상으로, 고른 글자를 품은 요소로).
  * `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P·⌘F·⌘G·⇧⌘G, Tab).
  * `null`이 아닌 동작은 모두 기본 동작을 막는다.
  */
@@ -126,6 +135,8 @@ export type ShortcutAction =
   | Extract<ShellCommand, 'toggle-panel' | 'open-search' | 'find-in-file'>
   | 'close-selection-toolbar'
   | 'focus-selection-toolbar'
+  | 'leave-selection-toolbar'
+  | 'return-to-selection'
   | 'open-palette'
   | 'close-palette'
   | 'close-overlay'
@@ -205,16 +216,15 @@ export function shortcutFor(
     return null;
   }
 
-  // 선택 툴바는 글 끝에 포털되어 DOM 순서로는 고른 자리에서 멀다. 고른 자리에서 누른 첫 Tab은 툴바 첫 버튼으로 보낸다.
-  // 툴바 안과 그 뒤의 Tab·Shift+Tab은 브라우저에 맡긴다.
-  if (
-    event.key === 'Tab' &&
-    bare(event) &&
-    context.toolbarOpen &&
-    event.atSelection &&
-    event.target === 'other'
-  )
-    return 'focus-selection-toolbar';
+  // 선택 툴바는 글 끝에 포털되어 DOM 순서로는 고른 자리에서 멀다. 툴바가 고른 자리 바로 뒤에 놓인 것처럼 Tab 순서를
+  // 잇는다: 고른 자리의 첫 Tab은 툴바 첫 버튼으로, 마지막 버튼의 Tab은 선택 뒤 첫 Tab 대상으로(없으면 브라우저),
+  // 첫 버튼의 Shift+Tab은 고른 글자를 품은 요소로 보낸다. 버튼 사이와 툴바 밖의 Tab은 브라우저에 맡긴다(가두지 않는다).
+  if (event.key === 'Tab' && unmodified(event) && context.toolbarOpen && event.target === 'other') {
+    const button = event.toolbarButton;
+    if (event.shiftKey) return button?.first ? 'return-to-selection' : null;
+    if (event.atSelection) return 'focus-selection-toolbar';
+    if (button?.last && event.stopAfterSelection) return 'leave-selection-toolbar';
+  }
 
   // 선택 툴바·팔레트가 없으면 Esc는 겹침 패널, 그다음 찾기 줄을 닫는다. 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는
   // 곳이라 Esc를 받지만 찾기 줄은 닫지 않는다(겹침 패널이 없으면 입력창이 받아 글자를 지운다). 다른 입력창은 모든

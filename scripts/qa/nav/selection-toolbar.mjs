@@ -1,8 +1,9 @@
 /**
  * 선택 툴바와 복사 토스트(1440px, 좁은 폭은 390px). 글 본문을 드래그해 선택 툴바(상자와 복사 버튼)가 뜨고, 복사하면
- * 체크로 바뀌고 토스트가 떴다 저절로 닫히며, 선택이 접히거나 화면을 옮기면 걷히는지 본다. 이어서 Esc로 걷히기,
- * Shift+→로 골라 뜨기와 Tab 한 번에 툴바로 들어가기, 팔레트·찾기 줄이 열리면 걷히기, 화면보다 긴 선택, 좁은 폭에서
- * 상자 안쪽으로 들이기를 본다. 시작 상태는 `../scenario.mjs`.
+ * 체크로 바뀌고 토스트가 떴다 저절로 닫히며, 선택이 접히거나 화면을 옮기면 걷히는지 본다. 이어서 막 연 글에서 툴바를
+ * 그리는 중에 누른 Tab, Esc로 걷히기, Shift+→로 골라 뜨기와 Tab 순서(고른 자리 → 툴바 → 선택 뒤 첫 대상, Shift+Tab으로
+ * 고른 자리), 팔레트·찾기 줄이 열리면 걷히기, 화면보다 긴 선택, 좁은 폭에서 상자 안쪽으로 들이기를 본다. 시작 상태는
+ * `../scenario.mjs`.
  */
 /* global QA */
 import { scenario } from '../scenario.mjs';
@@ -284,6 +285,50 @@ const onScreen = ({ toolbar, screen }) =>
   toolbar.right <= screen.right + 1;
 
 await openPost();
+// 막 연 글에서는 툴바 청크가 아직 없다. 한 태스크 안에서 고르고(포인터를 누르고 떼고) 바로 Tab을 보내, 툴바를 그리는
+// 중에 누른 Tab이 그리기를 마친 뒤 첫 버튼에 닿는지 본다. 판정은 `document`의 keydown 하나가 받으므로 만든 이벤트로 충분하다.
+const race = await page.evaluate(() => {
+  const paragraph = [...document.querySelectorAll('#content > p')].find(
+    (p) => p.getBoundingClientRect().height > 80,
+  );
+  const lead = paragraph && document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT).nextNode();
+  if (!lead) return null;
+  paragraph.scrollIntoView({ block: 'center' });
+  paragraph.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+  const range = document.createRange();
+  range.setStart(lead, 0);
+  range.setEnd(lead, Math.min(lead.length, 20));
+  getSelection()?.removeAllRanges();
+  getSelection()?.addRange(range);
+  paragraph.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }));
+  const drawnAtTab = document.querySelector('[data-selection-toolbar] button') !== null;
+  const tab = new KeyboardEvent('keydown', {
+    key: 'Tab',
+    code: 'Tab',
+    bubbles: true,
+    cancelable: true,
+  });
+  document.body.dispatchEvent(tab);
+  return { drawnAtTab, taken: tab.defaultPrevented, text: getSelection()?.toString() ?? '' };
+});
+check(
+  '선택 툴바: 막 연 글에서 툴바를 그리는 중에 Tab을 누름',
+  race !== null && !race.drawnAtTab && race.taken,
+  JSON.stringify(race),
+);
+check(
+  '선택 툴바: 그리는 중에 누른 Tab이 그린 뒤 첫 버튼에 닿음',
+  await until(
+    '선택 툴바: 그린 뒤 첫 버튼에 포커스',
+    () => document.activeElement?.closest('[data-selection-toolbar]') != null,
+  ),
+);
+await page.evaluate(() => {
+  getSelection()?.removeAllRanges();
+  return true;
+});
+await toolbarGone('선택 툴바: 그리는 중 Tab 확인 뒤 걷힘');
+
 const keys = await dragPlan();
 check('선택 툴바(키보드): 고를 여러 줄 문단이 있음', keys !== null);
 if (keys) {
@@ -324,6 +369,69 @@ if (keys) {
     () => document.activeElement?.closest('[data-selection-toolbar]') != null,
   );
   check('선택 툴바: 고른 자리에서 Tab 한 번에 툴바 버튼에 들어감', entered);
+
+  // 툴바 첫 버튼에서 Shift+Tab을 누르면 고른 글자를 품은 요소로 돌아가고 선택은 남는다. 다시 Tab을 누르면 툴바로 들어간다.
+  await page.keyboard.press('Shift+Tab');
+  const returned = await page.evaluate(() => {
+    const active = document.activeElement;
+    const selection = getSelection();
+    return {
+      active: active?.id || active?.localName || null,
+      holds:
+        active != null &&
+        selection != null &&
+        selection.rangeCount > 0 &&
+        active.contains(selection.getRangeAt(0).commonAncestorContainer),
+      text: selection?.toString() ?? '',
+      toolbars: document.querySelectorAll('[data-selection-toolbar]').length,
+    };
+  });
+  check(
+    '선택 툴바: 첫 버튼에서 Shift+Tab을 누르면 고른 자리로 돌아가고 선택이 남음',
+    returned.holds && returned.text === shifted.text && returned.toolbars === 1,
+    JSON.stringify(returned),
+  );
+  await page.keyboard.press('Tab');
+  check(
+    '선택 툴바: 돌아온 자리에서 다시 Tab을 누르면 툴바로 들어감',
+    await page.evaluate(() => document.activeElement?.closest('[data-selection-toolbar]') != null),
+  );
+
+  // 툴바 마지막 버튼에서 Tab을 누르면 문서 순서로 선택 끝 뒤에 오는 첫 Tab 대상(대개 본문 링크)으로 간다.
+  const expected = await page.evaluate(() => {
+    const selection = getSelection();
+    if (!selection?.rangeCount) return null;
+    const end = selection.getRangeAt(0).endContainer;
+    const stop = [
+      ...document.querySelectorAll(
+        'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+      ),
+    ].find(
+      (element) =>
+        end.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING &&
+        !element.contains(end) &&
+        !element.closest('[data-selection-toolbar]') &&
+        element.checkVisibility({ visibilityProperty: true }),
+    );
+    if (!stop) return null;
+    stop.setAttribute('data-qa-after-selection', '');
+    return {
+      tag: stop.localName,
+      name: (stop.getAttribute('aria-label') ?? stop.textContent ?? '').trim().slice(0, 30),
+    };
+  });
+  await page.keyboard.press('Tab');
+  const left = await page.evaluate(() => ({
+    reached: document.activeElement?.hasAttribute('data-qa-after-selection') === true,
+    active: document.activeElement?.localName ?? null,
+    text: getSelection()?.toString() ?? '',
+    toolbars: document.querySelectorAll('[data-selection-toolbar]').length,
+  }));
+  check(
+    '선택 툴바: 툴바에서 Tab을 누르면 선택 뒤 첫 대상으로 감',
+    expected !== null && left.reached && left.text === shifted.text,
+    JSON.stringify({ expected, ...left }),
+  );
 
   // 고른 글자 위에서 누르면 글자 끌어 옮기기가 되므로 선택을 먼저 풀고, 드래그할 자리를 다시 잰다.
   await page.evaluate(() => {
