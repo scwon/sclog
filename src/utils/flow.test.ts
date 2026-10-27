@@ -41,7 +41,7 @@ function shape(lines: ReturnType<typeof listLines>) {
       case 'folded':
         return `folded ${line.post.id}`;
       case 'entry':
-        return `${line.no} entry ${line.label} -> ${line.href} (${line.note})`;
+        return `${line.no} entry ${line.label} -> ${line.href} (${line.note})${line.heading ? ' heading' : ''}`;
       case 'end':
         return `${line.no} end ${line.label}`;
       default:
@@ -98,7 +98,7 @@ describe('listLines with steps (ai-written.log)', () => {
 const site = { brand: 'sclog', author: 'scwon', githubUrl: 'https://github.com/scwon' };
 
 describe('homeLines AI 글 칸', () => {
-  it('stacks own posts, then an exit line to ai-written.log and AI log lines, ending with the own post count', () => {
+  it('stacks own posts, then an exit line to ai-written.log as the section heading and AI log lines, ending with the own post count', () => {
     const lines = homeLines([entry('blog', 'x', '2023-04-30', 1)], site, [
       entry('ai-written', 'b', '2026-10-01', 2),
       entry('ai-written', 'a', '2025-01-01', 0),
@@ -111,7 +111,7 @@ describe('homeLines AI 글 칸', () => {
       '5 log /blog/x/ foldable',
       '6 step /blog/x/#ch-1',
       'folded x',
-      '7 entry ai-written.log -> /ai-written/ (글 2편)',
+      '7 entry ai-written.log -> /ai-written/ (글 2편) heading',
       '8 log /ai-written/b/',
       '9 log /ai-written/a/',
       '10 end 글 1편',
@@ -124,7 +124,7 @@ describe('homeLines AI 글 칸', () => {
     );
     const lines = homeLines([entry('blog', 'x', '2023-04-30')], site, ai);
     expect(shape(lines).slice(5)).toEqual([
-      '6 entry ai-written.log -> /ai-written/ (글 6편)',
+      '6 entry ai-written.log -> /ai-written/ (글 6편) heading',
       '7 log /ai-written/f/',
       '8 log /ai-written/e/',
       '9 log /ai-written/d/',

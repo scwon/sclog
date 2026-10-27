@@ -1237,7 +1237,7 @@
   }
 }
 
-/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수` */
+/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수`, 홈 AI 글 칸 머리(제목 `h2` 안의 링크) */
 @layer components {
   .flow-entry-link {
     transition: color var(--motion-fast) var(--motion-easing);
