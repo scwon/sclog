@@ -41,6 +41,15 @@ describe('searchPost line numbers', () => {
     expect(post.blocks.at(-1)).toMatchObject({ line: first, text: '첫 문단' });
   });
 
+  it('counts the AI notice as one line after the byline, before the body', () => {
+    const post = searchPost(source({ notice: 'AI가 작성한 글입니다.', body: '첫 문단' }));
+    expect(lines(post).slice(5)).toEqual([
+      [6, 'scwon · 2024.05.01 · 읽는 시간 1분'],
+      [7, 'AI가 작성한 글입니다.'],
+      [8, '첫 문단'],
+    ]);
+  });
+
   it('writes tags and the hero image path the way the frontmatter shows them', () => {
     const post = searchPost(source({ tags: ['회고', '개발'], heroImage: '/hero.png' }));
     expect(post.blocks.slice(3, 5).map(({ text }) => text)).toEqual([
