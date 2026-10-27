@@ -31,6 +31,7 @@ describe('keyLabel', () => {
 });
 
 const closed: ShortcutContext = {
+  toolbarOpen: false,
   paletteOpen: false,
   overlayOpen: false,
   findOpen: false,
@@ -221,6 +222,29 @@ describe('shortcutFor: Esc는 맨 위 층 하나만 닫는다', () => {
     expect(shortcutFor(key({ key: 'Escape', target: 'palette-input' }), both)).toBe(
       'close-palette',
     );
+  });
+
+  it('closes the selection toolbar before every other layer', () => {
+    const all: ShortcutContext = {
+      ...closed,
+      toolbarOpen: true,
+      paletteOpen: true,
+      overlayOpen: true,
+      findOpen: true,
+    };
+    expect(shortcutFor(key({ key: 'Escape' }), all)).toBe('close-selection-toolbar');
+    expect(shortcutFor(key({ key: 'Escape', target: 'palette-input' }), all)).toBe(
+      'close-selection-toolbar',
+    );
+    expect(shortcutFor(key({ key: 'Escape' }), { ...closed, toolbarOpen: true })).toBe(
+      'close-selection-toolbar',
+    );
+  });
+
+  it('leaves Esc to other text fields even with the selection toolbar open', () => {
+    const toolbar: ShortcutContext = { ...closed, toolbarOpen: true };
+    expect(shortcutFor(key({ key: 'Escape', target: 'text' }), toolbar)).toBeNull();
+    expect(shortcutFor(key({ key: 'Escape', shiftKey: true }), toolbar)).toBeNull();
   });
 
   it('closes the overlay panel when no palette is open', () => {

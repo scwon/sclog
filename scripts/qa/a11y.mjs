@@ -5,7 +5,7 @@
  * 움직임 줄이기를 켜서 펼침 도중의 반투명 글자를 명암비 위반으로 잘못 잡지 않게 한다.
  * 읽기 기록을 미리 넣어 탐색기 꼬리표(`✓`·`42%`)와 프로필의 읽기 기록 칸도 함께 본다. 꼬리표 종류는 폭·테마마다
  * 번갈아 넣어 두 테마가 두 꼬리표를 모두 거친다. 읽는 중으로 넣은 글은 개요의 첫 장을 위치로 다시 넣고 열어,
- * 상태줄에 이어 읽기 버튼이 뜬 화면도 본다(폭마다 한 테마씩, 세 폭 모두). 폭·테마마다 글에서 ⌘F로 연 찾기 줄(검색어 입력)도 본다.
+ * 상태줄에 이어 읽기 버튼이 뜬 화면도 본다(폭마다 한 테마씩, 세 폭 모두). 폭·테마마다 글에서 ⌘F로 연 찾기 줄(검색어 입력)과 본문을 골라 띄운 선택 툴바도 본다.
  * `run.mjs`가 `globalThis.QA = { base, pages, axe }`를 넣고 ego-browser에서 import한다.
  */
 /* global QA, taskSpace */
@@ -180,6 +180,37 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
       if (findViolations.length)
         failures.push(`${width} ${theme} 찾기 줄: ${findViolations.join('; ')}`);
       await page.keyboard.press('Escape');
+      await until('찾기 줄이 닫힘', () => document.querySelector('[data-find-input]') === null);
+      // 본문을 골라 띄운 선택 툴바(상자와 복사 버튼). 문단 앞 몇 글자를 고르면 선택이 멈춘 뒤 뜬다.
+      await page.evaluate(() => {
+        const paragraph = [...document.querySelectorAll('#content > p')].find(
+          (p) => (p.textContent ?? '').trim().length > 20,
+        );
+        const lead =
+          paragraph && document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT).nextNode();
+        if (!lead) return false;
+        paragraph.scrollIntoView({ block: 'center' });
+        const range = document.createRange();
+        range.setStart(lead, 0);
+        range.setEnd(lead, Math.min(12, lead.length));
+        getSelection()?.removeAllRanges();
+        getSelection()?.addRange(range);
+        return true;
+      });
+      const toolbarShown = await until(
+        '선택 툴바가 뜸',
+        () => document.querySelector('[data-selection-toolbar] button') !== null,
+      );
+      if (!toolbarShown) failures.push(`${width} ${theme} 선택 툴바: 뜨지 않음`);
+      const toolbarViolations = await axeViolations();
+      runs++;
+      if (toolbarViolations.length)
+        failures.push(`${width} ${theme} 선택 툴바: ${toolbarViolations.join('; ')}`);
+      await page.keyboard.press('Escape');
+      await until(
+        '선택 툴바가 걷힘',
+        () => document.querySelector('[data-selection-toolbar]') === null,
+      );
     }
   }
 }

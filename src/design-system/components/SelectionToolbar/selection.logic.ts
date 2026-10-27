@@ -137,14 +137,81 @@ export interface PlacementInput {
    * 높이까지 넓혀 잰다. 없으면 넓히지 않는다.
    */
   lineHeight?: number;
+  /** 버튼이 보이는 화면 범위: 위는 탭·경로 표시줄 아래, 아래는 창 아래 끝, 오른쪽은 스크롤 막대를 뺀 창 오른쪽 끝. */
+  screen: ScreenBounds;
+  /** 툴바(버튼 묶음)의 크기. `toolbarSize`로 잰다. */
+  button: ToolbarSize;
 }
 
-/** 상자와 버튼 자리. 둘 다 화면 좌표다. */
+/** 버튼이 보이는 화면 범위(화면 좌표). */
+export interface ScreenBounds {
+  top: number;
+  bottom: number;
+  right: number;
+}
+
+/** 툴바(버튼 묶음)의 폭과 높이(px). */
+export interface ToolbarSize {
+  width: number;
+  height: number;
+}
+
+/** 상자와 버튼 자리. 모두 화면 좌표다. */
 export interface Placement {
   /** 고른 줄들을 감싸는 상자. */
   box: Rect;
-  /** 버튼을 띄우는 기준점: 상자 오른쪽 가장자리에서 폭이 0이고, 높이는 끝 줄이다. */
+  /** 선택의 끝 줄(마우스를 놓은 줄). 스크롤하면 그리는 쪽이 이 줄로 `buttonAnchor`를 다시 잰다. */
+  line: Pick<Rect, 'top' | 'bottom'>;
+  /** 오른쪽 여백이 좁아 버튼을 상자 안쪽 오른쪽 위로 들였는가. */
+  inset: boolean;
+  /**
+   * 버튼을 띄우는 기준점: 상자 오른쪽 가장자리에서 폭이 0이다. 바깥이면 끝 줄 높이(툴바는 기준점 오른쪽), 들였으면
+   * 상자 위 끝에서 `TOOLBAR_GAP` 아래인 점(툴바는 기준점 왼쪽)이다. 세로는 화면 안으로 묶는다.
+   */
   anchor: Rect;
+}
+
+/** 툴바가 기준점에서 떨어지는 간격(px). 바깥이면 상자 오른쪽 가장자리에서, 들였으면 상자 안쪽 가장자리에서 띄운다. */
+export const TOOLBAR_GAP = 6;
+
+/**
+ * 버튼 `count`개짜리 툴바의 크기. `SelectionToolbar.tsx`의 클래스와 맞춘다: 30px 정사각 버튼(`IconButton`)을
+ * 2px 간격(`gap-0.5`)으로 세로로 쌓고, 안쪽 여백 2px(`p-0.5`)과 테두리 1px을 두른다.
+ */
+export function toolbarSize(count: number): ToolbarSize {
+  const frame = 2 * 2 + 1 * 2;
+  return { width: 30 + frame, height: 30 * count + 2 * Math.max(count - 1, 0) + frame };
+}
+
+/**
+ * 툴바 위 변을 화면 안으로 묶는다. 화면 안으로 옮기더라도 상자 밖으로는 나가지 않는다(상자가 통째로 화면 밖이면
+ * 버튼도 상자를 따라 밖에 있다). 원래 자리가 이미 화면 안이면 그대로 둔다.
+ */
+function clampTop(top: number, height: number, box: Rect, screen: ScreenBounds): number {
+  const wanted = Math.min(Math.max(top, screen.top), screen.bottom - height);
+  if (wanted > top) return Math.min(wanted, Math.max(top, box.bottom - height));
+  if (wanted < top) return Math.max(wanted, Math.min(top, box.top));
+  return top;
+}
+
+/** `buttonAnchor`의 입력. 모두 화면 좌표다. */
+export interface AnchorInput {
+  box: Rect;
+  line: Pick<Rect, 'top' | 'bottom'>;
+  inset: boolean;
+  screen: ScreenBounds;
+  button: ToolbarSize;
+}
+
+/**
+ * 버튼 기준점(`Placement.anchor`)을 잰다. 그리는 쪽은 스크롤할 때마다 상자의 지금 화면 위치로 이 함수를 다시 불러,
+ * 상자가 화면보다 길어도 버튼이 화면 안에 남게 한다.
+ */
+export function buttonAnchor({ box, line, inset, screen, button }: AnchorInput): Rect {
+  const top = inset ? box.top + TOOLBAR_GAP : line.top;
+  const height = inset ? 0 : line.bottom - line.top;
+  const clamped = clampTop(top, button.height, box, screen);
+  return { top: clamped, bottom: clamped + height, left: box.right, right: box.right };
 }
 
 /** 상자가 글자에서 떨어지는 여백. 왼쪽 여백이 줄 번호 열을 덮지 않을 만큼만 둔다. */
@@ -174,14 +241,16 @@ function toLineBox(line: Rect, lineHeight: number): Rect {
 
 /**
  * 선택 rect 목록에서 상자와 버튼 자리를 계산한다. 상자는 첫 줄 위에서 끝 줄 아래까지, 폭은 본문 단 전체다.
- * 버튼은 상자 오른쪽, 선택의 끝 줄(마우스를 놓은 줄) 높이다. 쓸 만한 rect가 없으면 `null`.
- * 좁은 여백에서 안으로 들이기와 화면 안으로 묶기는 아직 하지 않는다(입력에 화면 범위를 더해 늘린다).
+ * 버튼은 상자 오른쪽, 선택의 끝 줄(마우스를 놓은 줄) 높이다. 오른쪽 여백이 툴바 폭보다 좁으면 상자 안쪽 오른쪽 위로
+ * 들이고, 세로는 화면 안으로 묶는다. 쓸 만한 rect가 없으면 `null`.
  */
 export function toolbarPlacement({
   lines,
   column,
   backward,
   lineHeight = 0,
+  screen,
+  button,
 }: PlacementInput): Placement | null {
   const usable = lines
     .filter((line) => line.bottom > line.top)
@@ -196,8 +265,7 @@ export function toolbarPlacement({
     right: column.right + BOX_PADDING.x,
   };
   const end = backward ? firstLine(usable) : lastLine(usable);
-  return {
-    box,
-    anchor: { top: end.top, bottom: end.bottom, left: box.right, right: box.right },
-  };
+  const line = { top: end.top, bottom: end.bottom };
+  const inset = box.right + TOOLBAR_GAP + button.width > screen.right;
+  return { box, line, inset, anchor: buttonAnchor({ box, line, inset, screen, button }) };
 }

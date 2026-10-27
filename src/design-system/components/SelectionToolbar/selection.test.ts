@@ -100,6 +100,11 @@ describe('toolbarAllowed: 선택 툴바를 띄울 선택인가', () => {
 
 /** 본문 단: 화면 왼쪽 300px에서 680px 폭. */
 const column = { left: 300, right: 980 };
+/** 넉넉한 화면과 버튼 하나짜리 툴바(36px 정사각). 들이기·묶기가 일어나지 않는다. */
+const room = {
+  screen: { top: 0, bottom: 2400, right: 1400 },
+  button: { width: 36, height: 36 },
+};
 
 describe('toolbarPlacement: 상자와 버튼 자리', () => {
   // 세 줄에 걸친 선택. 줄 높이 28px, 첫 줄은 중간부터, 끝 줄은 중간까지.
@@ -110,7 +115,7 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
   ];
 
   it('상자는 첫 줄 위에서 끝 줄 아래까지, 폭은 본문 단 전체(여백을 조금 둔다)', () => {
-    expect(toolbarPlacement({ lines, column, backward: false })?.box).toEqual({
+    expect(toolbarPlacement({ ...room, lines, column, backward: false })?.box).toEqual({
       top: 94,
       bottom: 190,
       left: 290,
@@ -119,7 +124,7 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
   });
 
   it('버튼 기준점은 상자 오른쪽 가장자리, 마우스를 놓은 끝 줄 높이다', () => {
-    expect(toolbarPlacement({ lines, column, backward: false })?.anchor).toEqual({
+    expect(toolbarPlacement({ ...room, lines, column, backward: false })?.anchor).toEqual({
       top: 156,
       bottom: 184,
       left: 990,
@@ -128,7 +133,7 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
   });
 
   it('위로 드래그하면 끝이 첫 줄이라 버튼도 첫 줄 높이다', () => {
-    const placement = toolbarPlacement({ lines, column, backward: true });
+    const placement = toolbarPlacement({ ...room, lines, column, backward: true });
     expect(placement?.anchor).toEqual({ top: 100, bottom: 128, left: 990, right: 990 });
     expect(placement?.box).toEqual({ top: 94, bottom: 190, left: 290, right: 990 });
   });
@@ -142,8 +147,10 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
       { top: 234, bottom: 262, left: 300, right: 980 },
       { top: 284, bottom: 312, left: 300, right: 420 },
     ];
-    expect(toolbarPlacement({ lines: across, column, backward: false })).toEqual({
+    expect(toolbarPlacement({ ...room, lines: across, column, backward: false })).toEqual({
       box: { top: 94, bottom: 318, left: 290, right: 990 },
+      line: { top: 284, bottom: 312 },
+      inset: false,
       anchor: { top: 284, bottom: 312, left: 990, right: 990 },
     });
   });
@@ -154,8 +161,12 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
       { top: 100, bottom: 156, left: 300, right: 980 },
       { top: 128, bottom: 156, left: 300, right: 500 },
     ];
-    expect(toolbarPlacement({ lines: tail, column, backward: false })?.anchor.top).toBe(128);
-    expect(toolbarPlacement({ lines: tail, column, backward: true })?.anchor.bottom).toBe(128);
+    expect(toolbarPlacement({ ...room, lines: tail, column, backward: false })?.anchor.top).toBe(
+      128,
+    );
+    expect(toolbarPlacement({ ...room, lines: tail, column, backward: true })?.anchor.bottom).toBe(
+      128,
+    );
   });
 
   it('글자 rect가 줄 높이보다 낮으면 줄 높이(선택색이 칠해지는 줄 상자)까지 위아래로 넓혀 잰다', () => {
@@ -164,16 +175,88 @@ describe('toolbarPlacement: 상자와 버튼 자리', () => {
       { top: 106, bottom: 130, left: 520, right: 980 },
       { top: 142, bottom: 166, left: 300, right: 610 },
     ];
-    expect(toolbarPlacement({ lines: glyphs, column, backward: false, lineHeight: 36 })).toEqual({
+    expect(
+      toolbarPlacement({ ...room, lines: glyphs, column, backward: false, lineHeight: 36 }),
+    ).toEqual({
       box: { top: 94, bottom: 178, left: 290, right: 990 },
+      line: { top: 136, bottom: 172 },
+      inset: false,
       anchor: { top: 136, bottom: 172, left: 990, right: 990 },
+    });
+  });
+
+  it('오른쪽 여백이 버튼 폭보다 좁으면 버튼을 상자 안쪽 오른쪽 위로 들인다', () => {
+    // 상자 오른쪽 990, 간격 6, 버튼 폭 36: 화면 오른쪽이 1032보다 작으면 바깥에 들어가지 않는다.
+    const narrow = { ...room, screen: { ...room.screen, right: 1010 } };
+    const placement = toolbarPlacement({ lines, column, backward: false, ...narrow });
+    expect(placement?.inset).toBe(true);
+    expect(placement?.anchor).toEqual({ top: 100, bottom: 100, left: 990, right: 990 });
+
+    const fits = { ...room, screen: { ...room.screen, right: 1032 } };
+    expect(toolbarPlacement({ lines, column, backward: false, ...fits })?.inset).toBe(false);
+  });
+
+  describe('상자가 화면보다 길면 버튼 세로 위치를 화면 안으로 묶는다', () => {
+    // 화면은 위 140(탭·경로 표시줄 아래)부터 900까지. 선택은 100에서 2000까지 이어진다.
+    const screen = { top: 140, bottom: 900, right: 1400 };
+    const tall = [
+      { top: 100, bottom: 128, left: 520, right: 980 },
+      { top: 128, bottom: 1972, left: 300, right: 980 },
+      { top: 1972, bottom: 2000, left: 300, right: 610 },
+    ];
+
+    it('끝 줄이 화면 아래에 있으면 버튼은 화면 아래 끝에 붙는다', () => {
+      const anchor = toolbarPlacement({
+        ...room,
+        screen,
+        lines: tall,
+        column,
+        backward: false,
+      })?.anchor;
+      expect(anchor).toEqual({ top: 864, bottom: 892, left: 990, right: 990 });
+    });
+
+    it('위로 드래그해 끝 줄이 화면 위에 있으면 버튼은 화면 위 끝에 붙는다', () => {
+      const anchor = toolbarPlacement({
+        ...room,
+        screen,
+        lines: tall,
+        column,
+        backward: true,
+      })?.anchor;
+      expect(anchor).toEqual({ top: 140, bottom: 168, left: 990, right: 990 });
+    });
+
+    it('안으로 들인 버튼도 상자 위 끝이 화면 위에 있으면 화면 위 끝에 붙는다', () => {
+      const narrow = { ...screen, right: 1010 };
+      const placement = toolbarPlacement({
+        ...room,
+        screen: narrow,
+        lines: tall,
+        column,
+        backward: false,
+      });
+      expect(placement?.inset).toBe(true);
+      expect(placement?.anchor).toEqual({ top: 140, bottom: 140, left: 990, right: 990 });
+    });
+
+    it('상자가 통째로 화면 밖이면 버튼도 상자를 따라 밖에 있다', () => {
+      const above = { ...screen, top: 400 };
+      const placement = toolbarPlacement({
+        ...room,
+        screen: above,
+        lines,
+        column,
+        backward: false,
+      });
+      expect(placement?.anchor).toEqual({ top: 156, bottom: 184, left: 990, right: 990 });
     });
   });
 
   it('높이가 없는 rect는 버리고, 남는 것이 없으면 자리가 없다', () => {
     const empty = [{ top: 120, bottom: 120, left: 300, right: 300 }];
-    expect(toolbarPlacement({ lines: empty, column, backward: false })).toBeNull();
-    expect(toolbarPlacement({ lines: [], column, backward: false })).toBeNull();
+    expect(toolbarPlacement({ ...room, lines: empty, column, backward: false })).toBeNull();
+    expect(toolbarPlacement({ ...room, lines: [], column, backward: false })).toBeNull();
   });
 });
 

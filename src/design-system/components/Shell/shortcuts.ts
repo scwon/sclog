@@ -69,6 +69,8 @@ export function usePlatform(): Platform | null {
 
 /** 판정에 쓰는 창 틀의 지금 맥락. */
 export interface ShortcutState {
+  /** 본문 선택 툴바가 떠 있는가. */
+  toolbarOpen: boolean;
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;

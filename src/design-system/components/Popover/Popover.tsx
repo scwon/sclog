@@ -24,16 +24,21 @@ export function PopoverAnchor(props: ComponentProps<typeof PopoverPrimitive.Anch
 }
 
 /**
- * 팝오버 내용. `document.body`로 포털되고 테마 토큰은 `<html data-theme>`를 따른다. 떠오른 바탕(`surface-raised`)에
+ * 팝오버 내용. `document.body`로 포털되고(`container`를 주면 그 요소 끝으로) 테마 토큰은 `<html data-theme>`를 따른다.
+ * 랜드마크 안에 있어야 하는 내용(본문 위에 뜨는 툴바)은 `container`로 랜드마크 안 요소를 준다. 떠오른 바탕(`surface-raised`)에
  * 테두리를 두르고, 나타날 때 짧게 커지며 들어온다(움직임 줄이기에서는 바로 뜬다).
  */
 export function PopoverContent({
   className,
   sideOffset = 6,
+  container,
   ...props
-}: ComponentProps<typeof PopoverPrimitive.Content>) {
+}: ComponentProps<typeof PopoverPrimitive.Content> & {
+  /** 포털할 요소. 없으면 `document.body`. */
+  container?: HTMLElement | null;
+}) {
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={container}>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         sideOffset={sideOffset}

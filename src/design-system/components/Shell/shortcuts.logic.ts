@@ -83,6 +83,8 @@ export interface KeyShape {
 
 /** 지금 창 틀의 맥락. */
 export interface ShortcutContext {
+  /** 본문 선택 툴바(고른 대목의 상자와 동작 버튼)가 떠 있는가. Esc가 맨 먼저 닫는 층이다. */
+  toolbarOpen: boolean;
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;
@@ -109,14 +111,15 @@ export type ShellCommand =
   | 'clear-history';
 
 /**
- * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`·`find-in-file`)과 팔레트·겹침 패널·찾기 줄을
- * 다루는 동작이다. `find-next`·`find-prev`는 찾기 줄의 다음·이전 일치로 간다(찾기 입력창의 Enter·Shift+Enter, 어디서나
+ * 창 틀이 할 동작. 붙은 키의 창 틀 명령(`toggle-panel`·`open-search`·`find-in-file`)과 선택 툴바·팔레트·겹침 패널·
+ * 찾기 줄을 다루는 동작이다. `find-next`·`find-prev`는 찾기 줄의 다음·이전 일치로 간다(찾기 입력창의 Enter·Shift+Enter, 어디서나
  * ⌘G·⇧⌘G). 찾기 줄이 닫혀 있으면 창 틀이 마지막 검색어로 열고, 마지막 검색어가 없으면 찾기 줄만 연다.
  * `swallow`는 브라우저 기본 동작만 막고 아무 일도 하지 않는다(열린 팔레트의 ⌘P·⌘F·⌘G·⇧⌘G, Tab).
  * `null`이 아닌 동작은 모두 기본 동작을 막는다.
  */
 export type ShortcutAction =
   | Extract<ShellCommand, 'toggle-panel' | 'open-search' | 'find-in-file'>
+  | 'close-selection-toolbar'
   | 'open-palette'
   | 'close-palette'
   | 'close-overlay'
@@ -174,6 +177,11 @@ export function shortcutFor(
     letter === combo.letter &&
     modOnly(event, context.platform, combo.shift ?? false);
 
+  // Esc는 맨 위 층 하나만 닫는다: 선택 툴바, 팔레트, 겹침 패널, 찾기 줄 순서다. 선택 툴바는 포커스를 가져가지 않으므로
+  // 맨 앞에서 본다. 다른 입력창(`text`)의 Esc는 입력창에 맡긴다.
+  if (event.key === 'Escape' && bare(event) && context.toolbarOpen && event.target !== 'text')
+    return 'close-selection-toolbar';
+
   // 찾기 줄은 CSS Custom Highlight API로 칠하므로, 없는 브라우저에서는 ⌘F·⌘G·⇧⌘G를 브라우저 찾기에 맡긴다.
   const { find, findNext, findPrev } = context.findSupported ? keys : NO_FIND_KEYS;
 
@@ -190,7 +198,7 @@ export function shortcutFor(
     return null;
   }
 
-  // Esc는 맨 위 층 하나만 닫는다: 겹침 패널, 그다음 찾기 줄. 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는
+  // 선택 툴바·팔레트가 없으면 Esc는 겹침 패널, 그다음 찾기 줄을 닫는다. 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는
   // 곳이라 Esc를 받지만 찾기 줄은 닫지 않는다(겹침 패널이 없으면 입력창이 받아 글자를 지운다). 다른 입력창은 모든
   // 키를 입력창에 맡긴다.
   if (event.key === 'Escape' && bare(event) && event.target !== 'text') {

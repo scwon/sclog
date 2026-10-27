@@ -1,11 +1,14 @@
 import { COARSE_POINTER } from '../../media';
+import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
 import {
   headingAbove,
   slugOf,
   toolbarAllowed,
   toolbarPlacement,
+  toolbarSize,
   visibleActions,
   type ElementStep,
+  type ScreenBounds,
   type SelectionAction,
 } from './selection.logic';
 import type { SelectionToolbarProps } from './SelectionToolbar';
@@ -15,7 +18,10 @@ import type { SelectionToolbarProps } from './SelectionToolbar';
  * (`SelectionToolbar.tsx`)를 불러 그린다. 첫 화면은 이 작은 감시만 싣는다.
  *
  * - 마우스로 고르는 동안(`pointerdown`~`pointerup`)은 그리지 않고 `pointerup`에서 그린다.
+ * - 키보드(Shift+화살표)로 고르면 선택이 `KEYBOARD_SETTLE_MS` 동안 멈춘 뒤 그린다. 포커스는 본문에 남는다.
  * - 선택이 접히면(빈 곳 클릭 포함) 걷는다. 떠 있는 동안 선택이 바뀌면 자리를 다시 잰다.
+ * - Esc와 찾기 줄이 열릴 때는 창 틀이 `dismissSelectionToolbar()`를 부른다(선택은 남는다). 떠 있는지는
+ *   `$selectionToolbarOpen`으로 알린다.
  * - 화면을 옮기기 전에는 소비자가 `closeSelectionToolbar()`를 부른다.
  */
 
@@ -40,10 +46,34 @@ let options: SelectionToolbarOptions | null = null;
 let chunk: Promise<Chunk> | null = null;
 /** 마우스 단추를 누른 채 고르는 중인가. */
 let dragging = false;
-/** 툴바가 떠 있는가(그리기를 요청했고 아직 걷지 않았다). */
-let shown = false;
 /** 그리기·걷기 요청 순번. 청크를 불러오는 사이에 걷혔으면 늦게 온 그리기를 버린다. */
 let request = 0;
+/** 키보드로 고른 선택을 그리려고 기다리는 타이머. */
+let settle = 0;
+
+/**
+ * 키보드로 고른 선택이 이만큼 멈추면 그린다(ms). Shift+화살표를 누르고 있는 동안 툴바가 깜박이지 않을 만큼 길고,
+ * 손을 뗀 뒤 기다린다고 느끼지 않을 만큼 짧다.
+ */
+const KEYBOARD_SETTLE_MS = 250;
+
+/** 툴바가 떠 있는가(그리기를 요청했고 아직 걷지 않았다). */
+function shown(): boolean {
+  return $selectionToolbarOpen.get();
+}
+
+/**
+ * 버튼이 보이는 화면 범위: 위는 탭·경로 표시줄 아래(`html`의 `scroll-padding-top`, 앵커 이동과 같은 선), 아래는 창
+ * 아래 끝, 오른쪽은 스크롤 막대를 뺀 창 오른쪽 끝이다. 그리는 쪽도 스크롤할 때마다 읽는다.
+ */
+export function screenBounds(): ScreenBounds {
+  const root = document.documentElement;
+  return {
+    top: parseFloat(getComputedStyle(root).scrollPaddingTop) || 0,
+    bottom: window.innerHeight,
+    right: root.clientWidth,
+  };
+}
 
 function load(): Promise<Chunk> {
   chunk ??= import('./SelectionToolbar');
@@ -99,13 +129,6 @@ function read(
   });
   if (!allowed) return null;
 
-  const placement = toolbarPlacement({
-    lines: [...range.getClientRects()],
-    column: prose.getBoundingClientRect(),
-    backward: isBackward(selection, range),
-    lineHeight: parseFloat(getComputedStyle(prose).lineHeight) || 0,
-  });
-  if (!placement) return null;
   const context = {
     text,
     slug: slugOf(document.getElementById('editor')?.dataset.fileUrl),
@@ -113,10 +136,20 @@ function read(
   };
   const actions = visibleActions(current.actions, context);
   if (actions.length === 0) return null;
+  const button = toolbarSize(actions.length);
+  const placement = toolbarPlacement({
+    lines: [...range.getClientRects()],
+    column: prose.getBoundingClientRect(),
+    backward: isBackward(selection, range),
+    lineHeight: parseFloat(getComputedStyle(prose).lineHeight) || 0,
+    screen: screenBounds(),
+    button,
+  });
+  if (!placement) return null;
 
   // 화면 좌표 → 층 좌표. 층은 글 요소를 꽉 채우므로 글 요소의 화면 위치를 뺀다.
   const origin = host.getBoundingClientRect();
-  const { box, anchor } = placement;
+  const { box, line, inset } = placement;
   return {
     host,
     props: {
@@ -126,7 +159,9 @@ function read(
         left: box.left - origin.left,
         right: box.right - origin.left,
       },
-      line: { top: anchor.top - origin.top, bottom: anchor.bottom - origin.top },
+      line: { top: line.top - origin.top, bottom: line.bottom - origin.top },
+      inset,
+      button,
       actions,
       context,
       label: current.label,
@@ -143,15 +178,16 @@ function refresh(): void {
     return;
   }
   const ticket = ++request;
-  shown = true;
+  $selectionToolbarOpen.set(true);
   void load().then(({ showSelectionToolbar }) => {
     if (ticket === request) showSelectionToolbar(view.host, view.props);
   });
 }
 
 function hide(): void {
-  if (!shown) return;
-  shown = false;
+  window.clearTimeout(settle);
+  if (!shown()) return;
+  $selectionToolbarOpen.set(false);
   request++;
   void chunk?.then(({ hideSelectionToolbar }) => hideSelectionToolbar());
 }
@@ -172,19 +208,25 @@ function onPointerUp(event: PointerEvent): void {
 }
 
 /**
- * 선택이 접히면 걷는다. 마우스로 고르는 중이 아니고 툴바가 떠 있으면 자리를 다시 잰다.
- * 키보드(Shift+화살표)로 새로 고른 선택을 띄우는 일은 아직 하지 않는다.
+ * 선택이 접히면 걷는다. 마우스로 고르는 중이면 `pointerup`을 기다린다. 툴바가 떠 있으면 자리를 바로 다시 재고, 떠
+ * 있지 않으면(키보드로 새로 고름) 선택이 `KEYBOARD_SETTLE_MS` 동안 멈춘 뒤 그린다.
  */
 function onSelectionChange(): void {
+  window.clearTimeout(settle);
   if (document.getSelection()?.isCollapsed ?? true) {
     hide();
     return;
   }
-  if (!dragging && shown) refresh();
+  if (dragging) return;
+  if (shown()) refresh();
+  else
+    settle = window.setTimeout(() => {
+      if (!dragging) refresh();
+    }, KEYBOARD_SETTLE_MS);
 }
 
 function onResize(): void {
-  if (shown) refresh();
+  if (shown()) refresh();
 }
 
 /**
@@ -201,9 +243,18 @@ export function watchSelectionToolbar(next: SelectionToolbarOptions): void {
   window.addEventListener('resize', onResize);
 }
 
+/**
+ * 상자와 버튼을 걷는다. 고른 글자는 그대로 두므로 ⌘C는 그대로 되고, 선택을 다시 바꾸면 다시 뜬다.
+ * 창 틀이 Esc와 찾기 줄을 열 때 부른다.
+ */
+export function dismissSelectionToolbar(): void {
+  hide();
+}
+
 /** 상자와 버튼을 걷고 층을 없앤다. 화면을 옮기기 전(`astro:before-swap`)에 부른다. */
 export function closeSelectionToolbar(): void {
-  shown = false;
+  window.clearTimeout(settle);
+  $selectionToolbarOpen.set(false);
   dragging = false;
   request++;
   void chunk?.then(({ unmountSelectionToolbar }) => unmountSelectionToolbar());

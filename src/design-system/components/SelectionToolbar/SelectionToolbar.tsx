@@ -3,7 +3,15 @@ import { createRoot, type Root } from 'react-dom/client';
 import { IconButton } from '../IconButton/IconButton';
 import { Popover, PopoverAnchor, PopoverContent } from '../Popover/Popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Tooltip/Tooltip';
-import type { Rect, SelectionAction, SelectionContext } from './selection.logic';
+import { screenBounds } from './selection';
+import {
+  buttonAnchor,
+  TOOLBAR_GAP,
+  type Rect,
+  type SelectionAction,
+  type SelectionContext,
+  type ToolbarSize,
+} from './selection.logic';
 
 /** 됐다는 표시(체크·`done.label`)를 보이는 시간. 코드 블록 복사 버튼과 같다. */
 export const DONE_MS = 2000;
@@ -14,37 +22,65 @@ export interface SelectionToolbarProps {
   box: Rect;
   /** 버튼을 붙이는 줄(선택의 끝 줄)의 위·아래. */
   line: Pick<Rect, 'top' | 'bottom'>;
+  /** 오른쪽 여백이 좁아 버튼을 상자 안쪽 오른쪽 위로 들이는가. */
+  inset: boolean;
+  /** 툴바(버튼 묶음)의 크기. 세로 위치를 화면 안으로 묶을 때 쓴다. */
+  button: ToolbarSize;
   /** 그릴 동작(이미 `when`으로 거른 것). */
   actions: readonly SelectionAction[];
   context: SelectionContext;
   /** 버튼 묶음의 접근 가능한 이름. */
   label: string;
+  /**
+   * 버튼 묶음을 포털할 요소(글 `article.doc`). 랜드마크(`main`) 안에 두어 axe `region`을 지키고, Tab이 글 끝을
+   * 지나 바로 툴바로 온다. 없으면 `document.body`.
+   */
+  container?: HTMLElement | null;
 }
 
 /**
  * 선택 툴바: 고른 줄들을 감싼 상자와, 상자 오른쪽 바깥에 붙은 동작 버튼들. 상자는 층 안에 그려 글자를 밀지 않고
- * (`pointer-events: none`), 버튼은 가상 기준점(상자 오른쪽 가장자리, 끝 줄 높이)에 붙은 팝오버로 띄운다.
+ * (`pointer-events: none`), 버튼은 가상 기준점(상자 오른쪽 가장자리, 끝 줄 높이)에 붙은 팝오버로 띄운다. 오른쪽 여백이
+ * 좁으면(`inset`) 상자 안쪽 오른쪽 위로 들이고, 상자가 화면보다 길면 스크롤해도 버튼이 화면 안에 남는다.
  * 떠도 포커스를 가져가지 않고, 버튼을 눌러도 선택이 풀리지 않는다. Tab으로 들어갈 수 있다.
- * 닫힘·Esc는 이 컴포넌트가 아니라 그리는 쪽(`selection.ts`)이 정한다.
+ * 닫힘·Esc는 이 컴포넌트가 아니라 그리는 쪽(`selection.ts`)과 창 틀의 단축키가 정한다.
  */
-export function SelectionToolbar({ box, line, actions, context, label }: SelectionToolbarProps) {
+export function SelectionToolbar({
+  box,
+  line,
+  inset,
+  button,
+  actions,
+  context,
+  label,
+  container,
+}: SelectionToolbarProps) {
   const boxRef = useRef<HTMLDivElement>(null);
-  // 스크롤하면 Popper가 다시 부른다. 상자 요소의 지금 화면 위치에서 끝 줄까지의 거리를 더한다.
+  // 스크롤하면 Popper가 다시 부른다. 상자 요소의 지금 화면 위치로 끝 줄을 옮겨 기준점을 다시 잰다(화면 안으로 묶기).
   const anchor = useMemo(
     () => ({
       current: {
         getBoundingClientRect() {
           const frame = boxRef.current?.getBoundingClientRect();
+          if (!frame) return new DOMRect();
+          const shift = frame.top - box.top;
+          const point = buttonAnchor({
+            box: { top: frame.top, bottom: frame.bottom, left: frame.left, right: frame.right },
+            line: { top: line.top + shift, bottom: line.bottom + shift },
+            inset,
+            screen: screenBounds(),
+            button,
+          });
           return DOMRect.fromRect({
-            x: frame?.right ?? 0,
-            y: (frame?.top ?? 0) + line.top - box.top,
+            x: point.left,
+            y: point.top,
             width: 0,
-            height: line.bottom - line.top,
+            height: point.bottom - point.top,
           });
         },
       },
     }),
-    [box.top, line.top, line.bottom],
+    [box.top, line.top, line.bottom, inset, button],
   );
 
   return (
@@ -64,12 +100,13 @@ export function SelectionToolbar({ box, line, actions, context, label }: Selecti
         <PopoverAnchor virtualRef={anchor} />
         <PopoverContent
           data-selection-toolbar
+          container={container}
           role="toolbar"
           aria-orientation="vertical"
           aria-label={label}
-          side="right"
+          side={inset ? 'left' : 'right'}
           align="start"
-          sideOffset={6}
+          sideOffset={TOOLBAR_GAP}
           className="z-15 flex flex-col gap-0.5 p-0.5"
           // 포커스는 본문에 둔다. Esc·바깥 누름으로 닫는 일은 선택 상태를 보는 쪽이 한다.
           onOpenAutoFocus={(event) => event.preventDefault()}
@@ -124,7 +161,7 @@ function ActionButton({ action, context }: { action: SelectionAction; context: S
 let mounted: { host: HTMLElement; layer: HTMLElement; root: Root } | null = null;
 
 /**
- * `host`(글 `article.doc`, `position: relative`) 맨 앞에 층을 두고 선택 툴바를 그린다. 층은 `position: absolute`라
+ * `host`(글 `article.doc`, `position: relative`) 맨 앞에 층을 두고 선택 툴바를 그린다. 버튼 묶음은 `host` 끝으로 포털한다. 층은 `position: absolute`라
  * 레이아웃에 끼지 않고, 본문(`.doc-prose`) 안에는 넣지 않는다(줄 번호·읽는 위치 블록이 바뀐다).
  */
 export function showSelectionToolbar(host: HTMLElement, props: SelectionToolbarProps): void {
@@ -137,7 +174,7 @@ export function showSelectionToolbar(host: HTMLElement, props: SelectionToolbarP
     mounted = { host, layer, root: createRoot(layer) };
   }
   // 고른 글자가 바뀌면 버튼의 됐다는 표시도 처음으로 돌린다.
-  mounted.root.render(<SelectionToolbar key={props.context.text} {...props} />);
+  mounted.root.render(<SelectionToolbar key={props.context.text} container={host} {...props} />);
 }
 
 /** 상자와 버튼을 걷는다. 층은 다음 선택을 위해 남긴다. */

@@ -39,6 +39,8 @@ import { toggleTheme } from '../../stores/theme';
 import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
 import { seedFindQuery } from '../../stores/find';
+import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
+import { dismissSelectionToolbar } from '../SelectionToolbar/selection';
 import {
   BranchIcon,
   CodeIcon,
@@ -675,6 +677,11 @@ export function Shell({
     [findOpen, openFind],
   );
 
+  // 찾기 줄이 열리면 본문 선택 툴바를 걷는다(⌘F가 고른 글자를 검색어로 넣은 뒤다). 고른 글자는 남는다.
+  useEffect(() => {
+    if (findOpen) dismissSelectionToolbar();
+  }, [findOpen]);
+
   // 다른 파일로 옮기면 찾기 줄을 닫는다. 바꾸기 전에 바로 언마운트해 칠한 것을 지운다(포커스는 화면 이동이 맡는다).
   // 마지막 검색어(`$findQuery`)는 창 틀 메모리에 남는다.
   useEffect(() => {
@@ -743,6 +750,9 @@ export function Shell({
   // 단축키: 판정은 `shortcuts.logic.ts`, `document` 리스너는 `shortcuts.ts`가 맡고 여기서는 동작만 실행한다.
   const onShortcut = (action: ShortcutAction) => {
     switch (action) {
+      case 'close-selection-toolbar':
+        dismissSelectionToolbar();
+        break;
       case 'open-palette':
         paletteOpener.current =
           document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -778,7 +788,8 @@ export function Shell({
         runCommand(action);
     }
   };
-  useShortcuts({ paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
+  const toolbarOpen = useStore($selectionToolbarOpen);
+  useShortcuts({ toolbarOpen, paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];

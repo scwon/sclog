@@ -1023,6 +1023,166 @@ if (plan) {
   await toolbarGone('선택 툴바: 끝내며 걷힘');
 }
 
+// 선택 툴바의 키보드·Esc·찾기·좁은 폭: Esc로 걷히고 고른 글자는 남는다. Shift+→로 골라도 뜨고 포커스는 본문에 남으며,
+// Tab으로 툴바에 들어갈 수 있다. ⌘F로 찾기 줄을 열면 걷힌다. 좁은 폭(390px)에서는 버튼이 상자 안쪽 오른쪽 위로 들어오고,
+// 화면보다 긴 선택에서는 스크롤해도 버튼이 화면 안에 남는다.
+/** 툴바가 화면 안에 있고 상자 안팎 어디에 붙었는지 잰다. */
+const toolbarFit = () =>
+  page.evaluate(() => {
+    const [box, toolbar] = ['[data-selection-box]', '[data-selection-toolbar]'].map((selector) => {
+      const r = document.querySelector(selector)?.getBoundingClientRect();
+      return r ? { top: r.top, bottom: r.bottom, left: r.left, right: r.right } : null;
+    });
+    const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    return {
+      box,
+      toolbar,
+      screen: { top, bottom: innerHeight, right: document.documentElement.clientWidth },
+    };
+  });
+const onScreen = ({ toolbar, screen }) =>
+  toolbar !== null &&
+  toolbar.top >= screen.top - 1 &&
+  toolbar.bottom <= screen.bottom + 1 &&
+  toolbar.right <= screen.right + 1;
+
+await goto(QA.base + post.url);
+const keys = await dragPlan();
+check('선택 툴바(키보드): 고를 여러 줄 문단이 있음', keys !== null);
+if (keys) {
+  await drag(keys.top, keys.bottom, 'Esc 앞 드래그');
+  await toolbarShown('선택 툴바: Esc 앞에 뜸');
+  await page.keyboard.press('Escape');
+  check('선택 툴바: Esc로 걷힘', await toolbarGone('선택 툴바: Esc로 걷힘'));
+  const keptText = await page.evaluate(() => getSelection()?.toString() ?? '');
+  check('선택 툴바: Esc 뒤에도 고른 글자는 남음', keptText.length > 0);
+
+  // 문단 첫 글자 하나만 고른 데서(세 자 미만이라 뜨지 않는다) Shift+→로 넓힌다. 캐럿 브라우징이 꺼진 Chrome은 접힌
+  // 선택을 키보드로 넓히지 않으므로 한 글자 선택에서 시작한다. 선택이 잠시 멈춘 뒤 뜬다.
+  await page.evaluate(() => {
+    const paragraph = [...document.querySelectorAll('#content > p')].find(
+      (p) => p.getBoundingClientRect().height > 80,
+    );
+    const lead = paragraph && document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT).nextNode();
+    if (!lead) return false;
+    const range = document.createRange();
+    range.setStart(lead, 0);
+    range.setEnd(lead, 1);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    return true;
+  });
+  await toolbarGone('선택 툴바: 한 글자 선택에서는 뜨지 않음');
+  for (let i = 0; i < 8; i++) await page.keyboard.press('Shift+ArrowRight');
+  await toolbarShown('선택 툴바: Shift+→로 고르면 뜸');
+  const shifted = await toolbarState();
+  check(
+    '선택 툴바: 키보드로 고르면 뜨고 포커스는 본문에 남음',
+    shifted.toolbars === 1 && !shifted.focusInToolbar && shifted.text.length >= 3,
+    JSON.stringify({ text: shifted.text, focusInToolbar: shifted.focusInToolbar }),
+  );
+  let presses = 0;
+  let entered = false;
+  while (!entered && presses < 150) {
+    await page.keyboard.press('Tab');
+    presses++;
+    entered = await page.evaluate(
+      () => document.activeElement?.closest('[data-selection-toolbar]') != null,
+    );
+  }
+  check('선택 툴바: Tab으로 툴바 버튼에 들어감', entered, `Tab ${presses}번`);
+
+  // 고른 글자 위에서 누르면 글자 끌어 옮기기가 되므로 선택을 먼저 풀고, Tab이 화면을 옮겼으므로 드래그할 자리를 다시 잰다.
+  await page.evaluate(() => {
+    getSelection()?.removeAllRanges();
+    return true;
+  });
+  await toolbarGone('선택 툴바: ⌘F 앞에 선택을 풀면 걷힘');
+  const retake = (await dragPlan()) ?? keys;
+  await drag(retake.top, retake.bottom, '⌘F 앞 드래그');
+  await toolbarShown('선택 툴바: ⌘F 앞에 뜸');
+  await page.keyboard.press('ControlOrMeta+F');
+  await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
+  check('선택 툴바: 찾기 줄이 열리면 걷힘', await toolbarGone('선택 툴바: 찾기 줄이 열리면 걷힘'));
+  await page.keyboard.type('개발');
+  await until('찾기 위치 글자(n/m)', () =>
+    /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+  );
+  check('선택 툴바: 찾기 줄에 검색하는 동안 다시 뜨지 않음', (await toolbarState()).toolbars === 0);
+  await page.keyboard.press('Escape');
+  await until('찾기 줄이 닫힘', () => document.querySelector('[data-find-input]') === null);
+
+  // 화면보다 긴 선택: 본문 첫 문단부터 마지막 문단까지 고르고 가운데로 스크롤한다.
+  await page.evaluate(() => {
+    const blocks = [...document.querySelectorAll('#content > p')];
+    const range = document.createRange();
+    range.setStart(blocks[0], 0);
+    range.setEnd(blocks.at(-1), blocks.at(-1).childNodes.length);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    const box = range.getBoundingClientRect();
+    scrollTo({ top: scrollY + box.top + box.height / 2 - innerHeight / 2, behavior: 'instant' });
+    return true;
+  });
+  await toolbarShown('선택 툴바: 화면보다 긴 선택에서 뜸');
+  const tall = await toolbarFit();
+  check(
+    '선택 툴바: 화면보다 긴 선택에서도 버튼이 화면 안',
+    onScreen(tall) && tall.box !== null && tall.box.bottom - tall.box.top > tall.screen.bottom,
+    JSON.stringify(tall),
+  );
+  await page.evaluate(() => {
+    scrollBy({ top: 300, behavior: 'instant' });
+    return true;
+  });
+  check(
+    '선택 툴바: 긴 선택을 스크롤해도 버튼이 화면 안',
+    await until('선택 툴바: 스크롤 뒤 화면 안', () => {
+      const r = document.querySelector('[data-selection-toolbar]')?.getBoundingClientRect();
+      const top = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      return r !== undefined && r.top >= top - 1 && r.bottom <= innerHeight + 1;
+    }),
+  );
+  await page.evaluate(() => {
+    getSelection()?.removeAllRanges();
+    return true;
+  });
+  await toolbarGone('선택 툴바: 긴 선택을 풀면 걷힘');
+
+  // 좁은 폭: 오른쪽 여백이 툴바 폭보다 좁아 상자 안쪽 오른쪽 위로 들어온다.
+  await page.cdp('Emulation.setDeviceMetricsOverride', {
+    width: 390,
+    height: 844,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  const narrow = await dragPlan();
+  if (narrow) {
+    await drag(narrow.top, narrow.bottom, '좁은 폭 드래그');
+    await toolbarShown('선택 툴바: 좁은 폭에서 뜸');
+    const fit = await toolbarFit();
+    check(
+      '선택 툴바: 좁은 폭에서는 버튼이 상자 안쪽 오른쪽 위',
+      onScreen(fit) &&
+        fit.box !== null &&
+        fit.toolbar.right <= fit.box.right &&
+        fit.toolbar.left >= fit.box.left &&
+        fit.toolbar.top - fit.box.top < 12,
+      JSON.stringify(fit),
+    );
+    await page.keyboard.press('Escape');
+    await toolbarGone('선택 툴바: 좁은 폭에서 Esc로 걷힘');
+  } else {
+    check('선택 툴바: 좁은 폭에서 고를 문단이 있음', false);
+  }
+  await page.cdp('Emulation.setDeviceMetricsOverride', {
+    width: 1440,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+}
+
 const events = await page.events();
 const errors = events
   .filter(

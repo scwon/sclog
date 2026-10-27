@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { CheckIcon, CopyIcon } from './icons';
 import { SelectionToolbar } from './SelectionToolbar';
-import type { SelectionAction } from './selection.logic';
+import { toolbarSize, type SelectionAction } from './selection.logic';
 
 /** 복사 동작 대역. 클립보드에 쓰지 않고 됐다고만 한다. */
 const copy: SelectionAction = {
@@ -26,6 +26,8 @@ const meta = {
     // 대역 문단의 둘째~넷째 줄(위 여백 40px, 줄 28px), 본문 단 680px에 상자 여백 10px
     box: { top: 62, bottom: 158, left: 46, right: 746 },
     line: { top: 124, bottom: 152 },
+    inset: false,
+    button: toolbarSize(1),
     actions: [copy],
     context: { text: '고른 대목', slug: 'developer', headingId: null },
     label: '선택 툴바',
@@ -55,6 +57,9 @@ export const Default: Story = {};
 
 /** 위로 드래그: 끝이 첫 줄이라 버튼도 상자 첫 줄 높이에 뜬다. */
 export const Backward: Story = { args: { line: { top: 68, bottom: 96 } } };
+
+/** 오른쪽 여백이 좁다(좁은 화면): 버튼을 상자 안쪽 오른쪽 위로 들인다. */
+export const Inset: Story = { args: { inset: true } };
 
 /** 클립보드가 막혔다: 눌러도 체크로 바뀌지 않는다. */
 export const CopyBlocked: Story = {
