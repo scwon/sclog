@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { built, dist, pages, urlOf } from './dist';
+import { SITE } from '@/site';
+import { anchors, built, dist, pages, urlOf } from './dist';
 
 describe.skipIf(!built)('build output', () => {
   it.each([
@@ -9,9 +10,56 @@ describe.skipIf(!built)('build output', () => {
     'blog/index.html',
     'blog/tags/index.html',
     'blog/tags/회고/index.html',
+    'ai-written/index.html',
+    'ai-written/why-ai-written-folder/index.html',
     '404.html',
   ])('has %s', (file) => {
     expect(existsSync(resolve(dist, file))).toBe(true);
+  });
+
+  it('puts the AI notice under the title block of AI posts only, before the body', () => {
+    const notice = `<p class="doc-notice">${SITE.aiWrittenNotice}</p>`;
+    const posts = pages
+      .map(({ path, html }) => ({ url: urlOf(path), html }))
+      .filter(({ html }) => html.includes('data-file-kind="post"'));
+    expect(posts.some(({ url }) => url.startsWith('/ai-written/'))).toBe(true);
+    for (const { url, html } of posts) {
+      const at = html.indexOf(notice);
+      expect({ url, notice: at >= 0 }).toEqual({ url, notice: url.startsWith('/ai-written/') });
+      if (at < 0) continue;
+      expect(html.indexOf('</header>')).toBeLessThan(at);
+      expect(at).toBeLessThan(html.indexOf('class="doc-prose"'));
+    }
+  });
+
+  it('puts AI post titles on the home under their own ai-written.log heading, not a year', () => {
+    const html = readFileSync(resolve(dist, 'index.html'), 'utf8');
+    const headings = [...html.matchAll(/<(h[23])\b[^>]*>([\s\S]*?)<\/\1>/g)].map(
+      ([, level, inner]) => ({ level, text: inner.replace(/<[^>]*>/g, '').trim(), inner }),
+    );
+    const ai = headings.findIndex(
+      ({ level, inner }) => level === 'h3' && inner.includes('href="/ai-written/'),
+    );
+    expect(ai).toBeGreaterThan(0);
+    const section = headings.slice(0, ai).findLast(({ level }) => level === 'h2');
+    expect(section?.text).toBe('ai-written.log');
+  });
+
+  it('offers both logs, the post list and both tag lists as places to go from 404', () => {
+    const html = existsSync(resolve(dist, '404.html'))
+      ? readFileSync(resolve(dist, '404.html'), 'utf8')
+      : '';
+    const main = html.slice(html.indexOf('<main'));
+    const links = anchors(main)
+      .filter(({ attributes }) => attributes.includes('flow-entry-link'))
+      .map(({ href, inner }) => ({ href, label: inner.replace(/<[^>]*>/g, '').trim() }));
+    expect(links).toEqual([
+      { href: '/', label: 'posts.log' },
+      { href: '/ai-written/', label: 'ai-written.log' },
+      { href: '/blog/', label: 'posts/' },
+      { href: '/blog/tags/', label: 'tags/' },
+      { href: '/ai-written/tags/', label: 'ai-written/tags/' },
+    ]);
   });
 
   it('lists every page except 404 in the sitemap, with the same URLs', () => {

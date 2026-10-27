@@ -17,23 +17,28 @@ const meta = {
     onDismiss: () => {},
     tree: [
       {
-        year: '2024',
-        files: [
+        name: 'posts',
+        years: [
           {
-            url: '/blog/react-hooks/',
-            title: '훅을 다시 읽다',
-            path: 'posts/2024/react-hooks.mdx',
+            year: '2024',
+            files: [
+              {
+                url: '/blog/react-hooks/',
+                title: '훅을 다시 읽다',
+                path: 'posts/2024/react-hooks.mdx',
+              },
+              { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
+            ],
           },
-          { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
-        ],
-      },
-      {
-        year: '2023',
-        files: [
           {
-            url: '/blog/pro-developer-2023-days/',
-            title: '프로 개발자 2023일 후기',
-            path: 'posts/2023/pro-developer-2023-days.mdx',
+            year: '2023',
+            files: [
+              {
+                url: '/blog/pro-developer-2023-days/',
+                title: '프로 개발자 2023일 후기',
+                path: 'posts/2023/pro-developer-2023-days.mdx',
+              },
+            ],
           },
         ],
       },

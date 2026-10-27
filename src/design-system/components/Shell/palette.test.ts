@@ -7,24 +7,44 @@ import {
 } from './palette.logic';
 import { SHORTCUT_KEYS } from './shortcuts.logic';
 
-/** 탐색기 트리 props(최신 먼저). 시험용 글이다. */
+/** 탐색기 트리 props: 루트 폴더(`posts` 먼저), 그 안은 최신 먼저. 시험용 글이다. */
 const tree = [
   {
-    year: '2024',
-    files: [
-      { url: '/blog/react-hooks/', title: '훅을 다시 읽다', path: 'posts/2024/react-hooks.mdx' },
-      { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
+    name: 'posts',
+    years: [
+      {
+        year: '2024',
+        files: [
+          {
+            url: '/blog/react-hooks/',
+            title: '훅을 다시 읽다',
+            path: 'posts/2024/react-hooks.mdx',
+          },
+          { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
+        ],
+      },
+      {
+        year: '2023',
+        files: [
+          {
+            url: '/blog/pro-developer-2023-days/',
+            title: '프로 개발자 2023일 후기',
+            path: 'posts/2023/pro-developer-2023-days.mdx',
+          },
+          { url: '/blog/my-react/', title: '나의 첫 글', path: 'posts/2023/my-react.mdx' },
+        ],
+      },
     ],
   },
   {
-    year: '2023',
-    files: [
+    name: 'ai-written',
+    years: [
       {
-        url: '/blog/pro-developer-2023-days/',
-        title: '프로 개발자 2023일 후기',
-        path: 'posts/2023/pro-developer-2023-days.mdx',
+        year: '2026',
+        files: [
+          { url: '/ai-written/agent/', title: 'AI가 쓴 글', path: 'ai-written/2026/agent.mdx' },
+        ],
       },
-      { url: '/blog/my-react/', title: '나의 첫 글', path: 'posts/2023/my-react.mdx' },
     ],
   },
 ];
@@ -38,8 +58,20 @@ describe('paletteFiles', () => {
       '/blog/hello/',
       '/blog/pro-developer-2023-days/',
       '/blog/my-react/',
+      '/ai-written/agent/',
     ]);
     expect(urls('   ')).toEqual(urls(''));
+  });
+
+  it('shows the root folder in the folder of an AI-written row', () => {
+    expect(paletteFiles(tree, 'agent')).toEqual([
+      {
+        url: '/ai-written/agent/',
+        name: 'agent.mdx',
+        folder: 'ai-written/2026',
+        title: 'AI가 쓴 글',
+      },
+    ]);
   });
 
   it('gives each row its file name, folder and title', () => {

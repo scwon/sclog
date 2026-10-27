@@ -14,21 +14,22 @@ import {
   type ShellCommand,
   type ShortcutKeys,
 } from './shortcuts.logic';
-import type { TreeYear } from './Shell';
+import type { TreeRoot } from './Shell';
+import { treeYears } from './tree.logic';
 
 /** 팔레트 목록의 글 한 줄. */
 export interface PaletteFile {
   url: string;
   /** 파일 이름. 예: `pro-developer-2023-days.mdx` */
   name: string;
-  /** 경로의 폴더. 예: `posts/2023` */
+  /** 경로의 폴더(루트 폴더부터). 예: `posts/2023`, `ai-written/2026` */
   folder: string;
   title: string;
 }
 
-/** 트리를 트리 순서(최신 먼저)의 글 줄로 편다. */
-function rows(tree: TreeYear[]): PaletteFile[] {
-  return tree.flatMap(({ files }) =>
+/** 트리를 트리 순서(루트 순서, 그 안은 최신 먼저)의 글 줄로 편다. */
+function rows(tree: TreeRoot[]): PaletteFile[] {
+  return treeYears(tree).flatMap(({ files }) =>
     files.map(({ url, title, path }) => {
       const name = fileName(path);
       return {
@@ -54,7 +55,7 @@ function rankOf(file: PaletteFile, query: string): number | null {
  * 입력에 맞는 글 줄. 파일 이름과 제목을 정규화해 부분 일치시키고(폴더는 보지 않는다), 순위는 파일 이름이
  * 입력으로 시작 → 파일 이름에 포함 → 제목에 포함이며, 같으면 트리 순서다. 빈 입력이면 모든 글을 트리 순서로 보인다.
  */
-export function paletteFiles(tree: TreeYear[], query: string): PaletteFile[] {
+export function paletteFiles(tree: TreeRoot[], query: string): PaletteFile[] {
   const all = rows(tree);
   const needle = normalizeForMatch(query.trim());
   if (!needle) return all;

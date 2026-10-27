@@ -61,9 +61,17 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
       return (
         <li class="flow-line flow-dir flow-entry" data-line={line.no}>
           <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
-          <a class="flow-dir-label flow-entry-link" href={line.href}>
-            {line.label}
-          </a>
+          {line.heading ? (
+            <h2 class="flow-dir-label">
+              <a class="flow-entry-link" href={line.href}>
+                {line.label}
+              </a>
+            </h2>
+          ) : (
+            <a class="flow-dir-label flow-entry-link" href={line.href}>
+              {line.label}
+            </a>
+          )}
           <span class="flow-dir-rule" aria-hidden="true" />
           {line.note && <span class="flow-dir-count">{line.note}</span>}
         </li>

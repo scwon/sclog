@@ -1,0 +1,18 @@
+---
+/** AI 글 화면 `/ai-written/<슬러그>/`. 화면은 직접 쓴 글과 같은 `PostPage`이고, 폴더에 따라 문구·이동 줄이 갈린다. */
+import PostPage from '../../components/blog/PostPage.astro';
+import { postPaths, type BlogPost } from '../../utils/blog';
+
+/** AI 글(`ai-written`)의 발행 글마다 한 화면. 초안·예약 글은 화면이 없다. */
+export function getStaticPaths() {
+  return postPaths('ai-written');
+}
+
+interface Props {
+  post: BlogPost;
+}
+
+const { post } = Astro.props;
+---
+
+<PostPage post={post} />

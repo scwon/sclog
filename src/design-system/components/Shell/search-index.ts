@@ -17,7 +17,10 @@ export interface SearchBlock {
   chapter: NumberedChapter | null;
   /** 이 블록이 속한 절. 장 머리이거나 절이 없으면 `null`. */
   section: { id: string; text: string } | null;
-  /** MDX 문법과 HTML을 걷어 낸 순수 텍스트(공백은 하나로 줄임). 그림만 있는 블록은 빈 문자열이다. */
+  /**
+   * MDX 문법과 HTML을 걷어 낸 순수 텍스트(공백은 하나로 줄임). 그림만 있는 블록이나 블로그가 찾지 않게 비워 둔 줄은
+   * 빈 문자열이라 어떤 검색어에도 걸리지 않는다.
+   */
   text: string;
 }
 

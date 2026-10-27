@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { TreeYear } from '@/design-system/components/Shell/Shell';
+import type { TreeRoot } from '@/design-system/components/Shell/Shell';
 import { nextFile } from '@/design-system/components/Shell/tree.logic';
+import { FOLDER_ROUTES, type Folder } from '@/utils/folder';
 import { built, fileUrl, pages } from './dist';
 
 /** 글 끝 이동 줄(`nav.doc-end`)의 줄들: 링크 주소, 라벨, 접근 가능한 이름(`aria-label`), 꼬리표 자리 유무. */
@@ -27,21 +28,29 @@ describe.skipIf(!built)('build output', () => {
       }))
       .filter(({ kind }) => kind === 'post');
 
-    // 글 페이지들로 탐색기 트리를 다시 짓는다: `posts/<연도>/…`의 연도 폴더, 폴더 안은 새 글 먼저.
-    const tree: TreeYear[] = [...new Set(posts.map(({ path }) => path.split('/')[1]))]
-      .toSorted((a, b) => b.localeCompare(a))
-      .map((year) => ({
-        year,
-        files: posts
-          .filter(({ path }) => path.split('/')[1] === year)
-          .toSorted((a, b) => b.published.localeCompare(a.published))
-          .map(({ url, title, path }) => ({ url, title, path })),
-      }));
+    // 글 페이지들로 폴더(`posts`·`ai-written`)마다 탐색기 트리를 다시 짓는다: `<폴더>/<연도>/…`의 연도 폴더,
+    // 폴더 안은 새 글 먼저.
+    const treeOf = (folder: string): TreeRoot[] => {
+      const inFolder = posts.filter(({ path }) => path.split('/')[0] === folder);
+      const years = [...new Set(inFolder.map(({ path }) => path.split('/')[1]))]
+        .toSorted((a, b) => b.localeCompare(a))
+        .map((year) => ({
+          year,
+          files: inFolder
+            .filter(({ path }) => path.split('/')[1] === year)
+            .toSorted((a, b) => b.published.localeCompare(a.published))
+            .map(({ url, title, path }) => ({ url, title, path })),
+        }));
+      return [{ name: folder, years }];
+    };
 
-    it.each(posts.map(({ url, html }) => ({ url, html })))(
-      'ends $url with the next file line (only when the folder has a newer post), posts.log, 맨 위로',
-      ({ url, html }) => {
-        const next = nextFile(tree, url);
+    it.each(
+      posts.map(({ url, html, path }) => ({ url, html, folder: path.split('/')[0] as Folder })),
+    )(
+      'ends $url with the next file line (only when the folder has a newer post), the $folder log, 맨 위로',
+      ({ url, html, folder }) => {
+        const next = nextFile(treeOf(folder), url);
+        const { log } = FOLDER_ROUTES[folder];
         const nextLine = next
           ? [
               {
@@ -54,7 +63,7 @@ describe.skipIf(!built)('build output', () => {
           : [];
         expect(docEndLines(html)).toEqual([
           ...nextLine,
-          { href: '/', label: 'posts.log', name: undefined, mark: false },
+          { href: log.url, label: log.name, name: undefined, mark: false },
           { href: '#editor', label: '맨 위로', name: undefined, mark: false },
         ]);
       },

@@ -12,6 +12,8 @@ export const dist = resolve(import.meta.dirname, '../../../dist');
 export const built = existsSync(dist);
 /** 원본 글 폴더(`src/content/blog`)의 절대 경로. */
 export const blogDir = resolve(import.meta.dirname, '../../content/blog');
+/** AI 글 폴더(`src/content/ai-written`)의 절대 경로. */
+export const aiWrittenDir = resolve(import.meta.dirname, '../../content/ai-written');
 
 /** `dist/` 안에서 그 확장자로 끝나는 파일의 절대 경로들. `dist/`가 없으면 빈 배열. */
 export function files(extension: string): string[] {

@@ -84,7 +84,7 @@ import {
   type ShellCommand,
   type ShortcutAction,
 } from './shortcuts.logic';
-import { nextFile } from './tree.logic';
+import { nextFile, treeUrls } from './tree.logic';
 
 /** 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 JS에 넣지 않는다. */
 const Palette = lazy(() => import('./Palette'));
@@ -99,7 +99,7 @@ const FindWidget = lazy(() => import('./FindWidget'));
 export interface TreeFile {
   url: string;
   title: string;
-  /** `posts/<연도>/<slug>.mdx` */
+  /** `<루트>/<연도>/<slug>.mdx`. 예: `posts/2023/x.mdx`, `ai-written/2026/y.mdx` */
   path: string;
 }
 
@@ -109,7 +109,18 @@ export interface TreeYear {
   files: TreeFile[];
 }
 
-/** 지금 화면의 파일. 경로는 `posts/<연도>/<slug>.mdx`, `posts.log`, `tags/<태그>`, `404` 등이다. */
+/** 탐색기 트리의 루트 폴더. 탐색기는 루트마다 이름 있는 구역을 그린다. */
+export interface TreeRoot {
+  /** 루트 폴더 이름이자 구역 머리. 예: `posts`, `ai-written` */
+  name: string;
+  /** 연도 폴더(최신 연도 먼저). */
+  years: TreeYear[];
+}
+
+/**
+ * 지금 화면의 파일. 경로는 `posts/<연도>/<slug>.mdx`, `ai-written/<연도>/<slug>.mdx`, `posts.log`, `ai-written.log`,
+ * `tags/<태그>`, `ai-written/tags/<태그>`, `404` 등이다.
+ */
 export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url' | 'kind'>;
 
 /** 패널의 프로필 화면에 보이는 블로그 주인 소개. */
@@ -135,7 +146,8 @@ export interface ShellProps {
   githubUrl: string;
   /** 활동 막대의 "이 블로그의 소스" 링크. */
   sourceUrl: string;
-  tree: TreeYear[];
+  /** 탐색기 트리: 루트 폴더 순서대로(`posts` 먼저). 글이 없는 루트는 넣지 않는다. */
+  tree: TreeRoot[];
   profile: Profile;
   /** 검색 화면이 처음 열릴 때 내려받는 검색 색인(`SearchIndex`)의 주소. 예: `/search-index.json` */
   searchIndexUrl: string;
@@ -538,7 +550,7 @@ export function Shell({
 
   // 읽기 기록에서 발행된 글 목록(트리)에 없는 글을 버린다.
   useEffect(() => {
-    keepPublishedHistory(tree.flatMap((year) => year.files.map((entry) => entry.url)));
+    keepPublishedHistory(treeUrls(tree));
   }, [tree]);
 
   // 패널 화면이 바뀔 때마다 세션 동안 남긴다. 열림·닫힘은 저장하지 않는다.
@@ -819,7 +831,6 @@ export function Shell({
   };
   useShortcuts({ paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
 
-  const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
   // 이어 읽기는 지금 글의 열기 요약이 사라진 뒤에만 보인다(앞 파일의 요약이 끝난 직후 새 글이 열려도 겹치지 않게).
   const offer = resume && file?.url === resume.url && settled === resume.url ? resume : null;
@@ -943,46 +954,54 @@ export function Shell({
           )
         ) : (
           <>
-            <section aria-labelledby="explorer-posts" className="pb-2">
-              <SectionHead id="explorer-posts">posts</SectionHead>
-              <ul className="m-0 list-none p-0">
-                {years.map(({ year, files, count }) => (
-                  <li key={year}>
-                    <p className="m-0 flex h-7 items-center gap-1.5 pr-3 pl-6.5 font-mono text-[12.5px] leading-none font-medium text-text-soft">
-                      <Twisty />
-                      {year}
-                      <span className="ml-auto text-[11.5px] text-text-muted">{count}</span>
-                    </p>
-                    <ul className="m-0 list-none p-0">
-                      {files.map((entry) => {
-                        const active = shown?.url === entry.url;
-                        const name = fileName(entry.path);
-                        const mark = readingMark(history, entry.url);
-                        return (
-                          <li key={entry.url}>
-                            <a
-                              href={entry.url}
-                              title={name}
-                              aria-current={active ? 'page' : undefined}
-                              className={cn(
-                                'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
-                                mark?.kind === 'read' && 'text-text-muted',
-                                active &&
-                                  'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
-                              )}
-                            >
-                              <FileGlyph />
-                              <span className="min-w-0 truncate">{name}</span>
-                              {mark && <ReadMark mark={mark} selected={active} />}
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {tree.map(({ name: root, years }, index) => (
+              <section
+                key={root}
+                aria-labelledby={`explorer-${root}`}
+                className={cn('pb-2', index > 0 && 'border-t border-border')}
+              >
+                <SectionHead id={`explorer-${root}`}>{root}</SectionHead>
+                <ul className="m-0 list-none p-0">
+                  {years.map(({ year, files }) => (
+                    <li key={year}>
+                      <p className="m-0 flex h-7 items-center gap-1.5 pr-3 pl-6.5 font-mono text-[12.5px] leading-none font-medium text-text-soft">
+                        <Twisty />
+                        {year}
+                        <span className="ml-auto text-[11.5px] text-text-muted">
+                          {files.length}
+                        </span>
+                      </p>
+                      <ul className="m-0 list-none p-0">
+                        {files.map((entry) => {
+                          const active = shown?.url === entry.url;
+                          const name = fileName(entry.path);
+                          const mark = readingMark(history, entry.url);
+                          return (
+                            <li key={entry.url}>
+                              <a
+                                href={entry.url}
+                                title={name}
+                                aria-current={active ? 'page' : undefined}
+                                className={cn(
+                                  'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                  mark?.kind === 'read' && 'text-text-muted',
+                                  active &&
+                                    'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
+                                )}
+                              >
+                                <FileGlyph />
+                                <span className="min-w-0 truncate">{name}</span>
+                                {mark && <ReadMark mark={mark} selected={active} />}
+                              </a>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
             {outline.length > 0 && (
               <section aria-labelledby="explorer-outline" className="border-t border-border pb-2">
                 <SectionHead id="explorer-outline">개요</SectionHead>

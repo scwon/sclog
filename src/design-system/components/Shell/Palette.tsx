@@ -16,7 +16,7 @@ import {
 } from './palette.logic';
 import { SHORTCUT_KEYS, keyLabel, type Platform, type ShellCommand } from './shortcuts.logic';
 import { findSupported } from './shortcuts';
-import type { TreeYear } from './Shell';
+import type { TreeRoot } from './Shell';
 
 /** 창 틀이 팔레트에 넘기는 키 동작. 키 판정은 창 틀의 `document` 리스너 하나가 하고, 팔레트는 그 결과만 받는다. */
 export interface PaletteHandle {
@@ -29,7 +29,7 @@ export interface PaletteHandle {
 /** `Palette`의 props. */
 export interface PaletteProps {
   /** 탐색기 트리 props. 팔레트는 이것만 거르고 검색 색인은 받지 않는다. */
-  tree: TreeYear[];
+  tree: TreeRoot[];
   /** 키 표기를 고르는 플랫폼. 창 틀이 브라우저에서 처음 그릴 때 정한다. */
   platform: Platform;
   /** 지금 글에 다음 파일이 있는가. 없으면 명령 목록에서 `다음 파일 열기`를 뺀다. */

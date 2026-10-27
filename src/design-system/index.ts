@@ -11,6 +11,7 @@ export {
   type Profile,
   type ShellProps,
   type TreeFile,
+  type TreeRoot,
   type TreeYear,
 } from './components/Shell/Shell';
 export { nextFile } from './components/Shell/tree.logic';

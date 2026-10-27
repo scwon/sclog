@@ -1,26 +1,46 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { FOLDER_ROUTES, FOLDERS, type Folder } from './folder';
 
-export type BlogPost = CollectionEntry<'blog'>;
+/** 글 한 편: 직접 쓴 글(`blog` 컬렉션)이거나 AI 글(`ai-written` 컬렉션). 폴더는 `postFolder`로 묻는다. */
+export type BlogPost = CollectionEntry<'blog'> | CollectionEntry<'ai-written'>;
+
+/** 한 폴더의 발행 글(순서 없음). `draft`·미래 날짜(예약 발행) 규칙은 폴더와 상관없이 같다. */
+async function publishedIn(folder: Folder): Promise<BlogPost[]> {
+  const now = new Date();
+  return getCollection(
+    FOLDER_ROUTES[folder].collection,
+    ({ data }: BlogPost) => !data.draft && data.pubDate <= now,
+  );
+}
 
 /**
- * 발행된 블로그 글 목록을 최신순으로 반환
+ * 발행된 글 목록을 최신순으로 반환. 폴더를 주면 그 폴더만, 안 주면 두 폴더를 합친다.
  * - draft: true인 글 제외
  * - 미래 날짜 글 제외 (예약 발행)
  */
-export async function getPublishedPosts(): Promise<BlogPost[]> {
-  const posts = await getCollection('blog', ({ data }) => {
-    const now = new Date();
-    return !data.draft && data.pubDate <= now;
-  });
-
+export async function getPublishedPosts(folder?: Folder): Promise<BlogPost[]> {
+  const posts = (await Promise.all((folder ? [folder] : FOLDERS).map(publishedIn))).flat();
   return posts.toSorted((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
 /**
- * 모든 태그와 해당 글 수를 반환
+ * 한 폴더 글 화면의 정적 경로(`getStaticPaths`): 발행 글마다 슬러그와 그 글. 초안·예약 글은 화면도
+ * 사이트맵 항목도 생기지 않는다.
  */
-export async function getAllTags(): Promise<Map<string, number>> {
-  const posts = await getPublishedPosts();
+export async function postPaths(
+  folder: Folder,
+): Promise<{ params: { slug: string }; props: { post: BlogPost } }[]> {
+  return (await getPublishedPosts(folder)).map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+/**
+ * 한 폴더의 모든 태그와 해당 글 수를 반환
+ */
+export async function getAllTags(folder: Folder): Promise<Map<string, number>> {
+  const posts = await getPublishedPosts(folder);
   const tagCount = new Map<string, number>();
 
   posts.forEach((post) => {
@@ -33,10 +53,10 @@ export async function getAllTags(): Promise<Map<string, number>> {
 }
 
 /**
- * 특정 태그를 가진 글 목록 반환
+ * 한 폴더에서 특정 태그를 가진 글 목록 반환
  */
-export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
-  const posts = await getPublishedPosts();
+export async function getPostsByTag(folder: Folder, tag: string): Promise<BlogPost[]> {
+  const posts = await getPublishedPosts(folder);
   return posts.filter((post) => post.data.tags.includes(tag));
 }
 

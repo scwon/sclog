@@ -1,8 +1,16 @@
 import { statSync } from 'node:fs';
 import type { MarkdownHeading } from 'astro';
-import { fileName, type EditorFile, type OutlineItem, type TreeFile } from '@/design-system';
+import {
+  fileName,
+  type EditorFile,
+  type OutlineItem,
+  type TreeFile,
+  type TreeRoot,
+  type TreeYear,
+} from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
+import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, tagPathFolder, type Folder } from './folder';
 
 /** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). 개요는 따로 넘긴다. */
 export type IdeFile = Omit<EditorFile, 'outline'>;
@@ -15,16 +23,32 @@ export function postYear(post: BlogPost): string {
   return String(post.data.pubDate.getUTCFullYear());
 }
 
-/** 글 URL. 기존 주소 `/blog/<slug>/`를 그대로 쓴다. */
+/** 글 URL: 그 폴더의 주소 앞부분 + 슬러그(`/blog/<slug>/`, `/ai-written/<slug>/`). */
 export function postUrl(post: BlogPost): string {
-  return `/blog/${post.id}/`;
+  return `${FOLDER_ROUTES[postFolder(post)].postBase}${post.id}/`;
 }
 
-/** 글을 창 틀의 파일로 본다: 경로 `posts/<연도>/<slug>.mdx`, 크기는 원본 파일 바이트. */
+/** 폴더의 태그별 글 주소: `/blog/tags/<태그>/`, `/ai-written/tags/<태그>/`. */
+export function tagUrl(folder: Folder, tag: string): string {
+  return `${FOLDER_ROUTES[folder].tags}${tag}/`;
+}
+
+/**
+ * 태그 화면의 파일 경로(탭·경로 표시줄): 직접 쓴 글은 `tags/`·`tags/<태그>`, AI 글은 앞에 폴더를 붙여
+ * `ai-written/tags/`·`ai-written/tags/<태그>`. 태그를 빼면 태그 목록이다.
+ */
+export function tagPath(folder: Folder, tag = ''): string {
+  return `${FOLDER_ROUTES[folder].tagPath}${tag}`;
+}
+
+/**
+ * 글을 창 틀의 파일로 본다: 경로 `<폴더>/<연도>/<slug>.mdx`(`posts/…`, `ai-written/…`),
+ * 크기는 원본 파일 바이트.
+ */
 export function postFile(post: BlogPost): IdeFile {
   return {
     title: post.data.title,
-    path: `posts/${postYear(post)}/${post.id}.mdx`,
+    path: `${postFolder(post)}/${postYear(post)}/${post.id}.mdx`,
     url: postUrl(post),
     kind: 'post',
     size: post.filePath ? statSync(post.filePath).size : undefined,
@@ -32,8 +56,8 @@ export function postFile(post: BlogPost): IdeFile {
   };
 }
 
-/** 탐색기 트리: 연도 폴더(최신 연도 먼저)와 그 안의 글 파일. */
-export function buildTree(posts: BlogPost[]) {
+/** 한 폴더 글의 연도 폴더(최신 연도 먼저)와 그 안의 글 파일(넘긴 순서 그대로). */
+function yearFolders(posts: BlogPost[]): TreeYear[] {
   const years = new Map<string, BlogPost[]>();
   for (const post of posts) years.set(postYear(post), [...(years.get(postYear(post)) ?? []), post]);
   return [...years.entries()]
@@ -47,17 +71,30 @@ export function buildTree(posts: BlogPost[]) {
     }));
 }
 
+/**
+ * 탐색기 트리: 루트 폴더(`posts` 먼저, `ai-written` 다음)와 그 안의 연도 폴더(최신 연도 먼저)·글 파일.
+ * 글이 한 편도 없는 루트는 넣지 않는다. 글은 새 글 먼저(발행 글 조회 순서)로 넘긴다.
+ */
+export function buildTree(posts: BlogPost[]): TreeRoot[] {
+  return FOLDERS.map((name) => ({
+    name,
+    years: yearFolders(posts.filter((post) => postFolder(post) === name)),
+  })).filter((root) => root.years.length > 0);
+}
+
 /** 글 끝 이동 줄 하나. 다음 파일 줄만 메모(글 제목)와 접근 가능한 이름이 있다. */
 export type DocEndLink =
   | { href: string; label: string; note: string; name: string; next: true }
   | { href: string; label: string; next?: never };
 
 /**
- * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → `posts.log` → `맨 위로`. 다음 파일이 없으면 그 줄만 뺀다.
+ * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더의 로그(`posts.log`·`ai-written.log`) → `맨 위로`.
+ * 다음 파일이 없으면 그 줄만 뺀다.
  */
-export function docEndLinks(next: TreeFile | null): DocEndLink[] {
+export function docEndLinks(folder: Folder, next: TreeFile | null): DocEndLink[] {
+  const { log } = FOLDER_ROUTES[folder];
   const rest: DocEndLink[] = [
-    { href: '/', label: 'posts.log' },
+    { href: log.url, label: log.name },
     { href: '#editor', label: '맨 위로' },
   ];
   if (!next) return rest;
@@ -71,6 +108,44 @@ export function docEndLinks(next: TreeFile | null): DocEndLink[] {
     },
     ...rest,
   ];
+}
+
+/** 경로 표시줄 조각 하나. 마지막 조각(`current`)과 폴더가 아닌 중간 조각은 링크가 없다. */
+export interface Crumb {
+  label: string;
+  href: string | undefined;
+  current: boolean;
+}
+
+/**
+ * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
+ * 그 폴더의 태그 목록(`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
+ */
+function sectionHref(label: string, upTo: string[]): string | undefined {
+  if (isFolder(label)) return FOLDER_ROUTES[label].log.url;
+  const folder = tagPathFolder(`${upTo.join('/')}/`);
+  return folder && FOLDER_ROUTES[folder].tags;
+}
+
+/**
+ * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `tags › 회고`,
+ * `ai-written › tags › 회고`).
+ * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 폴더 조각은 그 폴더의 로그, `tags` 조각은 그 폴더의 태그 목록으로 간다.
+ */
+export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
+  const logFolder = FOLDERS.find((folder) => FOLDER_ROUTES[folder].log.name === file.path);
+  const segments =
+    file.kind === 'log' && logFolder
+      ? [logFolder, file.path]
+      : file.path.split('/').filter(Boolean);
+  return segments.map((label, index) => {
+    const current = index === segments.length - 1;
+    return {
+      label,
+      href: current ? undefined : sectionHref(label, segments.slice(0, index + 1)),
+      current,
+    };
+  });
 }
 
 /** 본문 제목에서 개요를 만든다. 가장 얕은 단계가 장이고, 바로 아래 단계가 그 장의 절이다. */
