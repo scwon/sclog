@@ -2,6 +2,7 @@ import { COARSE_POINTER } from '../../media';
 import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
 import {
   headingAbove,
+  PROSE_CLASS,
   slugOf,
   toolbarAllowed,
   toolbarPlacement,
@@ -20,8 +21,8 @@ import type { SelectionToolbarProps } from './SelectionToolbar';
  * - 마우스로 고르는 동안(`pointerdown`~`pointerup`)은 그리지 않고 `pointerup`에서 그린다.
  * - 키보드(Shift+화살표)로 고르면 선택이 `KEYBOARD_SETTLE_MS` 동안 멈춘 뒤 그린다. 포커스는 본문에 남는다.
  * - 선택이 접히면(빈 곳 클릭 포함) 걷는다. 떠 있는 동안 선택이 바뀌면 자리를 다시 잰다.
- * - Esc와 찾기 줄이 열릴 때는 창 틀이 `dismissSelectionToolbar()`를 부른다(선택은 남는다). 떠 있는지는
- *   `$selectionToolbarOpen`으로 알린다.
+ * - Esc, 찾기 줄·팔레트가 열릴 때는 창 틀이 `dismissSelectionToolbar()`를 부른다(선택은 남는다). 떠 있는지는
+ *   `$selectionToolbarOpen`으로 알린다. 고른 자리에서 누른 첫 Tab에는 창 틀이 `focusSelectionToolbar()`를 부른다.
  * - 화면을 옮기기 전에는 소비자가 `closeSelectionToolbar()`를 부른다.
  */
 
@@ -31,12 +32,17 @@ export interface SelectionToolbarOptions {
   actions: readonly SelectionAction[];
   /** 버튼 묶음의 접근 가능한 이름. */
   label: string;
+  /**
+   * 상자 층을 붙이고 버튼 묶음을 포털할 요소의 선택자. 본문 요소(`.doc-prose`)를 품는 가장 가까운 조상 가운데 이 선택자에
+   * 맞는 것을 쓴다. `position: relative`여야 하고 랜드마크(`main`) 안에 있어야 한다(axe `region`).
+   */
+  host: string;
+  /** 본문 안이어도 툴바를 띄우지 않는 요소의 클래스(제 복사 버튼이 있는 코드 블록 틀 등). */
+  excludedClasses?: readonly string[];
 }
 
 /** 본문 요소. 글 화면에만 있다. */
-const PROSE = '.doc-prose';
-/** 층을 붙이는 글 요소(`position: relative`). */
-const DOC = '[data-doc]';
+const PROSE = `.${PROSE_CLASS}`;
 /** 툴바 버튼 묶음(포털되어 본문 밖에 있다). */
 const TOOLBAR = '[data-selection-toolbar]';
 
@@ -90,15 +96,22 @@ function ancestry(node: Node | null): ElementStep[] {
   return steps;
 }
 
-/** 선택이 시작한 본문 블록과 그 앞 블록들(가까운 것부터). */
-function blocksAbove(prose: Element, node: Node): ElementStep[] {
-  let block = node instanceof Element ? node : node.parentElement;
-  while (block && block.parentElement !== prose) block = block.parentElement;
-  const steps: ElementStep[] = [];
-  for (; block; block = block.previousElementSibling) {
-    steps.push({ name: block.localName, id: block.id });
-  }
-  return steps;
+/** 본문 요소의 자식 노드들. 글자 노드는 `null`이다(`headingAbove`의 입력). */
+function proseChildren(prose: Element): (ElementStep | null)[] {
+  return [...prose.childNodes].map((node) =>
+    node instanceof Element ? { name: node.localName, id: node.id } : null,
+  );
+}
+
+/**
+ * 선택이 시작한 본문 자식의 자리. 시작 노드가 본문 요소 자신이면(블록 경계에서 시작) 그 오프셋이 곧 자식 번호다.
+ * 본문 밖이면 -1.
+ */
+function startChild(prose: Element, range: Range): number {
+  if (range.startContainer === prose) return range.startOffset;
+  let node: Node | null = range.startContainer;
+  while (node && node.parentNode !== prose) node = node.parentNode;
+  return node ? [...prose.childNodes].indexOf(node as ChildNode) : -1;
 }
 
 /** 끝(focus)이 시작(anchor)보다 앞에 있는가(위로·왼쪽으로 고름). */
@@ -110,14 +123,14 @@ function isBackward(selection: Selection, range: Range): boolean {
   );
 }
 
-/** 지금 선택으로 그릴 툴바. 띄우지 않을 선택이면 `null`. */
-function read(
+/** 지금 선택으로 그릴 툴바(붙일 글 요소와 props). 띄우지 않을 선택이면 `null`. */
+function toolbarView(
   current: SelectionToolbarOptions,
 ): { host: HTMLElement; props: SelectionToolbarProps } | null {
   const selection = document.getSelection();
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
   const prose = document.querySelector(PROSE);
-  const host = prose?.closest<HTMLElement>(DOC);
+  const host = prose?.closest<HTMLElement>(current.host);
   if (!prose || !host) return null;
   const range = selection.getRangeAt(0);
   const text = selection.toString();
@@ -126,24 +139,25 @@ function read(
     end: ancestry(range.endContainer),
     text,
     coarsePointer: window.matchMedia(COARSE_POINTER).matches,
+    excludedClasses: current.excludedClasses,
   });
   if (!allowed) return null;
 
   const context = {
     text,
     slug: slugOf(document.getElementById('editor')?.dataset.fileUrl),
-    headingId: headingAbove(blocksAbove(prose, range.startContainer)),
+    headingId: headingAbove(proseChildren(prose), startChild(prose, range)),
   };
   const actions = visibleActions(current.actions, context);
   if (actions.length === 0) return null;
-  const button = toolbarSize(actions.length);
+  const toolbar = toolbarSize(actions.length);
   const placement = toolbarPlacement({
     lines: [...range.getClientRects()],
     column: prose.getBoundingClientRect(),
     backward: isBackward(selection, range),
     lineHeight: parseFloat(getComputedStyle(prose).lineHeight) || 0,
     screen: screenBounds(),
-    button,
+    toolbar,
   });
   if (!placement) return null;
 
@@ -161,7 +175,7 @@ function read(
       },
       line: { top: line.top - origin.top, bottom: line.bottom - origin.top },
       inset,
-      button,
+      toolbar,
       actions,
       context,
       label: current.label,
@@ -172,7 +186,7 @@ function read(
 /** 지금 선택으로 다시 그리거나, 띄울 선택이 아니면 걷는다. */
 function refresh(): void {
   if (!options) return;
-  const view = read(options);
+  const view = toolbarView(options);
   if (!view) {
     hide();
     return;
@@ -245,10 +259,18 @@ export function watchSelectionToolbar(next: SelectionToolbarOptions): void {
 
 /**
  * 상자와 버튼을 걷는다. 고른 글자는 그대로 두므로 ⌘C는 그대로 되고, 선택을 다시 바꾸면 다시 뜬다.
- * 창 틀이 Esc와 찾기 줄을 열 때 부른다.
+ * 창 틀이 Esc에, 그리고 찾기 줄·팔레트가 열릴 때 부른다.
  */
 export function dismissSelectionToolbar(): void {
   hide();
+}
+
+/**
+ * 선택 툴바의 첫 버튼에 포커스를 준다. 툴바는 글 끝에 포털되어 DOM 순서로는 고른 자리에서 멀므로, 창 틀이 고른 자리에서
+ * 누른 첫 Tab에 부른다. 툴바가 아직 그려지지 않았으면 아무것도 하지 않는다.
+ */
+export function focusSelectionToolbar(): void {
+  document.querySelector<HTMLElement>(`${TOOLBAR} button`)?.focus();
 }
 
 /** 상자와 버튼을 걷고 층을 없앤다. 화면을 옮기기 전(`astro:before-swap`)에 부른다. */

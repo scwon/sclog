@@ -66,12 +66,11 @@ const seedHistory = (kind) =>
   );
 
 /**
- * 선택 툴바에서 복사해 띄운 토스트를 본다. 본문 문단 앞 글자들을 골라 툴바를 띄우고 복사 버튼을 누른 뒤, 닫힘 시계를
- * 멈춘 채 axe를 돌린다. 움직임 줄이기에서 전환 없이 뜨는지도 본다.
+ * 본문 문단 앞 열두 자를 골라 선택 툴바를 띄운다. 첫 글자 마디가 열두 자 넘는 문단을 화면 가운데로 옮겨 고르고,
+ * 문단을 누르고 고른 뒤 놓은 것처럼 알린다(선택 툴바는 마우스를 놓을 때 그린다). 고를 문단이 없으면 거짓.
  */
-const checkToast = async (where) => {
-  const picked = await page.evaluate(() => {
-    // 첫 글자 마디가 열두 자 넘는 문단에서 그 앞 열두 자를 고른다.
+const selectLead = () =>
+  page.evaluate(() => {
     const text = [...document.querySelectorAll('#content > p')]
       .map((p) => document.createTreeWalker(p, NodeFilter.SHOW_TEXT).nextNode())
       .find((node) => (node?.textContent ?? '').trim().length > 12);
@@ -83,11 +82,17 @@ const checkToast = async (where) => {
     range.setEnd(text, 12);
     getSelection()?.removeAllRanges();
     getSelection()?.addRange(range);
-    // 선택 툴바는 마우스를 놓을 때 그린다. 문단을 누르고 고른 뒤 놓은 것처럼 알린다.
     paragraph.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
     paragraph.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }));
     return true;
   });
+
+/**
+ * 선택 툴바에서 복사해 띄운 토스트를 본다. 본문 문단 앞 글자들을 골라 툴바를 띄우고 복사 버튼을 누른 뒤, 닫힘 시계를
+ * 멈춘 채 axe를 돌린다. 움직임 줄이기에서 전환 없이 뜨는지도 본다.
+ */
+const checkToast = async (where) => {
+  const picked = await selectLead();
   if (!picked) return failures.push(`${where} 토스트: 고를 문단이 없음`);
   await page.waitForSelector('loc=css:[data-selection-toolbar] button[data-action="copy"]', {
     state: 'visible',
@@ -234,22 +239,8 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
         failures.push(`${width} ${theme} 찾기 줄: ${findViolations.join('; ')}`);
       await page.keyboard.press('Escape');
       await until('찾기 줄이 닫힘', () => document.querySelector('[data-find-input]') === null);
-      // 본문을 골라 띄운 선택 툴바(상자와 복사 버튼). 문단 앞 몇 글자를 고르면 선택이 멈춘 뒤 뜬다.
-      await page.evaluate(() => {
-        const paragraph = [...document.querySelectorAll('#content > p')].find(
-          (p) => (p.textContent ?? '').trim().length > 20,
-        );
-        const lead =
-          paragraph && document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT).nextNode();
-        if (!lead) return false;
-        paragraph.scrollIntoView({ block: 'center' });
-        const range = document.createRange();
-        range.setStart(lead, 0);
-        range.setEnd(lead, Math.min(12, lead.length));
-        getSelection()?.removeAllRanges();
-        getSelection()?.addRange(range);
-        return true;
-      });
+      // 본문을 골라 띄운 선택 툴바(상자와 복사 버튼).
+      if (!(await selectLead())) failures.push(`${width} ${theme} 선택 툴바: 고를 문단이 없음`);
       const toolbarShown = await until(
         '선택 툴바가 뜸',
         () => document.querySelector('[data-selection-toolbar] button') !== null,

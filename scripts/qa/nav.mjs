@@ -1056,8 +1056,8 @@ if (plan) {
   await toolbarGone('선택 툴바: 끝내며 걷힘');
 }
 
-// 선택 툴바의 키보드·Esc·찾기·좁은 폭: Esc로 걷히고 고른 글자는 남는다. Shift+→로 골라도 뜨고 포커스는 본문에 남으며,
-// Tab으로 툴바에 들어갈 수 있다. ⌘F로 찾기 줄을 열면 걷힌다. 좁은 폭(390px)에서는 버튼이 상자 안쪽 오른쪽 위로 들어오고,
+// 선택 툴바의 키보드·Esc·팔레트·찾기·좁은 폭: Esc로 걷히고 고른 글자는 남는다. Shift+→로 골라도 뜨고 포커스는 본문에
+// 남으며, 고른 자리에서 Tab 한 번에 툴바로 들어간다. ⌘P로 팔레트를 열거나 ⌘F로 찾기 줄을 열면 걷힌다. 좁은 폭(390px)에서는 버튼이 상자 안쪽 오른쪽 위로 들어오고,
 // 화면보다 긴 선택에서는 스크롤해도 버튼이 화면 안에 남는다.
 /** 툴바가 화면 안에 있고 상자 안팎 어디에 붙었는지 잰다. */
 const toolbarFit = () =>
@@ -1114,18 +1114,27 @@ if (keys) {
     shifted.toolbars === 1 && !shifted.focusInToolbar && shifted.text.length >= 3,
     JSON.stringify({ text: shifted.text, focusInToolbar: shifted.focusInToolbar }),
   );
-  let presses = 0;
-  let entered = false;
-  while (!entered && presses < 150) {
-    await page.keyboard.press('Tab');
-    presses++;
-    entered = await page.evaluate(
-      () => document.activeElement?.closest('[data-selection-toolbar]') != null,
-    );
-  }
-  check('선택 툴바: Tab으로 툴바 버튼에 들어감', entered, `Tab ${presses}번`);
+  // 툴바는 글 끝에 포털되지만, 고른 자리에서 누른 첫 Tab은 창 틀이 툴바 첫 버튼으로 보낸다.
+  await page.keyboard.press('Tab');
+  const entered = await page.evaluate(
+    () => document.activeElement?.closest('[data-selection-toolbar]') != null,
+  );
+  check('선택 툴바: 고른 자리에서 Tab 한 번에 툴바 버튼에 들어감', entered);
 
-  // 고른 글자 위에서 누르면 글자 끌어 옮기기가 되므로 선택을 먼저 풀고, Tab이 화면을 옮겼으므로 드래그할 자리를 다시 잰다.
+  // 고른 글자 위에서 누르면 글자 끌어 옮기기가 되므로 선택을 먼저 풀고, 드래그할 자리를 다시 잰다.
+  await page.evaluate(() => {
+    getSelection()?.removeAllRanges();
+    return true;
+  });
+  await toolbarGone('선택 툴바: 팔레트 앞에 선택을 풀면 걷힘');
+  const again = (await dragPlan()) ?? keys;
+  await drag(again.top, again.bottom, '팔레트 앞 드래그');
+  await toolbarShown('선택 툴바: 팔레트 앞에 뜸');
+  await page.keyboard.press('ControlOrMeta+P');
+  await paletteFocused();
+  check('선택 툴바: 팔레트가 열리면 걷힘', await toolbarGone('선택 툴바: 팔레트가 열리면 걷힘'));
+  await page.keyboard.press('Escape');
+  check('선택 툴바: 팔레트를 연 뒤 Esc 한 번에 팔레트가 닫힘', await paletteClosed());
   await page.evaluate(() => {
     getSelection()?.removeAllRanges();
     return true;

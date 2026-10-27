@@ -41,7 +41,7 @@ import { fileName, openLog, parseEditorFile, type EditorFile } from '../../store
 import { requestSearchFocus } from '../../stores/search';
 import { seedFindQuery } from '../../stores/find';
 import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
-import { dismissSelectionToolbar } from '../SelectionToolbar/selection';
+import { dismissSelectionToolbar, focusSelectionToolbar } from '../SelectionToolbar/selection';
 import {
   BranchIcon,
   CodeIcon,
@@ -679,10 +679,11 @@ export function Shell({
     [findOpen, openFind],
   );
 
-  // 찾기 줄이 열리면 본문 선택 툴바를 걷는다(⌘F가 고른 글자를 검색어로 넣은 뒤다). 고른 글자는 남는다.
+  // 찾기 줄이나 팔레트가 열리면 본문 선택 툴바를 걷는다(⌘F가 고른 글자를 검색어로 넣은 뒤다). 고른 글자는 남는다.
+  // 팔레트(모달) 뒤에 가려진 툴바에 Esc 한 번을 쓰지 않게 한다.
   useEffect(() => {
-    if (findOpen) dismissSelectionToolbar();
-  }, [findOpen]);
+    if (findOpen || paletteOpen) dismissSelectionToolbar();
+  }, [findOpen, paletteOpen]);
 
   // 다른 파일로 옮기면 찾기 줄을 닫는다. 바꾸기 전에 바로 언마운트해 칠한 것을 지운다(포커스는 화면 이동이 맡는다).
   // 마지막 검색어(`$findQuery`)는 창 틀 메모리에 남는다.
@@ -754,6 +755,9 @@ export function Shell({
     switch (action) {
       case 'close-selection-toolbar':
         dismissSelectionToolbar();
+        break;
+      case 'focus-selection-toolbar':
+        focusSelectionToolbar();
         break;
       case 'open-palette':
         paletteOpener.current =

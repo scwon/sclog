@@ -50,6 +50,7 @@ function key(shape: Partial<KeyShape> & Pick<KeyShape, 'key'>): KeyShape {
     isComposing: false,
     keyCode: 0,
     target: 'other',
+    atSelection: false,
     ...shape,
   };
 }
@@ -216,6 +217,30 @@ describe('shortcutFor: 열린 팔레트', () => {
   });
 });
 
+describe('shortcutFor: Tab으로 선택 툴바에 들어간다', () => {
+  const toolbar: ShortcutContext = { ...closed, toolbarOpen: true };
+
+  it('moves the first Tab from the selection into the toolbar', () => {
+    expect(shortcutFor(key({ key: 'Tab', atSelection: true }), toolbar)).toBe(
+      'focus-selection-toolbar',
+    );
+  });
+
+  it('leaves Tab to the browser once focus has left the selection (inside or past the toolbar)', () => {
+    expect(shortcutFor(key({ key: 'Tab' }), toolbar)).toBeNull();
+  });
+
+  it('leaves Shift+Tab and modified Tab to the browser', () => {
+    expect(shortcutFor(key({ key: 'Tab', shiftKey: true, atSelection: true }), toolbar)).toBeNull();
+    expect(shortcutFor(key({ key: 'Tab', altKey: true, atSelection: true }), toolbar)).toBeNull();
+  });
+
+  it('leaves Tab to the browser when no toolbar is shown or a text field has focus', () => {
+    expect(shortcutFor(key({ key: 'Tab', atSelection: true }), closed)).toBeNull();
+    expect(shortcutFor(key({ key: 'Tab', atSelection: true, target: 'text' }), toolbar)).toBeNull();
+  });
+});
+
 describe('shortcutFor: Esc는 맨 위 층 하나만 닫는다', () => {
   it('closes the palette before the overlay panel', () => {
     const both: ShortcutContext = { ...closed, paletteOpen: true, overlayOpen: true };
@@ -228,14 +253,18 @@ describe('shortcutFor: Esc는 맨 위 층 하나만 닫는다', () => {
     const all: ShortcutContext = {
       ...closed,
       toolbarOpen: true,
-      paletteOpen: true,
       overlayOpen: true,
       findOpen: true,
     };
     expect(shortcutFor(key({ key: 'Escape' }), all)).toBe('close-selection-toolbar');
-    expect(shortcutFor(key({ key: 'Escape', target: 'palette-input' }), all)).toBe(
-      'close-selection-toolbar',
-    );
+    // 팔레트를 열면 창 틀이 선택 툴바를 걷으므로 팔레트 입력창의 Esc는 바로 팔레트를 닫는다.
+    expect(
+      shortcutFor(key({ key: 'Escape', target: 'palette-input' }), {
+        ...all,
+        paletteOpen: true,
+        toolbarOpen: false,
+      }),
+    ).toBe('close-palette');
     expect(shortcutFor(key({ key: 'Escape' }), { ...closed, toolbarOpen: true })).toBe(
       'close-selection-toolbar',
     );

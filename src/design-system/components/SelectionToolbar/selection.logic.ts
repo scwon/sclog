@@ -49,10 +49,23 @@ export function slugOf(fileUrl: string | undefined): string | null {
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 
 /**
- * 선택이 시작한 본문 블록과 그 앞 블록들(가까운 것부터)에서 처음 만나는 제목의 id. id 없는 제목은 건너뛴다.
+ * 선택이 시작한 본문 블록부터 위로 가며 처음 만나는 제목의 id. id 없는 제목은 건너뛴다.
+ *
+ * `children`은 본문 요소의 자식 노드를 차례대로 옮긴 것이고 글자 노드(블록 사이 줄바꿈)는 `null`이다. `start`는 선택이
+ * 시작한 자식의 자리다: 시작 노드를 품은 자식의 번호, 또는 시작 노드가 본문 요소 자신이면 그 오프셋. 오프셋이 블록 사이
+ * 글자 노드나 마지막 자식 뒤를 가리키면 선택은 그 뒤 블록에서 시작하므로, 그 뒤 첫 블록(없으면 마지막 블록)부터 본다.
  */
-export function headingAbove(blocks: readonly ElementStep[]): string | null {
-  return blocks.find((block) => HEADING_TAGS.has(block.name) && block.id)?.id ?? null;
+export function headingAbove(
+  children: readonly (ElementStep | null)[],
+  start: number,
+): string | null {
+  let index = start;
+  while (index < children.length && children[index] === null) index++;
+  for (index = Math.min(index, children.length - 1); index >= 0; index--) {
+    const block = children[index];
+    if (block && HEADING_TAGS.has(block.name) && block.id) return block.id;
+  }
+  return null;
 }
 
 /** 선택 끝이 놓인 노드에서 바깥으로 올라가며 만나는 요소 하나. */
@@ -73,32 +86,36 @@ export interface SelectionFacts {
   text: string;
   /** `(pointer: coarse)`인 화면인가. */
   coarsePointer: boolean;
+  /** 본문 안이어도 띄우지 않는 요소의 클래스(소비자가 넘긴다. 예: 제 복사 버튼이 있는 코드 블록 틀). 없으면 태그만 본다. */
+  excludedClasses?: readonly string[];
 }
 
-/** 글 본문 요소(`.doc-prose`, `#content`)인가. */
+/** 본문 요소의 클래스. 디자인 시스템 본문 스타일(`styles/prose.css`)이 붙는 요소다. */
+export const PROSE_CLASS = 'doc-prose';
+
+/** 글 본문 요소(`.doc-prose`)인가. */
 function isProse(step: ElementStep): boolean {
-  return step.id === 'content' || (step.classes?.includes('doc-prose') ?? false);
+  return step.classes?.includes(PROSE_CLASS) ?? false;
 }
 
 /**
- * 본문 안이어도 툴바를 띄우지 않는 요소: 코드 블록(제 복사 버튼이 있다)과 그 머리, 표, 제목, 목차.
- * 문장 속 인라인 `code`는 일반 글자로 본다.
+ * 본문 안이어도 툴바를 띄우지 않는 요소: 코드 블록(`pre`), 표, 제목, 목차. 문장 속 인라인 `code`는 일반 글자로 본다.
+ * 소비자가 붙이는 요소(코드 블록 머리처럼 제 동작이 있는 것)는 클래스로 더 받는다.
  */
-const EXCLUDED_TAGS = new Set(['pre', 'table', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav']);
-const EXCLUDED_CLASSES = ['code-block-wrapper'];
+const EXCLUDED_TAGS = new Set(['pre', 'table', 'nav', ...HEADING_TAGS]);
 
-function isExcluded(step: ElementStep): boolean {
+function isExcluded(step: ElementStep, excludedClasses: readonly string[]): boolean {
   return (
     EXCLUDED_TAGS.has(step.name) ||
-    EXCLUDED_CLASSES.some((name) => step.classes?.includes(name) ?? false)
+    excludedClasses.some((name) => step.classes?.includes(name) ?? false)
   );
 }
 
 /** 선택 끝 하나가 본문 안 일반 글자에 있는가: 본문 요소에 닿기 전에 제외 요소를 만나지 않는다. */
-function inBody(path: readonly ElementStep[]): boolean {
+function inBody(path: readonly ElementStep[], excludedClasses: readonly string[]): boolean {
   for (const step of path) {
     if (isProse(step)) return true;
-    if (isExcluded(step)) return false;
+    if (isExcluded(step, excludedClasses)) return false;
   }
   return false;
 }
@@ -107,13 +124,14 @@ function inBody(path: readonly ElementStep[]): boolean {
 export const MIN_SELECTED_CHARS = 3;
 
 /**
- * 선택 툴바를 띄울 선택인가: 시작과 끝이 모두 본문 안 일반 글자에 있고(코드 블록·표·제목·목차 밖), 공백을 뺀 글자가
+ * 선택 툴바를 띄울 선택인가: 시작과 끝이 모두 본문 안 일반 글자에 있고(코드 블록·표·제목·목차와 제외 클래스 밖), 공백을 뺀 글자가
  * `MIN_SELECTED_CHARS` 이상이며, 터치 화면이 아니다(OS 선택 메뉴와 겹친다).
  */
 export function toolbarAllowed(facts: SelectionFacts): boolean {
   if (facts.coarsePointer) return false;
   if ([...facts.text.replace(/\s/g, '')].length < MIN_SELECTED_CHARS) return false;
-  return inBody(facts.start) && inBody(facts.end);
+  const excluded = facts.excludedClasses ?? [];
+  return inBody(facts.start, excluded) && inBody(facts.end, excluded);
 }
 
 /** 화면 좌표의 사각형(`DOMRect`에서 쓰는 네 변만). */
@@ -140,7 +158,7 @@ export interface PlacementInput {
   /** 버튼이 보이는 화면 범위: 위는 탭·경로 표시줄 아래, 아래는 창 아래 끝, 오른쪽은 스크롤 막대를 뺀 창 오른쪽 끝. */
   screen: ScreenBounds;
   /** 툴바(버튼 묶음)의 크기. `toolbarSize`로 잰다. */
-  button: ToolbarSize;
+  toolbar: ToolbarSize;
 }
 
 /** 버튼이 보이는 화면 범위(화면 좌표). */
@@ -175,12 +193,16 @@ export interface Placement {
 export const TOOLBAR_GAP = 6;
 
 /**
- * 버튼 `count`개짜리 툴바의 크기. `SelectionToolbar.tsx`의 클래스와 맞춘다: 30px 정사각 버튼(`IconButton`)을
- * 2px 간격(`gap-0.5`)으로 세로로 쌓고, 안쪽 여백 2px(`p-0.5`)과 테두리 1px을 두른다.
+ * 툴바의 치수(px). 크기 계산(`toolbarSize`)과 그리는 쪽(`SelectionToolbar.tsx`의 인라인 스타일)이 모두 이 값을 쓴다.
+ * 버튼은 정사각이고 세로로 쌓는다.
  */
+export const TOOLBAR_METRICS = { button: 30, gap: 2, padding: 2, border: 1 } as const;
+
+/** 버튼 `count`개짜리 툴바의 크기(`TOOLBAR_METRICS`로 잰다). */
 export function toolbarSize(count: number): ToolbarSize {
-  const frame = 2 * 2 + 1 * 2;
-  return { width: 30 + frame, height: 30 * count + 2 * Math.max(count - 1, 0) + frame };
+  const { button, gap, padding, border } = TOOLBAR_METRICS;
+  const frame = 2 * (padding + border);
+  return { width: button + frame, height: button * count + gap * Math.max(count - 1, 0) + frame };
 }
 
 /**
@@ -200,17 +222,17 @@ export interface AnchorInput {
   line: Pick<Rect, 'top' | 'bottom'>;
   inset: boolean;
   screen: ScreenBounds;
-  button: ToolbarSize;
+  toolbar: ToolbarSize;
 }
 
 /**
  * 버튼 기준점(`Placement.anchor`)을 잰다. 그리는 쪽은 스크롤할 때마다 상자의 지금 화면 위치로 이 함수를 다시 불러,
  * 상자가 화면보다 길어도 버튼이 화면 안에 남게 한다.
  */
-export function buttonAnchor({ box, line, inset, screen, button }: AnchorInput): Rect {
+export function buttonAnchor({ box, line, inset, screen, toolbar }: AnchorInput): Rect {
   const top = inset ? box.top + TOOLBAR_GAP : line.top;
   const height = inset ? 0 : line.bottom - line.top;
-  const clamped = clampTop(top, button.height, box, screen);
+  const clamped = clampTop(top, toolbar.height, box, screen);
   return { top: clamped, bottom: clamped + height, left: box.right, right: box.right };
 }
 
@@ -250,7 +272,7 @@ export function toolbarPlacement({
   backward,
   lineHeight = 0,
   screen,
-  button,
+  toolbar,
 }: PlacementInput): Placement | null {
   const usable = lines
     .filter((line) => line.bottom > line.top)
@@ -266,6 +288,6 @@ export function toolbarPlacement({
   };
   const end = backward ? firstLine(usable) : lastLine(usable);
   const line = { top: end.top, bottom: end.bottom };
-  const inset = box.right + TOOLBAR_GAP + button.width > screen.right;
-  return { box, line, inset, anchor: buttonAnchor({ box, line, inset, screen, button }) };
+  const inset = box.right + TOOLBAR_GAP + toolbar.width > screen.right;
+  return { box, line, inset, anchor: buttonAnchor({ box, line, inset, screen, toolbar }) };
 }

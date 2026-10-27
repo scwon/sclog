@@ -5,6 +5,7 @@ import {
   keyLabel,
   showToast,
   type SelectionAction,
+  type SelectionToolbarOptions,
 } from '@/design-system';
 
 /**
@@ -34,3 +35,14 @@ export const copySelection: SelectionAction = {
 
 /** 선택 툴바 동작 목록. 버튼은 이 순서로 그린다. 새 동작(연관 내용 검색 등)은 여기에 더한다. */
 export const selectionActions: readonly SelectionAction[] = [copySelection];
+
+/**
+ * 글 화면의 선택 툴바 설정. 층은 글 요소(`article.doc[data-doc]`)에 붙이고, 제 복사 버튼이 있는 코드 블록 틀
+ * (`CodeBlock.astro`의 `.code-block-wrapper`, 언어 라벨 머리 포함)에서는 띄우지 않는다.
+ */
+export const selectionToolbarOptions: SelectionToolbarOptions = {
+  actions: selectionActions,
+  label: '선택 툴바',
+  host: '[data-doc]',
+  excludedClasses: ['code-block-wrapper'],
+};

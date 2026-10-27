@@ -511,37 +511,17 @@ describe.skipIf(!built)('build output', () => {
     });
   });
 
-  // 선택 툴바는 본문에서 처음 글자를 고를 때 불러오는 청크다. 첫 화면 HTML(미리 불러오기 포함)과 다른 청크의 정적
-  // import에 없어야 한다.
-  describe('selection toolbar chunk', () => {
+  // 선택 툴바는 본문에서 처음 글자를 고를 때, 토스트는 처음 띄울 때 불러오는 청크다. 첫 화면 HTML(미리 불러오기
+  // 포함)과 다른 청크의 정적 import에 없어야 한다.
+  describe.each([
+    ['selection toolbar chunk', 'SelectionToolbar'],
+    ['toast chunk', 'Toast'],
+  ])('%s', (_, component) => {
     const scripts = files('.js').map((path) => ({ path, js: readFileSync(path, 'utf8') }));
-    const chunk = scripts.find(({ path }) => /[\\/]SelectionToolbar\.[\w-]+\.js$/.test(path));
-    const name = chunk?.path.split(/[\\/]/).at(-1) ?? 'SelectionToolbar.js';
-
-    it('is split into its own chunk loaded by a dynamic import', () => {
-      expect(chunk).toBeDefined();
-      const loaders = scripts.filter(({ js }) => js.includes(`import(\`./${name}\`)`));
-      expect(loaders.map(({ path }) => path)).not.toEqual([]);
-    });
-
-    it('is not loaded or preloaded by any page', () => {
-      expect(
-        pages.filter(({ html }) => html.includes(name)).map(({ path }) => urlOf(path)),
-      ).toEqual([]);
-    });
-
-    it('is only imported dynamically', () => {
-      const staticImport = new RegExp(
-        String.raw`(?:from\s*|import\s*)["'\x60][^"'\x60]*${name.replace('.', '\\.')}`,
-      );
-      expect(scripts.filter(({ js }) => staticImport.test(js)).map(({ path }) => path)).toEqual([]);
-    });
-  });
-
-  describe('toast chunk', () => {
-    const scripts = files('.js').map((path) => ({ path, js: readFileSync(path, 'utf8') }));
-    const chunk = scripts.find(({ path }) => /[\\/]Toast\.[\w-]+\.js$/.test(path));
-    const name = chunk?.path.split(/[\\/]/).at(-1) ?? 'Toast.js';
+    const chunk = scripts.find(({ path }) =>
+      new RegExp(String.raw`[\\/]${component}\.[\w-]+\.js$`).test(path),
+    );
+    const name = chunk?.path.split(/[\\/]/).at(-1) ?? `${component}.js`;
 
     it('is split into its own chunk loaded by a dynamic import', () => {
       expect(chunk).toBeDefined();

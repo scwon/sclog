@@ -47,10 +47,6 @@ describe('toolbarAllowed: 선택 툴바를 띄울 선택인가', () => {
 
   it.each([
     ['코드 블록', [{ name: 'span' }, { name: 'code' }, { name: 'pre' }]],
-    [
-      '코드 블록 머리(언어 라벨)',
-      [{ name: 'span' }, { name: 'div', classes: ['code-block-wrapper'] }],
-    ],
     ['표', [{ name: 'td' }, { name: 'tr' }, { name: 'tbody' }, { name: 'table' }]],
     [
       '장 제목',
@@ -70,6 +66,17 @@ describe('toolbarAllowed: 선택 툴바를 띄울 선택인가', () => {
     expect(toolbarAllowed({ start: paragraph, end: inside, text, coarsePointer: false })).toBe(
       false,
     );
+  });
+
+  it('소비자가 넘긴 제외 클래스(코드 블록 머리 등) 안에 끝이 있으면 띄우지 않는다', () => {
+    const head: ElementStep[] = [
+      { name: 'span' },
+      { name: 'div', classes: ['code-block-wrapper'] },
+      ...paragraph.slice(1),
+    ];
+    const facts = { start: head, end: paragraph, text: '개발자로 일한 지', coarsePointer: false };
+    expect(toolbarAllowed({ ...facts, excludedClasses: ['code-block-wrapper'] })).toBe(false);
+    expect(toolbarAllowed(facts)).toBe(true);
   });
 
   it('문장 속 인라인 코드·강조·링크는 일반 글자로 본다', () => {
@@ -103,7 +110,7 @@ const column = { left: 300, right: 980 };
 /** 넉넉한 화면과 버튼 하나짜리 툴바(36px 정사각). 들이기·묶기가 일어나지 않는다. */
 const room = {
   screen: { top: 0, bottom: 2400, right: 1400 },
-  button: { width: 36, height: 36 },
+  toolbar: { width: 36, height: 36 },
 };
 
 describe('toolbarPlacement: 상자와 버튼 자리', () => {
@@ -290,17 +297,33 @@ describe('selection context', () => {
     expect(slugOf('/')).toBeNull();
   });
 
+  // 본문 자식 노드 목록. 글자 노드(블록 사이 줄바꿈)는 `null`이다.
+  const children: (ElementStep | null)[] = [
+    { name: 'h2', id: 'chapter' },
+    null,
+    { name: 'p' },
+    null,
+    { name: 'h3', id: 'section' },
+    null,
+    { name: 'p' },
+    null,
+    { name: 'ul' },
+  ];
+
   it('headingAbove: 선택이 시작한 블록부터 위로 가장 가까운 제목의 id', () => {
-    const blocks: ElementStep[] = [
-      { name: 'p' },
-      { name: 'ul' },
-      { name: 'h3', id: 'section' },
-      { name: 'p' },
-      { name: 'h2', id: 'chapter' },
-    ];
-    expect(headingAbove(blocks)).toBe('section');
-    expect(headingAbove([{ name: 'h4', id: 'self' }, ...blocks])).toBe('self');
-    expect(headingAbove([{ name: 'p' }, { name: 'h2' }, { name: 'p' }])).toBeNull();
-    expect(headingAbove([])).toBeNull();
+    expect(headingAbove(children, 8)).toBe('section');
+    expect(headingAbove(children, 4)).toBe('section');
+    expect(headingAbove(children, 2)).toBe('chapter');
+    expect(headingAbove([{ name: 'p' }, { name: 'h2' }, { name: 'p' }], 2)).toBeNull();
+    expect(headingAbove([], 0)).toBeNull();
+  });
+
+  it('headingAbove: 블록 사이 경계에서 시작하면 그 뒤 블록에서 시작한 것으로 본다', () => {
+    // 본문 요소 자신이 시작 노드이고 오프셋이 블록 사이 줄바꿈(3, 5)을 가리킨다.
+    expect(headingAbove(children, 3)).toBe('section');
+    expect(headingAbove(children, 5)).toBe('section');
+    expect(headingAbove(children, 1)).toBe('chapter');
+    // 오프셋이 마지막 자식 뒤(자식 수)를 가리켜도 마지막 블록에서 찾는다.
+    expect(headingAbove(children, children.length)).toBe('section');
   });
 });

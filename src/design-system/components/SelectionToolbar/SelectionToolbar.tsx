@@ -7,6 +7,7 @@ import { screenBounds } from './selection';
 import {
   buttonAnchor,
   TOOLBAR_GAP,
+  TOOLBAR_METRICS,
   type Rect,
   type SelectionAction,
   type SelectionContext,
@@ -24,16 +25,16 @@ export interface SelectionToolbarProps {
   line: Pick<Rect, 'top' | 'bottom'>;
   /** 오른쪽 여백이 좁아 버튼을 상자 안쪽 오른쪽 위로 들이는가. */
   inset: boolean;
-  /** 툴바(버튼 묶음)의 크기. 세로 위치를 화면 안으로 묶을 때 쓴다. */
-  button: ToolbarSize;
+  /** 툴바(버튼 묶음)의 크기(`toolbarSize`). 세로 위치를 화면 안으로 묶을 때 쓴다. */
+  toolbar: ToolbarSize;
   /** 그릴 동작(이미 `when`으로 거른 것). */
   actions: readonly SelectionAction[];
   context: SelectionContext;
   /** 버튼 묶음의 접근 가능한 이름. */
   label: string;
   /**
-   * 버튼 묶음을 포털할 요소(글 `article.doc`). 랜드마크(`main`) 안에 두어 axe `region`을 지키고, Tab이 글 끝을
-   * 지나 바로 툴바로 온다. 없으면 `document.body`.
+   * 버튼 묶음을 포털할 요소(소비자가 고른 글 요소). 랜드마크(`main`) 안에 두어 axe `region`을 지킨다. DOM 순서로는
+   * 글 끝이라, 고른 자리에서 누른 첫 Tab은 창 틀이 툴바로 보낸다(`focusSelectionToolbar`). 없으면 `document.body`.
    */
   container?: HTMLElement | null;
 }
@@ -49,7 +50,7 @@ export function SelectionToolbar({
   box,
   line,
   inset,
-  button,
+  toolbar,
   actions,
   context,
   label,
@@ -69,7 +70,7 @@ export function SelectionToolbar({
             line: { top: line.top + shift, bottom: line.bottom + shift },
             inset,
             screen: screenBounds(),
-            button,
+            toolbar,
           });
           return DOMRect.fromRect({
             x: point.left,
@@ -80,7 +81,7 @@ export function SelectionToolbar({
         },
       },
     }),
-    [box.top, line.top, line.bottom, inset, button],
+    [box.top, line.top, line.bottom, inset, toolbar],
   );
 
   return (
@@ -107,7 +108,13 @@ export function SelectionToolbar({
           side={inset ? 'left' : 'right'}
           align="start"
           sideOffset={TOOLBAR_GAP}
-          className="z-15 flex flex-col gap-0.5 p-0.5"
+          className="z-15 flex flex-col"
+          // 치수는 `toolbarSize`가 자리를 잴 때 쓰는 값과 같아야 하므로 한 상수에서 가져온다.
+          style={{
+            gap: TOOLBAR_METRICS.gap,
+            padding: TOOLBAR_METRICS.padding,
+            borderWidth: TOOLBAR_METRICS.border,
+          }}
           // 포커스는 본문에 둔다. Esc·바깥 누름으로 닫는 일은 선택 상태를 보는 쪽이 한다.
           onOpenAutoFocus={(event) => event.preventDefault()}
           onCloseAutoFocus={(event) => event.preventDefault()}
@@ -147,6 +154,7 @@ function ActionButton({ action, context }: { action: SelectionAction; context: S
           data-action={action.id}
           data-done={done ? '' : undefined}
           className="data-done:text-accent-text"
+          style={{ width: TOOLBAR_METRICS.button, height: TOOLBAR_METRICS.button }}
           onClick={run}
         >
           {shown.icon}
@@ -161,7 +169,7 @@ function ActionButton({ action, context }: { action: SelectionAction; context: S
 let mounted: { host: HTMLElement; layer: HTMLElement; root: Root } | null = null;
 
 /**
- * `host`(글 `article.doc`, `position: relative`) 맨 앞에 층을 두고 선택 툴바를 그린다. 버튼 묶음은 `host` 끝으로 포털한다. 층은 `position: absolute`라
+ * `host`(소비자가 고른 글 요소, `position: relative`) 맨 앞에 층을 두고 선택 툴바를 그린다. 버튼 묶음은 `host` 끝으로 포털한다. 층은 `position: absolute`라
  * 레이아웃에 끼지 않고, 본문(`.doc-prose`) 안에는 넣지 않는다(줄 번호·읽는 위치 블록이 바뀐다).
  */
 export function showSelectionToolbar(host: HTMLElement, props: SelectionToolbarProps): void {

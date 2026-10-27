@@ -79,6 +79,11 @@ export interface KeyShape {
    */
   keyCode: number;
   target: FocusTarget;
+  /**
+   * 포커스가 고른 글자를 품은 요소에 있는가(`body`, 또는 글자를 누르면 포커스를 받는 에디터 루트처럼 선택을 품은
+   * 요소). 선택 툴바 안이나 그 뒤로 Tab을 옮긴 뒤에는 거짓이다. 선택 툴바가 떠 있을 때 첫 Tab을 툴바로 보낼지 정한다.
+   */
+  atSelection: boolean;
 }
 
 /** 지금 창 틀의 맥락. */
@@ -120,6 +125,7 @@ export type ShellCommand =
 export type ShortcutAction =
   | Extract<ShellCommand, 'toggle-panel' | 'open-search' | 'find-in-file'>
   | 'close-selection-toolbar'
+  | 'focus-selection-toolbar'
   | 'open-palette'
   | 'close-palette'
   | 'close-overlay'
@@ -178,14 +184,15 @@ export function shortcutFor(
     modOnly(event, context.platform, combo.shift ?? false);
 
   // Esc는 맨 위 층 하나만 닫는다: 선택 툴바, 팔레트, 겹침 패널, 찾기 줄 순서다. 선택 툴바는 포커스를 가져가지 않으므로
-  // 맨 앞에서 본다. 다른 입력창(`text`)의 Esc는 입력창에 맡긴다.
+  // 맨 앞에서 본다. 팔레트·찾기 줄이 열리면 창 틀이 선택 툴바를 걷으므로 툴바와 팔레트가 함께 떠 있지는 않다.
+  // 다른 입력창(`text`)의 Esc는 입력창에 맡긴다.
   if (event.key === 'Escape' && bare(event) && context.toolbarOpen && event.target !== 'text')
     return 'close-selection-toolbar';
 
   // 찾기 줄은 CSS Custom Highlight API로 칠하므로, 없는 브라우저에서는 ⌘F·⌘G·⇧⌘G를 브라우저 찾기에 맡긴다.
   const { find, findNext, findPrev } = context.findSupported ? keys : NO_FIND_KEYS;
 
-  // 열린 팔레트는 대화상자라 그 창의 키만 받는다. 나머지 글자는 입력창이 받는다.
+  // 열린 팔레트는 대화상자라 그 창의 키만 받는다(선택 툴바는 팔레트가 열릴 때 걷혔다). 나머지 글자는 입력창이 받는다.
   if (context.paletteOpen) {
     if (event.key === 'Escape' && bare(event)) return 'close-palette';
     if (event.key === 'Tab' && unmodified(event)) return 'swallow';
@@ -197,6 +204,17 @@ export function shortcutFor(
     if (event.key === 'Enter') return 'palette-pick';
     return null;
   }
+
+  // 선택 툴바는 글 끝에 포털되어 DOM 순서로는 고른 자리에서 멀다. 고른 자리에서 누른 첫 Tab은 툴바 첫 버튼으로 보낸다.
+  // 툴바 안과 그 뒤의 Tab·Shift+Tab은 브라우저에 맡긴다.
+  if (
+    event.key === 'Tab' &&
+    bare(event) &&
+    context.toolbarOpen &&
+    event.atSelection &&
+    event.target === 'other'
+  )
+    return 'focus-selection-toolbar';
 
   // 선택 툴바·팔레트가 없으면 Esc는 겹침 패널, 그다음 찾기 줄을 닫는다. 검색 입력창은 ⌘⇧F가 겹침 패널과 함께 포커스를 주는
   // 곳이라 Esc를 받지만 찾기 줄은 닫지 않는다(겹침 패널이 없으면 입력창이 받아 글자를 지운다). 다른 입력창은 모든

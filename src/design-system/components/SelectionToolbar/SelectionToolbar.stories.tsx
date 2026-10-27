@@ -27,7 +27,7 @@ const meta = {
     box: { top: 62, bottom: 158, left: 46, right: 746 },
     line: { top: 124, bottom: 152 },
     inset: false,
-    button: toolbarSize(1),
+    toolbar: toolbarSize(1),
     actions: [copy],
     context: { text: '고른 대목', slug: 'developer', headingId: null },
     label: '선택 툴바',
