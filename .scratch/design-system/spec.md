@@ -1,6 +1,6 @@
 # 디자인 시스템과 전체 화면 IDE 교체
 
-Status: ready-for-agent
+Status: done
 
 1차 자료: `DESIGN.md`("사이트 방향", "전체 화면 IDE와 파일 열기 로그", "IDE 작업 화면과 흐름 로그"), 시안 `specs/010-blog-renewal/prototype/blog-opus/`(`index.html`·`article.html`·`ide.css`·`styles.css`·`app.js`), `docs/adr/0001`~`0003`, `docs/research/design-system-tokens.md`, 용어는 `GLOSSARY.md`. 이 문서는 결정만 담고 값은 시안과 DESIGN.md를 가리킨다.
 
