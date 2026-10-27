@@ -73,6 +73,11 @@ export interface KeyShape {
   shiftKey: boolean;
   altKey: boolean;
   isComposing: boolean;
+  /**
+   * 옛 키 번호(`KeyboardEvent.keyCode`). 229는 입력기가 처리 중인 키다. Safari는 한글 조합을 끝내는 Enter를
+   * `isComposing`이 `false`인 채 229로 보내므로 이 값도 조합 중으로 본다.
+   */
+  keyCode: number;
   target: FocusTarget;
 }
 
@@ -123,6 +128,9 @@ export type ShortcutAction =
   | 'palette-pick'
   | 'swallow';
 
+/** 입력기가 처리 중인 키의 `keyCode`. */
+const COMPOSING_KEY_CODE = 229;
+
 /** 키가 가리키는 라틴 글자(소문자). 한글 자판 등에서 `key`가 라틴 글자가 아니면 물리 키로 본다. */
 function letterOf({ key, code }: KeyShape): string | null {
   if (/^[a-z]$/i.test(key)) return key.toLowerCase();
@@ -151,7 +159,7 @@ export function shortcutFor(
   context: ShortcutContext,
   keys: ShortcutKeys = SHORTCUT_KEYS,
 ): ShortcutAction | null {
-  if (event.isComposing) return null;
+  if (event.isComposing || event.keyCode === COMPOSING_KEY_CODE) return null;
   const letter = letterOf(event);
   const command = (combo: KeyCombo | null) =>
     combo !== null &&
