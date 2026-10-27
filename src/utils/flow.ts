@@ -3,6 +3,10 @@ import type { MarkdownHeading } from 'astro';
 import type { BlogPost } from './blog';
 import { chapterNo } from '@/design-system';
 import { buildOutline, postFile, postUrl, postYear } from './ide';
+import { FOLDER_ROUTES } from './folder';
+
+/** 홈 아래 AI 글 칸에 보이는 AI 글 수 상한. */
+export const HOME_AI_WRITTEN_LIMIT = 5;
 
 /** 흐름 로그의 장 노드와 그 아래 절 노드. */
 export interface FlowStep {
@@ -123,10 +127,15 @@ function addPosts(write: ReturnType<typeof lineWriter>, posts: FlowEntry[], step
   }
 }
 
-/** 홈 `posts.log`: 블로그 이름·주석·빈 줄 → 연도별 글(장 흐름 포함) → 끝 줄. */
+/**
+ * 홈 `posts.log`: 블로그 이름·주석·빈 줄 → 직접 쓴 글의 연도별 글(장 흐름 포함) → AI 글 칸 → 끝 줄.
+ * AI 글 칸은 나가는 줄 `ai-written.log ---- 글 M편`(M은 AI 글 전체 수) 아래 AI 글 로그 줄을
+ * 최신순 최대 다섯 개 둔다(장 흐름·접힘 없음). AI 글이 없으면 칸을 생략한다. 끝 줄은 직접 쓴 글만 센다.
+ */
 export function homeLines(
   posts: FlowEntry[],
   site: { brand: string; author: string; githubUrl: string },
+  aiWritten: FlowEntry[] = [],
 ): FlowLine[] {
   const write = lineWriter();
   write.add({ kind: 'banner', text: site.brand });
@@ -137,6 +146,12 @@ export function homeLines(
   });
   write.add({ kind: 'blank' });
   addPosts(write, posts, true);
+  if (aiWritten.length > 0) {
+    const { log } = FOLDER_ROUTES['ai-written'];
+    write.add({ kind: 'entry', href: log.url, label: log.name, note: `글 ${aiWritten.length}편` });
+    for (const { flow } of aiWritten.slice(0, HOME_AI_WRITTEN_LIMIT))
+      write.add({ kind: 'log', post: flow, foldable: false });
+  }
   write.add({ kind: 'end', label: `글 ${posts.length}편` });
   return write.lines;
 }
