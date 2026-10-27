@@ -51,7 +51,8 @@ export function findInBlocks<T>(blocks: readonly FindBlock<T>[], query: string):
       );
       return { node: block[index].node, offset: at - starts[index] };
     };
-    for (const [start, end] of matchRanges(text, needle)) {
+    // 맞닿은 일치는 따로 센다("ㅋㅋㅋ"의 "ㅋ"는 셋). 음절을 넓혀 같은 글자를 함께 덮게 된 일치만 하나로 합친다.
+    for (const [start, end] of matchRanges(text, needle, { merge: 'overlap' })) {
       matches.push({ start: point(start, false), end: point(end, true) });
     }
   }

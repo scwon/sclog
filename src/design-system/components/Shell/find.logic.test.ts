@@ -58,6 +58,23 @@ describe('findInBlocks', () => {
     ]);
   });
 
+  it('counts touching matches one by one: "ㅋ" in "ㅋㅋㅋ" is three, "개발" in "개발개발" is two', () => {
+    expect(spans(findInBlocks(blocks(['ㅋㅋㅋ']), 'ㅋ'))).toEqual([
+      '0.0:0-0.0:1',
+      '0.0:1-0.0:2',
+      '0.0:2-0.0:3',
+    ]);
+    expect(spans(findInBlocks(blocks(['개발개발']), '개발'))).toEqual([
+      '0.0:0-0.0:2',
+      '0.0:2-0.0:4',
+    ]);
+  });
+
+  it('merges two matches whose widened syllables overlap into one', () => {
+    // "ᆯᄇ"(받침 ㄹ + 첫소리 ㅂ)는 "발발발"에서 두 번 맞고, 넓히면 둘 다 가운데 "발"을 덮는다.
+    expect(spans(findInBlocks(blocks(['발발발']), '\u11af\u1107'))).toEqual(['0.0:0-0.0:3']);
+  });
+
   it('ignores case like the search view', () => {
     expect(spans(findInBlocks(blocks(['Astro와 astro']), 'ASTRO'))).toEqual([
       '0.0:0-0.0:5',
