@@ -1,4 +1,4 @@
-import type { FindBlock, FindMatch, VerticalSpan } from './find.logic';
+import type { FindBlock, FindMatch, HorizontalSpan, VerticalSpan } from './find.logic';
 
 /**
  * 찾기 줄의 DOM 쪽: 에디터에서 화면에 보이는 글자를 블록별 텍스트 노드로 모으고, 일치를 CSS Custom Highlight API로
@@ -93,6 +93,11 @@ export function toRange({ start, end }: FindMatch<Text>): Range {
   return range;
 }
 
+/** 두 범위의 시작 자리를 문서 순서로 견준다(`a`가 앞이면 음수). `resumeMatch`에 넘긴다. */
+export function compareStart(a: Range, b: Range): number {
+  return a.compareBoundaryPoints(Range.START_TO_START, b);
+}
+
 /**
  * 일치를 칠한다. 모든 일치는 `find-match`, 지금 일치(`current`)는 우선순위가 높은 `find-current`에 담는다. 다른 칠하기를
  * 지우지 않게 `CSS.highlights.clear()` 대신 두 이름만 바꾼다.
@@ -129,4 +134,28 @@ export function visibleArea(editor: HTMLElement): VerticalSpan {
   const crumbs = editor.querySelector('.ide-crumbs');
   const top = crumbs ? crumbs.getBoundingClientRect().bottom : parseFloat(paddingTop) || 0;
   return { top, bottom: window.innerHeight - (parseFloat(paddingBottom) || 0) };
+}
+
+/**
+ * 일치를 감싼 가장 가까운 가로 스크롤 컨테이너(가로로 넘치는 코드 블록 등). `overflow-x`가 `auto`·`scroll`이고 실제로
+ * 넘치는 요소만 본다. 에디터(`root`) 안에 없으면 `null`이다.
+ */
+export function horizontalScroller(range: Range, root: HTMLElement): HTMLElement | null {
+  const start = range.startContainer;
+  for (
+    let element = start instanceof Element ? start : start.parentElement;
+    element && element !== root;
+    element = element.parentElement
+  ) {
+    if (!(element instanceof HTMLElement) || element.scrollWidth <= element.clientWidth) continue;
+    const { overflowX } = getComputedStyle(element);
+    if (overflowX === 'auto' || overflowX === 'scroll') return element;
+  }
+  return null;
+}
+
+/** 스크롤 컨테이너에서 글자가 보이는 가로 영역(뷰포트 좌표): 테두리 안쪽, 세로 스크롤바 앞까지다. */
+export function horizontalArea(scroller: HTMLElement): HorizontalSpan {
+  const left = scroller.getBoundingClientRect().left + scroller.clientLeft;
+  return { left, right: left + scroller.clientWidth };
 }

@@ -1,7 +1,7 @@
 /**
  * 찾기 줄(⌘F)의 규칙. DOM을 모르고, 에디터 글자를 블록(문단)마다 텍스트 노드 목록으로 받아 일치를 노드·오프셋 쌍으로
  * 돌려준다. 일치 규칙은 검색 화면과 같은 `match.logic.ts`의 `matchRanges`다(NFD 부분 일치, 대소문자 무시, 음절 넓히기).
- * 글자 모으기·칠하기·스크롤은 `FindWidget.tsx`가 맡는다.
+ * 글자 모으기·칠하기는 `find.ts`, 스크롤과 찾기 줄 상태는 `FindWidget.tsx`가 맡는다.
  */
 import { matchRanges } from './match.logic';
 
@@ -51,7 +51,8 @@ export function findInBlocks<T>(blocks: readonly FindBlock<T>[], query: string):
       );
       return { node: block[index].node, offset: at - starts[index] };
     };
-    for (const [start, end] of matchRanges(text, needle)) {
+    // 맞닿은 일치는 따로 센다("ㅋㅋㅋ"의 "ㅋ"는 셋). 음절을 넓혀 같은 글자를 함께 덮게 된 일치만 하나로 합친다.
+    for (const [start, end] of matchRanges(text, needle, { merge: 'overlap' })) {
       matches.push({ start: point(start, false), end: point(end, true) });
     }
   }
@@ -64,6 +65,21 @@ export function findInBlocks<T>(blocks: readonly FindBlock<T>[], query: string):
 export function stepMatch(current: number, total: number, delta: -1 | 1): number {
   if (total <= 0) return -1;
   return (current + delta + total) % total;
+}
+
+/**
+ * 찾기 줄이 열린 채 보이는 글자가 바뀌어(`<details>` 열기, 흐름 로그 접기) 일치를 다시 모은 뒤 이어 갈 번호: 앞 지금
+ * 일치(`anchor`)와 같거나 그 뒤에 있는 첫 일치다. 모두 앞에 있으면 마지막 일치, 일치가 없으면 `-1`이다. `matches`는
+ * 문서 순서이고, `compare(a, b)`는 `a`가 `b`보다 앞이면 음수, 같으면 0, 뒤면 양수다.
+ */
+export function resumeMatch<T>(
+  matches: readonly T[],
+  anchor: T,
+  compare: (a: T, b: T) => number,
+): number {
+  if (matches.length === 0) return -1;
+  const index = matches.findIndex((match) => compare(match, anchor) >= 0);
+  return index === -1 ? matches.length - 1 : index;
 }
 
 /** 화면 위의 세로 자리(뷰포트 좌표). `DOMRect`를 그대로 넘긴다. */
@@ -94,6 +110,26 @@ export function findPosition(query: string, current: number, total: number): str
  * 안에 다 들어 있으면 0이고, 아니면 그 줄의 가운데가 보이는 영역 가운데에 오는 거리다.
  */
 export function scrollToCenter(match: VerticalSpan, view: VerticalSpan): number {
-  if (match.top >= view.top && match.bottom <= view.bottom) return 0;
-  return (match.top + match.bottom) / 2 - (view.top + view.bottom) / 2;
+  return centerDistance(match.top, match.bottom, view.top, view.bottom);
+}
+
+/** 화면 위의 가로 자리(뷰포트 좌표). `DOMRect`를 그대로 넘긴다. */
+export interface HorizontalSpan {
+  left: number;
+  right: number;
+}
+
+/**
+ * 가로로 넘치는 스크롤 컨테이너(코드 블록 등) 안의 지금 일치를 보이려고 그 컨테이너를 가로로 스크롤할 거리(px,
+ * 오른쪽으로 양수). `view`는 컨테이너의 보이는 폭이다. 다 들어 있으면 0이고, 아니면 일치의 가운데가 보이는 폭
+ * 가운데에 오는 거리다.
+ */
+export function scrollToCenterX(match: HorizontalSpan, view: HorizontalSpan): number {
+  return centerDistance(match.left, match.right, view.left, view.right);
+}
+
+/** 한 축에서 `[start, end]`가 `[viewStart, viewEnd]` 안이면 0, 아니면 두 가운데 사이 거리. */
+function centerDistance(start: number, end: number, viewStart: number, viewEnd: number): number {
+  if (start >= viewStart && end <= viewEnd) return 0;
+  return (start + end) / 2 - (viewStart + viewEnd) / 2;
 }

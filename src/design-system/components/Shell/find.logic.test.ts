@@ -3,7 +3,9 @@ import {
   findInBlocks,
   findPosition,
   firstVisibleMatch,
+  resumeMatch,
   scrollToCenter,
+  scrollToCenterX,
   stepMatch,
   type FindBlock,
 } from './find.logic';
@@ -56,6 +58,23 @@ describe('findInBlocks', () => {
     expect(spans(findInBlocks(blocks(['프론트엔드 개발 이야기']), '개바'))).toEqual([
       '0.0:6-0.0:8',
     ]);
+  });
+
+  it('counts touching matches one by one: "ㅋ" in "ㅋㅋㅋ" is three, "개발" in "개발개발" is two', () => {
+    expect(spans(findInBlocks(blocks(['ㅋㅋㅋ']), 'ㅋ'))).toEqual([
+      '0.0:0-0.0:1',
+      '0.0:1-0.0:2',
+      '0.0:2-0.0:3',
+    ]);
+    expect(spans(findInBlocks(blocks(['개발개발']), '개발'))).toEqual([
+      '0.0:0-0.0:2',
+      '0.0:2-0.0:4',
+    ]);
+  });
+
+  it('merges two matches whose widened syllables overlap into one', () => {
+    // "ᆯᄇ"(받침 ㄹ + 첫소리 ㅂ)는 "발발발"에서 두 번 맞고, 넓히면 둘 다 가운데 "발"을 덮는다.
+    expect(spans(findInBlocks(blocks(['발발발']), '\u11af\u1107'))).toEqual(['0.0:0-0.0:3']);
   });
 
   it('ignores case like the search view', () => {
@@ -152,5 +171,49 @@ describe('scrollToCenter', () => {
   it('moves a match hidden under the top bars to the centre', () => {
     expect(scrollToCenter({ top: 100, bottom: 120 }, view)).toBe(-382);
     expect(scrollToCenter({ top: -500, bottom: -480 }, view)).toBe(-982);
+  });
+});
+
+describe('scrollToCenterX', () => {
+  // 가로로 넘치는 코드 블록의 보이는 폭: 300px부터 900px까지(가운데 600).
+  const view = { left: 300, right: 900 };
+
+  it('does not move when the match is inside the visible width', () => {
+    expect(scrollToCenterX({ left: 320, right: 360 }, view)).toBe(0);
+  });
+
+  it('moves a match past the right edge to the centre (scrolls right)', () => {
+    expect(scrollToCenterX({ left: 1380, right: 1420 }, view)).toBe(800);
+    // 오른쪽 끝에 걸쳐 일부만 보이는 일치도 옮긴다.
+    expect(scrollToCenterX({ left: 880, right: 920 }, view)).toBe(300);
+  });
+
+  it('moves a match before the left edge to the centre (scrolls left)', () => {
+    expect(scrollToCenterX({ left: 0, right: 40 }, view)).toBe(-580);
+  });
+});
+
+/** 일치를 문서 순서의 자리(숫자)로 둔 대역의 견주기. */
+const byPlace = (a: number, b: number) => a - b;
+
+describe('resumeMatch', () => {
+  it('keeps the same match when it is still there after re-collecting', () => {
+    expect(resumeMatch([10, 20, 30], 20, byPlace)).toBe(1);
+  });
+
+  it('moves to the next match when the current one disappeared (folded away)', () => {
+    expect(resumeMatch([10, 30, 40], 20, byPlace)).toBe(1);
+  });
+
+  it('stays on the right match when new matches appear before it (a details opened above)', () => {
+    expect(resumeMatch([5, 7, 10, 20], 20, byPlace)).toBe(3);
+  });
+
+  it('falls back to the last match when every match is before the old one', () => {
+    expect(resumeMatch([10, 20], 30, byPlace)).toBe(1);
+  });
+
+  it('has no match when nothing is found', () => {
+    expect(resumeMatch([], 20, byPlace)).toBe(-1);
   });
 });

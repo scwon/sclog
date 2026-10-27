@@ -47,6 +47,7 @@ function key(shape: Partial<KeyShape> & Pick<KeyShape, 'key'>): KeyShape {
     shiftKey: false,
     altKey: false,
     isComposing: false,
+    keyCode: 0,
     target: 'other',
     ...shape,
   };
@@ -311,6 +312,16 @@ describe('shortcutFor: ⌘F 찾기 줄', () => {
 
   it('leaves Enter to the Hangul composition', () => {
     expect(shortcutFor(key({ key: 'Enter', isComposing: true, ...inFind }), opened)).toBeNull();
+  });
+
+  it('leaves the Enter that ends a Hangul composition in Safari (keyCode 229) to the input', () => {
+    // Safari는 조합을 끝낸 뒤 isComposing=false, keyCode=229인 keydown을 보낸다.
+    const ending = { key: 'Enter', isComposing: false, keyCode: 229 };
+    expect(shortcutFor(key({ ...ending, ...inFind }), opened)).toBeNull();
+    expect(shortcutFor(key({ ...ending, shiftKey: true, ...inFind }), opened)).toBeNull();
+    expect(
+      shortcutFor(key({ ...ending, target: 'palette-input' }), { ...closed, paletteOpen: true }),
+    ).toBeNull();
   });
 
   it('leaves typed letters and other shortcuts to the find input', () => {

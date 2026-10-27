@@ -47,6 +47,20 @@ describe('matchRanges', () => {
     expect(matchRanges('발바발', '바')).toEqual([[0, 3]]);
   });
 
+  it("keeps touching matches apart with merge: 'overlap', but still merges overlapping ones", () => {
+    expect(matchRanges('개발개발', '개발', { merge: 'overlap' })).toEqual([
+      [0, 2],
+      [2, 4],
+    ]);
+    expect(matchRanges('ㅋㅋㅋ', 'ㅋ', { merge: 'overlap' })).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ]);
+    // 넓힌 두 일치([0, 2]·[1, 3])가 가운데 음절을 함께 덮으면 하나로 합친다.
+    expect(matchRanges('발발발', '\u11af\u1107', { merge: 'overlap' })).toEqual([[0, 3]]);
+  });
+
   it('keeps positions in UTF-16 offsets of the original even after astral characters', () => {
     expect(pieces('🚀 개발', '개발')).toEqual(['개발']);
   });

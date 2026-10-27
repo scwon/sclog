@@ -97,6 +97,7 @@ export function useShortcuts(state: ShortcutState, onAction: (action: ShortcutAc
           shiftKey: event.shiftKey,
           altKey: event.altKey,
           isComposing: event.isComposing,
+          keyCode: event.keyCode,
           target: focusTarget(event.target),
         },
         { ...current, findSupported: findSupported(), platform: browserPlatform() },
