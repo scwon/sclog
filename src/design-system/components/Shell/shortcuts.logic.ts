@@ -145,10 +145,18 @@ function modOnly(event: KeyShape, platform: Platform, shift: boolean): boolean {
   return mod && !event.altKey && event.shiftKey === shift;
 }
 
+/** ⌘·Ctrl·Alt가 없는가. Shift는 보지 않는다(Tab·Shift+Tab, Enter·Shift+Enter를 함께 받는다). */
+function unmodified(event: KeyShape): boolean {
+  return !event.metaKey && !event.ctrlKey && !event.altKey;
+}
+
 /** 수정 키가 하나도 없는가. */
 function bare(event: KeyShape): boolean {
-  return !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey;
+  return unmodified(event) && !event.shiftKey;
 }
+
+/** 찾기 줄의 키가 없는 조합. CSS Custom Highlight API가 없으면 이 값으로 바꿔 ⌘F·⌘G·⇧⌘G를 브라우저에 맡긴다. */
+const NO_FIND_KEYS = { find: null, findNext: null, findPrev: null } as const;
 
 /**
  * 키 하나를 창 틀 동작으로 바꾼다. 받지 않는 키(브라우저 키 포함)는 `null`이다.
@@ -167,14 +175,12 @@ export function shortcutFor(
     modOnly(event, context.platform, combo.shift ?? false);
 
   // 찾기 줄은 CSS Custom Highlight API로 칠하므로, 없는 브라우저에서는 ⌘F·⌘G·⇧⌘G를 브라우저 찾기에 맡긴다.
-  const find = context.findSupported ? keys.find : null;
-  const findNext = context.findSupported ? keys.findNext : null;
-  const findPrev = context.findSupported ? keys.findPrev : null;
+  const { find, findNext, findPrev } = context.findSupported ? keys : NO_FIND_KEYS;
 
   // 열린 팔레트는 대화상자라 그 창의 키만 받는다. 나머지 글자는 입력창이 받는다.
   if (context.paletteOpen) {
     if (event.key === 'Escape' && bare(event)) return 'close-palette';
-    if (event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey) return 'swallow';
+    if (event.key === 'Tab' && unmodified(event)) return 'swallow';
     if (command(keys.palette) || command(find) || command(findNext) || command(findPrev))
       return 'swallow';
     if (event.target !== 'palette-input' || !bare(event)) return null;
@@ -198,13 +204,7 @@ export function shortcutFor(
     if (command(findNext)) return 'find-next';
     if (command(findPrev)) return 'find-prev';
   }
-  if (
-    event.target === 'find-input' &&
-    event.key === 'Enter' &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.altKey
-  )
+  if (event.target === 'find-input' && event.key === 'Enter' && unmodified(event))
     return event.shiftKey ? 'find-prev' : 'find-next';
   if (event.target !== 'other') return null;
   if (command(keys.palette)) return 'open-palette';
