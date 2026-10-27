@@ -13,3 +13,12 @@ export const $findQuery = atom('');
 export function setFindQuery(query: string): void {
   $findQuery.set(query);
 }
+
+/**
+ * 찾기 줄을 열 때 에디터에서 고른 글자를 검색어로 넣는다. 앞뒤 공백(세 번 눌러 고른 문단 끝의 줄바꿈 포함)을 지운 글자가
+ * 한 줄이면 넣고, 비었거나 여러 줄이면 마지막 검색어를 그대로 둔다.
+ */
+export function seedFindQuery(selected: string): void {
+  const text = selected.trim();
+  if (text && !/[\r\n]/.test(text)) $findQuery.set(text);
+}

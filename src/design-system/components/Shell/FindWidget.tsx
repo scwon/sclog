@@ -31,12 +31,19 @@ export interface FindHandle {
   move: (delta: -1 | 1) => void;
 }
 
+/**
+ * 찾기 줄을 열 때 고를 일치. `next`는 화면 맨 위에 보이는 일치, `prev`는 그 바로 앞 일치다(찾기 줄이 닫힌 채 ⇧⌘G).
+ */
+export type FindStart = 'next' | 'prev';
+
 /** `FindWidget`의 props. */
 export interface FindWidgetProps {
   /** 찾는 영역(에디터 루트)의 id. */
   editorId: string;
   /** 툴팁 키 표기를 고르는 플랫폼. */
   platform: Platform;
+  /** 열 때 고를 일치. 기본값은 `next`다. 연 뒤 검색어가 바뀌면 늘 화면 맨 위 일치부터 시작한다. */
+  start?: FindStart;
   /** 닫기 버튼을 눌렀다. 창 틀이 찾기 줄을 닫고 포커스를 연 자리로 돌려준다. */
   onClose: () => void;
   ref?: Ref<FindHandle>;
@@ -82,7 +89,7 @@ function reveal(range: Range | undefined, editor: HTMLElement, widget: HTMLEleme
  * 주고 글자를 모두 고르며, 닫히면(언마운트) 칠한 것을 지운다. Enter·Shift+Enter·Esc는 창 틀의 단축키 리스너가 받아
  * `FindHandle`로 넘긴다.
  */
-export function FindWidget({ editorId, platform, onClose, ref }: FindWidgetProps) {
+export function FindWidget({ editorId, platform, start = 'next', onClose, ref }: FindWidgetProps) {
   const query = useStore($findQuery);
   const input = useRef<HTMLInputElement>(null);
   const widget = useRef<HTMLElement>(null);
@@ -97,10 +104,14 @@ export function FindWidget({ editorId, platform, onClose, ref }: FindWidgetProps
     const rects = ranges.map((range) => range.getBoundingClientRect());
     return { root, ranges, start: firstVisibleMatch(rects, visibleArea(root).top) };
   }, [editorId, query]);
+  const total = found.ranges.length;
+  // 열 때 찾은 결과. `start`는 이 결과에만 쓰고, 검색어가 바뀐 뒤에는 화면 맨 위 일치부터 시작한다.
+  const [opening] = useState(found);
+  const begin =
+    start === 'prev' && found === opening ? stepMatch(found.start, total, -1) : found.start;
   // 다음·이전으로 고른 일치. 그 뒤 검색어가 바뀌면(`found`가 바뀌면) 버리고 시작 일치로 돌아간다.
   const [picked, setPicked] = useState<{ found: typeof found; index: number } | null>(null);
-  const current = picked?.found === found ? picked.index : found.start;
-  const total = found.ranges.length;
+  const current = picked?.found === found ? picked.index : begin;
 
   // 칠하기와 스크롤은 지금 일치가 바뀔 때마다 맞춘다. 닫히면(언마운트) 칠한 것을 지운다.
   useEffect(() => {

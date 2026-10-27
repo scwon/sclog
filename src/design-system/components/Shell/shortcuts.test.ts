@@ -328,6 +328,65 @@ describe('shortcutFor: ⌘F 찾기 줄', () => {
   });
 });
 
+describe('shortcutFor: ⌘G·⇧⌘G 다음·이전 일치', () => {
+  const next = { key: 'g', metaKey: true } as const;
+  const prev = { key: 'G', metaKey: true, shiftKey: true } as const;
+  const opened: ShortcutContext = { ...closed, findOpen: true };
+
+  it('goes to the next match with ⌘G and the previous one with ⇧⌘G on a Mac', () => {
+    expect(shortcutFor(key(next), opened)).toBe('find-next');
+    expect(shortcutFor(key(prev), opened)).toBe('find-prev');
+  });
+
+  it('takes Ctrl+G and Ctrl+Shift+G outside a Mac', () => {
+    const other: ShortcutContext = { ...opened, platform: 'other' };
+    expect(shortcutFor(key({ key: 'g', ctrlKey: true }), other)).toBe('find-next');
+    expect(shortcutFor(key({ key: 'G', ctrlKey: true, shiftKey: true }), other)).toBe('find-prev');
+    expect(shortcutFor(key(next), other)).toBeNull();
+  });
+
+  it('works while the find widget is closed too (the shell opens it with the last query)', () => {
+    expect(shortcutFor(key(next), closed)).toBe('find-next');
+    expect(shortcutFor(key(prev), closed)).toBe('find-prev');
+  });
+
+  it('takes the keys from the find input', () => {
+    expect(shortcutFor(key({ ...next, target: 'find-input' }), opened)).toBe('find-next');
+    expect(shortcutFor(key({ ...prev, target: 'find-input' }), opened)).toBe('find-prev');
+  });
+
+  it('reads the physical key when the layout is not Latin (한글 자판)', () => {
+    expect(shortcutFor(key({ key: 'ㅎ', code: 'KeyG', metaKey: true }), opened)).toBe('find-next');
+  });
+
+  it('leaves ⌘G to the browser when the Custom Highlight API is missing', () => {
+    const unsupported: ShortcutContext = { ...opened, findSupported: false };
+    expect(shortcutFor(key(next), unsupported)).toBeNull();
+    expect(shortcutFor(key(prev), unsupported)).toBeNull();
+    expect(
+      shortcutFor(key({ ...next, target: 'palette-input' }), { ...unsupported, paletteOpen: true }),
+    ).toBeNull();
+  });
+
+  it('only blocks the browser find on ⌘G while the palette is open', () => {
+    const palette: ShortcutContext = { ...closed, paletteOpen: true };
+    expect(shortcutFor(key({ ...next, target: 'palette-input' }), palette)).toBe('swallow');
+    expect(shortcutFor(key({ ...prev, target: 'palette-input' }), palette)).toBe('swallow');
+  });
+
+  it('stays off in the search input, other text fields and while composing', () => {
+    expect(shortcutFor(key({ ...next, target: 'search-input' }), opened)).toBeNull();
+    expect(shortcutFor(key({ ...next, target: 'text' }), opened)).toBeNull();
+    expect(shortcutFor(key({ ...next, isComposing: true }), opened)).toBeNull();
+  });
+
+  it('takes nothing once the keys are dropped from the key table', () => {
+    const keys = { ...SHORTCUT_KEYS, findNext: null, findPrev: null };
+    expect(shortcutFor(key(next), opened, keys)).toBeNull();
+    expect(shortcutFor(key(prev), opened, keys)).toBeNull();
+  });
+});
+
 describe('shortcutFor: Esc와 찾기 줄', () => {
   const opened: ShortcutContext = { ...closed, findOpen: true };
 

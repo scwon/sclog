@@ -88,12 +88,18 @@ export interface PaletteCommand {
 export interface PaletteCommandContext {
   /** 지금 글에 다음 파일(`nextFile`)이 있는가. 없으면 `다음 파일 열기`를 빼낸다. */
   hasNextFile: boolean;
+  /**
+   * 브라우저에 CSS Custom Highlight API가 있는가. 없으면 ⌘F가 브라우저 찾기라 `이 파일에서 찾기`를 빼낸다
+   * (`shortcuts.ts`의 `findSupported()`).
+   */
+  findSupported: boolean;
   platform: Platform;
 }
 
 /** 명령 순서와 이름, 붙은 키. 이 순서가 단축키 도움말의 순서다. */
 const COMMANDS: { id: PaletteCommandId; label: string; key?: keyof ShortcutKeys }[] = [
   { id: 'open-file', label: '파일 열기', key: 'palette' },
+  { id: 'find-in-file', label: '이 파일에서 찾기', key: 'find' },
   { id: 'open-search', label: '본문에서 찾기', key: 'search' },
   { id: 'toggle-panel', label: '패널 열고 닫기', key: 'panel' },
   { id: 'show-explorer', label: '탐색기 보기' },
@@ -109,11 +115,12 @@ const COMMANDS: { id: PaletteCommandId; label: string; key?: keyof ShortcutKeys 
  */
 export function paletteCommands(
   query: string,
-  { hasNextFile, platform }: PaletteCommandContext,
+  { hasNextFile, findSupported, platform }: PaletteCommandContext,
   keys: ShortcutKeys = SHORTCUT_KEYS,
 ): PaletteCommand[] {
   const needle = normalizeForMatch(query.replace(/^>/, '').trim());
   return COMMANDS.filter(({ id }) => id !== 'open-next-file' || hasNextFile)
+    .filter(({ id }) => id !== 'find-in-file' || findSupported)
     .filter(({ label }) => normalizeForMatch(label).includes(needle))
     .map(({ id, label, key }) => {
       const combo = key ? keys[key] : null;
