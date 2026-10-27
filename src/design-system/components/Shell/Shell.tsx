@@ -840,8 +840,17 @@ export function Shell({
             {VIEWS[view].icon}
           </RailButton>
         ))}
-        <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
+        {/* 패널 화면 버튼이 아니라 사이트 밖으로 나가는 링크라, 막대 맨 아래로 떼고 ↗ 표시를 달아 새 탭에서 연다. */}
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="이 블로그의 소스 (GitHub, 새 탭에서 열림)"
+          title="이 블로그의 소스 — GitHub (새 탭)"
+          className={cn(railItem, 'group mt-auto')}
+        >
           <CodeIcon />
+          <ExternalIcon className="absolute top-2 right-2 size-[13px]! rounded-full bg-surface-sunken text-text-muted transition-[translate,color] duration-(--motion-fast) ease-standard group-hover:text-accent-text motion-safe:group-hover:translate-x-px motion-safe:group-hover:-translate-y-px" />
         </a>
       </nav>
 
