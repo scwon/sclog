@@ -136,11 +136,20 @@ const selectedPairs: [foreground: string, background: string][] = ['--text', '--
 );
 
 /**
- * 찾기 줄(⌘F)의 칠하기(`ide.css`의 `::highlight`). 모든 일치(`find-match`)는 에디터 바탕(`--surface`) 위에 겹친 형광 띠
- * (`--marker`)이고 글자색은 그대로다. 지금 일치(`find-current`)는 `--accent` 바탕과 `--on-accent` 글자라 위 `pairs`의
- * `--on-accent` on `--accent`가 본다.
+ * 찾기 줄(⌘F)의 칠하기(`ide.css`의 `::highlight(name)`)가 쓰는 글자색·바탕 토큰. 칠한 글자는 본문 글자색(강조·코드
+ * 색·흐린 글자)과 상관없이 늘 이 글자색이어야 하므로 규칙에서 바로 읽는다.
  */
-const findMatchText = ['--text', '--text-soft', '--prose', '--prose-strong'];
+function highlightTokens(name: string): { color: string | null; background: string | null } {
+  const body =
+    new RegExp(String.raw`::highlight\(${name}\)\s*\{([^}]*)\}`).exec(
+      read('../styles/ide.css'),
+    )?.[1] ?? '';
+  const token = (property: string) =>
+    new RegExp(String.raw`(?:^|[\s;])${property}\s*:\s*var\((--[\w-]+)\)`).exec(body)?.[1] ?? null;
+  return { color: token('color'), background: token('background-color') };
+}
+const findMatch = highlightTokens('find-match');
+const findCurrent = highlightTokens('find-current');
 
 describe('contrast', () => {
   it('matches known WCAG ratios', () => {
@@ -155,14 +164,22 @@ describe('contrast', () => {
       );
     });
 
-    it.each(findMatchText)('find-match: %s on --marker over --surface is at least 4.5:1', (fg) => {
-      const marked = over(resolveColor(tokens, '--marker'), resolveColor(tokens, '--surface'));
-      expect(contrast(resolveColor(tokens, fg), marked)).toBeGreaterThanOrEqual(BODY);
+    // 모든 일치(`find-match`)는 에디터 바탕(`--surface`) 위에 겹친 반투명 형광 띠다.
+    it('find-match: its own text color on its band over --surface is at least 4.5:1', () => {
+      expect(findMatch).toEqual({ color: expect.any(String), background: expect.any(String) });
+      const { color, background } = findMatch;
+      const marked = over(
+        resolveColor(tokens, background ?? ''),
+        resolveColor(tokens, '--surface'),
+      );
+      expect(contrast(resolveColor(tokens, color ?? ''), marked)).toBeGreaterThanOrEqual(BODY);
     });
 
-    it('find-current: --on-accent on --accent is at least 4.5:1', () => {
+    it('find-current: its text color on its background is at least 4.5:1', () => {
+      expect(findCurrent).toEqual({ color: expect.any(String), background: expect.any(String) });
+      const { color, background } = findCurrent;
       expect(
-        contrast(resolveColor(tokens, '--on-accent'), resolveColor(tokens, '--accent')),
+        contrast(resolveColor(tokens, color ?? ''), resolveColor(tokens, background ?? '')),
       ).toBeGreaterThanOrEqual(BODY);
     });
 
