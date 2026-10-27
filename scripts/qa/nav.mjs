@@ -8,7 +8,8 @@
  * 글에서 장 주소 복사(키보드)와 장 주소로 들어오기를 본다.
  * 글 가운데 장에서 홈으로 떠났다가 돌아오면 열기 요약 뒤 이어 읽기 버튼이 뜨고, 누르면 그 장으로 가며 사라지는지 본다.
  * 그다음 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
- * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다.
+ * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다. 이어서 글에서 ⌘F로 찾기 줄을 열어
+ * 위치 글자·칠하기·Enter·Esc를 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -562,6 +563,75 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {
   deviceScaleFactor: 1,
   mobile: false,
 });
+
+// ⌘F(Ctrl+F) 찾기 줄: 글에서 열어 입력창에 포커스 → 검색어 입력 → 위치 글자와 칠한 범위 수 → Enter로 다음 →
+// Esc로 닫히고 칠한 것이 사라지며 포커스가 에디터로 돌아온다(찾기 줄은 처음 쓸 때 불러오는 청크라 조금 기다린다).
+const findState = () =>
+  page.evaluate(() => {
+    const input = document.querySelector('[data-find-input]');
+    return {
+      open: input !== null,
+      focused: document.activeElement === input && input !== null,
+      role: input
+        ? (input.getAttribute('role') ?? (input.type === 'search' ? 'searchbox' : ''))
+        : '',
+      position: document.querySelector('search [aria-live="polite"]')?.textContent ?? '',
+      matches: CSS.highlights.get('find-match')?.size ?? 0,
+      current: CSS.highlights.get('find-current')?.size ?? 0,
+    };
+  });
+await page.goto(QA.base + post.url);
+await page.waitForTimeout(1500);
+check('찾기 전: 에디터에 포커스', await focusEditor());
+await page.keyboard.press('ControlOrMeta+F');
+await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
+await page
+  .waitForFunction(() => document.activeElement?.matches('[data-find-input]') === true, undefined, {
+    timeout: 3000,
+  })
+  .catch(() => {});
+const findOpened = await findState();
+check(
+  '⌘F로 찾기 줄이 열리고 입력창에 포커스',
+  findOpened.open && findOpened.focused && findOpened.role === 'searchbox',
+  JSON.stringify(findOpened),
+);
+await page.keyboard.type('개발');
+await page
+  .waitForFunction(
+    () =>
+      /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+    undefined,
+    { timeout: 3000 },
+  )
+  .catch(() => {});
+const typed = await findState();
+const [at, total] = typed.position.split('/').map(Number);
+check(
+  '찾기: 위치 글자와 칠한 범위 수가 맞음',
+  total > 0 && typed.matches === total && typed.current === 1 && at >= 1,
+  JSON.stringify(typed),
+);
+await page.keyboard.press('Enter');
+await page.waitForTimeout(300);
+const stepped = await findState();
+check(
+  '찾기: Enter로 다음 일치',
+  stepped.position === `${(at % total) + 1}/${total}` && stepped.focused,
+  `${typed.position} → ${stepped.position}`,
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+const findClosed = await findState();
+check(
+  '찾기: Esc로 닫히고 칠한 것이 사라짐',
+  !findClosed.open && findClosed.matches === 0 && findClosed.current === 0,
+  JSON.stringify(findClosed),
+);
+check(
+  '찾기: 닫으면 에디터로 포커스',
+  await page.evaluate(() => document.activeElement?.id === 'editor'),
+);
 
 const events = await page.events();
 const errors = events

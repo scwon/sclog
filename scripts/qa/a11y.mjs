@@ -5,7 +5,7 @@
  * 움직임 줄이기를 켜서 펼침 도중의 반투명 글자를 명암비 위반으로 잘못 잡지 않게 한다.
  * 읽기 기록을 미리 넣어 탐색기 꼬리표(`✓`·`42%`)와 프로필의 읽기 기록 칸도 함께 본다. 꼬리표 종류는 폭·테마마다
  * 번갈아 넣어 두 테마가 두 꼬리표를 모두 거친다. 읽는 중으로 넣은 글은 개요의 첫 장을 위치로 다시 넣고 열어,
- * 상태줄에 이어 읽기 버튼이 뜬 화면도 본다(폭마다 한 테마씩, 세 폭 모두).
+ * 상태줄에 이어 읽기 버튼이 뜬 화면도 본다(폭마다 한 테마씩, 세 폭 모두). 폭·테마마다 글에서 ⌘F로 연 찾기 줄(검색어 입력)도 본다.
  * `run.mjs`가 `globalThis.QA = { base, pages, axe }`를 넣고 ego-browser에서 import한다.
  */
 /* global QA, taskSpace */
@@ -151,6 +151,24 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
     if (searchViolations.length)
       failures.push(`${width} ${theme} 검색 화면: ${searchViolations.join('; ')}`);
     await page.evaluate(() => sessionStorage.clear());
+    // 검색어를 넣은 찾기 줄(⌘F). 칠하기는 axe가 보지 않으므로 찾기 줄 자체의 이름·명암비·겹침을 본다.
+    if (postUrls[0]) {
+      await page.goto(QA.base + postUrls[0]);
+      await page.waitForTimeout(600);
+      await page.evaluate(() => {
+        document.getElementById('editor')?.focus();
+        return true;
+      });
+      await page.keyboard.press('ControlOrMeta+F');
+      await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
+      await page.keyboard.type('개발');
+      await page.waitForTimeout(300);
+      const findViolations = await axeViolations();
+      runs++;
+      if (findViolations.length)
+        failures.push(`${width} ${theme} 찾기 줄: ${findViolations.join('; ')}`);
+      await page.keyboard.press('Escape');
+    }
   }
 }
 await page.evaluate(() => {

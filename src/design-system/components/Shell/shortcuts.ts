@@ -31,6 +31,7 @@ export function focusTarget(target: EventTarget | null): FocusTarget {
   if (!(target instanceof HTMLElement)) return 'other';
   if (target.matches('[data-palette-input]')) return 'palette-input';
   if (target.matches('[data-search-input]')) return 'search-input';
+  if (target.matches('[data-find-input]')) return 'find-input';
   if (
     target.isContentEditable ||
     target instanceof HTMLTextAreaElement ||
@@ -45,6 +46,14 @@ export function focusTarget(target: EventTarget | null): FocusTarget {
 export function browserPlatform(): Platform {
   const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
   return platformOf(nav.userAgentData?.platform || nav.platform || '');
+}
+
+/**
+ * 찾기 줄을 쓸 수 있는가: CSS Custom Highlight API(`CSS.highlights`, `Highlight`)가 있어야 칠할 수 있다. 없으면 ⌘F를
+ * 가로채지 않고 브라우저 찾기에 맡긴다. 브라우저에서만 부른다.
+ */
+export function findSupported(): boolean {
+  return typeof CSS !== 'undefined' && 'highlights' in CSS && typeof Highlight === 'function';
 }
 
 /** 바뀌지 않는 값의 구독. */
@@ -63,6 +72,8 @@ export interface ShortcutState {
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;
+  /** 찾기 줄이 열려 있는가. */
+  findOpen: boolean;
 }
 
 /**
@@ -88,7 +99,7 @@ export function useShortcuts(state: ShortcutState, onAction: (action: ShortcutAc
           isComposing: event.isComposing,
           target: focusTarget(event.target),
         },
-        { ...current, platform: browserPlatform() },
+        { ...current, findSupported: findSupported(), platform: browserPlatform() },
       );
       if (!action) return;
       event.preventDefault();

@@ -135,6 +135,13 @@ const selectedPairs: [foreground: string, background: string][] = ['--text', '--
   (fg) => ['--surface-panel', '--surface-raised'].map((bg): [string, string] => [fg, bg]),
 );
 
+/**
+ * 찾기 줄(⌘F)의 칠하기(`ide.css`의 `::highlight`). 모든 일치(`find-match`)는 에디터 바탕(`--surface`) 위에 겹친 형광 띠
+ * (`--marker`)이고 글자색은 그대로다. 지금 일치(`find-current`)는 `--accent` 바탕과 `--on-accent` 글자라 위 `pairs`의
+ * `--on-accent` on `--accent`가 본다.
+ */
+const findMatchText = ['--text', '--text-soft', '--prose', '--prose-strong'];
+
 describe('contrast', () => {
   it('matches known WCAG ratios', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
@@ -146,6 +153,17 @@ describe('contrast', () => {
       expect(contrast(resolveColor(tokens, fg), resolveColor(tokens, bg))).toBeGreaterThanOrEqual(
         minimum,
       );
+    });
+
+    it.each(findMatchText)('find-match: %s on --marker over --surface is at least 4.5:1', (fg) => {
+      const marked = over(resolveColor(tokens, '--marker'), resolveColor(tokens, '--surface'));
+      expect(contrast(resolveColor(tokens, fg), marked)).toBeGreaterThanOrEqual(BODY);
+    });
+
+    it('find-current: --on-accent on --accent is at least 4.5:1', () => {
+      expect(
+        contrast(resolveColor(tokens, '--on-accent'), resolveColor(tokens, '--accent')),
+      ).toBeGreaterThanOrEqual(BODY);
     });
 
     it.each(selectedPairs)('%s on --state-selected over %s is at least 4.5:1', (fg, bg) => {
