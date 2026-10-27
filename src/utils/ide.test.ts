@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BlogPost } from './blog';
-import { docEndLinks, fileCrumbs, postFile, postUrl } from './ide';
+import { docEndLinks, fileCrumbs, postFile, postUrl, tagPath, tagUrl } from './ide';
 
 /** 컬렉션 하나의 글. 파일 크기는 보지 않으므로 `filePath`는 없다. */
 function makePost(collection: 'blog' | 'ai-written', id: string, pubDate: string): BlogPost {
@@ -102,5 +102,27 @@ describe('fileCrumbs (경로 표시줄)', () => {
       { label: 'tags', href: '/blog/tags/', current: false },
       { label: '회고', href: undefined, current: true },
     ]);
+  });
+
+  it('links tags under ai-written to the AI tag list: ai-written › tags › 회고', () => {
+    expect(fileCrumbs({ path: 'ai-written/tags/회고', kind: 'page' })).toEqual([
+      { label: 'ai-written', href: '/ai-written/', current: false },
+      { label: 'tags', href: '/ai-written/tags/', current: false },
+      { label: '회고', href: undefined, current: true },
+    ]);
+  });
+});
+
+describe('태그 주소', () => {
+  it('sends a tag to the tag page of its folder', () => {
+    expect(tagUrl('posts', '회고')).toBe('/blog/tags/회고/');
+    expect(tagUrl('ai-written', '회고')).toBe('/ai-written/tags/회고/');
+  });
+
+  it('names tag tabs by folder: tags/ and tags/회고 for posts, ai-written/tags/… for AI posts', () => {
+    expect(tagPath('posts')).toBe('tags/');
+    expect(tagPath('posts', '회고')).toBe('tags/회고');
+    expect(tagPath('ai-written')).toBe('ai-written/tags/');
+    expect(tagPath('ai-written', '회고')).toBe('ai-written/tags/회고');
   });
 });

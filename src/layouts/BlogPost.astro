@@ -14,7 +14,7 @@ import { Badge, nextFile } from '@/design-system';
 import { SITE } from '../site';
 import { getPublishedPosts, type BlogPost } from '../utils/blog';
 import { postFolder } from '../utils/folder';
-import { buildOutline, buildTree, docEndLinks, postFile } from '../utils/ide';
+import { buildOutline, buildTree, docEndLinks, postFile, tagUrl } from '../utils/ide';
 
 interface Props {
   post: BlogPost;
@@ -129,7 +129,7 @@ const endLinks = docEndLinks(
           {tags.map((tag) => (
             <li>
               <Badge asChild>
-                <a href={`/blog/tags/${tag}/`}>{tag}</a>
+                <a href={tagUrl(folder, tag)}>{tag}</a>
               </Badge>
             </li>
           ))}

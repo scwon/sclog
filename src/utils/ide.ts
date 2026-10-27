@@ -21,6 +21,19 @@ export function postUrl(post: BlogPost): string {
   return `${FOLDER_ROUTES[postFolder(post)].postBase}${post.id}/`;
 }
 
+/** 폴더의 태그별 글 주소: `/blog/tags/<태그>/`, `/ai-written/tags/<태그>/`. */
+export function tagUrl(folder: Folder, tag: string): string {
+  return `${FOLDER_ROUTES[folder].tags}${tag}/`;
+}
+
+/**
+ * 태그 화면의 파일 경로(탭·경로 표시줄): 직접 쓴 글은 `tags/`·`tags/<태그>`, AI 글은 앞에 폴더를 붙여
+ * `ai-written/tags/`·`ai-written/tags/<태그>`. 태그를 빼면 태그 목록이다.
+ */
+export function tagPath(folder: Folder, tag = ''): string {
+  return `${folder === 'posts' ? '' : `${folder}/`}tags/${tag}`;
+}
+
 /**
  * 글을 창 틀의 파일로 본다: 경로 `<폴더>/<연도>/<slug>.mdx`(`posts/…`, `ai-written/…`),
  * 크기는 원본 파일 바이트.
@@ -86,15 +99,20 @@ export interface Crumb {
   current: boolean;
 }
 
-/** 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, `tags`면 태그 목록, 나머지는 없음. */
-function sectionHref(label: string): string | undefined {
+/**
+ * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, `tags`면 앞 조각 폴더의 태그 목록
+ * (`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
+ */
+function sectionHref(label: string, previous: string | undefined): string | undefined {
   if (isFolder(label)) return FOLDER_ROUTES[label].log.url;
-  return label === 'tags' ? FOLDER_ROUTES.posts.tags : undefined;
+  if (label !== 'tags') return undefined;
+  return FOLDER_ROUTES[previous && isFolder(previous) ? previous : 'posts'].tags;
 }
 
 /**
- * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `tags › 회고`).
- * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 첫 조각 링크는 폴더면 그 폴더의 로그, `tags`면 태그 목록이다.
+ * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `tags › 회고`,
+ * `ai-written › tags › 회고`).
+ * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 폴더 조각은 그 폴더의 로그, `tags` 조각은 그 폴더의 태그 목록으로 간다.
  */
 export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
   const logFolder = FOLDERS.find((folder) => FOLDER_ROUTES[folder].log.name === file.path);
@@ -104,7 +122,7 @@ export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
       : file.path.split('/').filter(Boolean);
   return segments.map((label, index) => {
     const current = index === segments.length - 1;
-    return { label, href: current ? undefined : sectionHref(label), current };
+    return { label, href: current ? undefined : sectionHref(label, segments[index - 1]), current };
   });
 }
 

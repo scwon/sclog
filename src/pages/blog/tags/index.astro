@@ -1,34 +1,6 @@
 ---
-/** 태그 목록 `tags/`: 태그마다 링크 줄 하나(`#태그 ---- 글 수`). */
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import FlowLog from '../../../components/flow/FlowLog.astro';
-import { getAllTags } from '../../../utils/blog';
-import { linkLines } from '../../../utils/flow';
-
-const tags = [...(await getAllTags('posts')).entries()].toSorted((a, b) => b[1] - a[1]);
+/** 태그 목록 `tags/`: 직접 쓴 글(`posts`)의 태그만 센다. */
+import TagIndex from '../../../components/tags/TagIndex.astro';
 ---
 
-<BaseLayout
-  title="태그"
-  description="SCLOG 블로그의 모든 태그 목록입니다."
-  file={{
-    title: '태그',
-    path: 'tags/',
-    url: '/blog/tags/',
-    kind: 'page',
-    summary: `태그 ${tags.length}개`,
-  }}
->
-  <FlowLog
-    lines={linkLines({
-      title: 'tags/',
-      comment: `태그 ${tags.length}개, 글이 많은 순`,
-      links: tags.map(([tag, count]) => ({
-        href: `/blog/tags/${tag}/`,
-        label: `#${tag}`,
-        note: `글 ${count}편`,
-      })),
-      end: `태그 ${tags.length}개`,
-    })}
-  />
-</BaseLayout>
+<TagIndex folder="posts" title="태그" description="SCLOG 블로그의 모든 태그 목록입니다." />
