@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -7,15 +9,44 @@ import {
   type ReactNode,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { REDUCED_MOTION } from '../../media';
+import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tabs } from '../Tabs/Tabs';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { useStore } from '@nanostores/react';
+import { $statusNotice, clearStatusNotice } from '../../stores/notice';
 import { $reading, emptyReading } from '../../stores/reading';
 import { chapterNo, readingSymbol } from '../../stores/reading.logic';
+import {
+  $readingHistory,
+  clearReadingHistory,
+  keepPublishedHistory,
+} from '../../stores/readingHistory';
+import {
+  emptyHistory,
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingMark,
+} from '../../stores/readingHistory.logic';
+import { $resume, dismissResume } from '../../stores/resume';
+import { resumeLabel } from '../../stores/resume.logic';
+import { showStatusNotice } from '../../stores/notice';
 import { openTab } from '../../stores/tabs';
-import { openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
-import { BranchIcon, CodeIcon, ExplorerIcon, ExternalIcon, MenuIcon, ProfileIcon } from './icons';
+import { toggleTheme } from '../../stores/theme';
+import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
+import { requestSearchFocus } from '../../stores/search';
+import {
+  BranchIcon,
+  CodeIcon,
+  ExplorerIcon,
+  ExternalIcon,
+  FileGlyph,
+  MenuIcon,
+  ProfileIcon,
+  SearchIcon,
+} from './icons';
 import {
   PANEL_VIEWS,
   dismissPanel,
@@ -24,11 +55,30 @@ import {
   panelVisible,
   pickView,
   showView,
+  startView,
   togglePanel,
   viewForFile,
   type PanelState,
   type PanelView,
 } from './panel.logic';
+import { readPanelView, writePanelView } from './panel';
+import type { PaletteHandle } from './Palette';
+import { usePlatform, useShortcuts } from './shortcuts';
+import {
+  SHORTCUT_KEYS,
+  keyLabel,
+  type KeyCombo,
+  type Platform,
+  type ShellCommand,
+  type ShortcutAction,
+} from './shortcuts.logic';
+import { nextFile } from './tree.logic';
+
+/** 명령 팔레트는 처음 쓸 때 불러오는 청크다. 첫 화면 JS에 넣지 않는다. */
+const Palette = lazy(() => import('./Palette'));
+
+/** 검색 화면은 처음 열 때 불러오는 청크다(첫 화면 JS에 넣지 않는다). */
+const SearchView = lazy(() => import('./SearchView'));
 
 /** 탐색기 트리의 글 파일 하나. */
 export interface TreeFile {
@@ -72,6 +122,8 @@ export interface ShellProps {
   sourceUrl: string;
   tree: TreeYear[];
   profile: Profile;
+  /** 검색 화면이 처음 열릴 때 내려받는 검색 색인(`SearchIndex`)의 주소. 예: `/search-index.json` */
+  searchIndexUrl: string;
   /**
    * 지금 화면의 파일(제목·경로·URL·종류). 서버 HTML에 탭·창 제목·패널 화면·탐색기 강조를 미리 그려, JS가 없거나
    * 하이드레이션 전에도 맞게 보인다. 하이드레이션 뒤에는 에디터 루트의 계약(`data-file-*`)을 읽어 바꾼다.
@@ -81,13 +133,28 @@ export interface ShellProps {
 }
 
 const DESKTOP = '(min-width: 1100px)';
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 const EDITOR_ID = 'editor';
 const OUTLINE_ID = 'editor-outline';
 const PANEL_ID = 'panel';
 
-/** 패널 화면 이름. 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에 쓴다. */
-const VIEW_LABEL: Record<PanelView, string> = { explorer: '탐색기', profile: '프로필' };
+/**
+ * 패널 화면마다의 이름·키·아이콘. 이름은 활동 막대 버튼·패널 제목·좁은 화면의 전환 버튼에, 키는 활동 막대 툴팁에,
+ * 아이콘은 활동 막대에 쓴다. 프로필 화면에는 키가 없다.
+ */
+const VIEWS: Record<PanelView, { label: string; keys: KeyCombo | null; icon: ReactNode }> = {
+  explorer: { label: '탐색기', keys: SHORTCUT_KEYS.panel, icon: <ExplorerIcon /> },
+  profile: { label: '프로필', keys: null, icon: <ProfileIcon /> },
+  search: { label: '검색', keys: SHORTCUT_KEYS.search, icon: <SearchIcon /> },
+};
+
+/**
+ * 활동 막대 툴팁 글자. 키가 있는 화면은 `검색 (⌘⇧F)`처럼 붙인다. 플랫폼을 모르는 서버 HTML과 첫 하이드레이션에서는
+ * 화면 이름만 쓴다.
+ */
+function railTitle(view: PanelView, platform: Platform | null): string {
+  const { label, keys } = VIEWS[view];
+  return keys && platform ? `${label} (${keyLabel(keys, platform)})` : label;
+}
 
 /** 1100px 이상인가. 서버는 화면 폭을 모르므로 넓은 화면으로 그린다. */
 function useDesktop(): boolean {
@@ -121,6 +188,15 @@ function navigateLikeLink(url: string): void {
   document.body.append(link);
   link.click();
   link.remove();
+}
+
+/**
+ * 검색 입력창 포커스를 다음 프레임에 요청한다. 패널을 검색 화면으로 여는 누름(활동 막대, ⌘⇧F, 팔레트 명령)이 같이
+ * 쓴다. 바로 요청하면 좁은 화면에서 숨은 입력창에 포커스를 주거나, 겹침 패널이 열리며 패널로 옮기는 포커스가
+ * 입력창 포커스를 덮는다.
+ */
+function focusSearchSoon(): void {
+  requestAnimationFrame(requestSearchFocus);
 }
 
 /** 블로그 이름의 `’`만 강조색으로 그린다. */
@@ -183,16 +259,21 @@ const panelTitle = 'text-[11.5px] font-semibold tracking-[0.06em] text-text-mute
 const railItem =
   'relative grid h-11.5 w-(--rail-width) place-items-center text-text-muted transition-colors duration-(--motion-fast) ease-standard hover:text-text focus-visible:-outline-offset-[5px] [&_svg]:size-[23px]';
 
-/** 활동 막대에서 패널 화면 하나를 고르는 버튼. 그 화면이 보이면 코랄 바탕·아이콘·왼쪽 막대로 표시한다. */
+/**
+ * 활동 막대에서 패널 화면 하나를 고르는 버튼. 그 화면이 보이면 코랄 바탕·아이콘·왼쪽 막대로 표시한다.
+ * 툴팁(`title`)에는 그 화면을 여는 키를 붙인다.
+ */
 function RailButton({
   view,
   current,
+  title,
   onPick,
   className,
   children,
 }: {
   view: PanelView;
   current: boolean;
+  title: string;
   onPick: (view: PanelView) => void;
   className?: string;
   children: ReactNode;
@@ -200,7 +281,8 @@ function RailButton({
   return (
     <button
       type="button"
-      aria-label={VIEW_LABEL[view]}
+      aria-label={VIEWS[view].label}
+      title={title}
       aria-controls={PANEL_ID}
       aria-pressed={current}
       onClick={() => onPick(view)}
@@ -221,8 +303,61 @@ function RailButton({
 const panelLink =
   'flex h-7.5 items-center gap-1 pr-3 pl-6.5 font-mono text-xs text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2';
 
-/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처. */
-function ProfileView({ profile }: { profile: Profile }) {
+/**
+ * 탐색기 파일 줄 끝의 읽음 꼬리표. 읽은 글은 `✓`(흐린 글자), 읽는 중인 글은 `42%`(강조 글자)이고, 스크린 리더는
+ * 기호 대신 "읽음"·"42% 읽는 중"을 읽는다. 줄지 않으므로 파일 이름이 먼저 말줄임된다.
+ * 지금 연 글의 줄(`selected`, 선택 바탕)에서는 흐린 글자·강조 글자 모두 명암비가 모자라 `text-soft`로 그린다.
+ */
+function ReadMark({ mark, selected }: { mark: ReadingMark; selected: boolean }) {
+  const { text, label } = markText(mark, 'short');
+  return (
+    <span
+      className={cn(
+        'ml-auto flex-none pl-1 text-[11px]',
+        selected ? 'text-text-soft' : mark.kind === 'read' ? 'text-text-muted' : 'text-accent-text',
+      )}
+    >
+      <span aria-hidden="true">{text}</span>
+      <span className="sr-only"> {label}</span>
+    </span>
+  );
+}
+
+/**
+ * 프로필 화면 맨 아래의 읽기 기록 칸. `이 브라우저에 N편 읽음 · M편 읽는 중`과 `기록 지우기`를 보이고, 기록이 없으면
+ * 안내 한 줄만 보인다. 지우면 버튼이 사라지므로 포커스를 안내 줄로 옮긴다.
+ */
+function HistorySection({ summary }: { summary: string | null }) {
+  const status = useRef<HTMLParagraphElement>(null);
+  return (
+    <section aria-labelledby="profile-history" className="border-t border-border pb-2">
+      <SectionHead id="profile-history">읽기 기록</SectionHead>
+      <p
+        ref={status}
+        tabIndex={-1}
+        className="m-0 py-1 pr-3 pl-6.5 font-mono text-xs leading-[1.6] text-text-soft outline-none"
+      >
+        {summary ? `이 브라우저에 ${summary}` : '이 브라우저에 남은 읽기 기록이 없습니다'}
+      </p>
+      {summary && (
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => {
+            clearReadingHistory();
+            status.current?.focus();
+          }}
+          className="mt-1 ml-6.5 font-mono text-xs"
+        >
+          기록 지우기
+        </Button>
+      )}
+    </section>
+  );
+}
+
+/** 패널의 프로필 화면: 사진, 이름·직함·소개, 경력, 연락처, 읽기 기록. */
+function ProfileView({ profile, history }: { profile: Profile; history: string | null }) {
   return (
     <div className="pb-2">
       <div className="px-4.5 pt-3 pb-4">
@@ -265,30 +400,51 @@ function ProfileView({ profile }: { profile: Profile }) {
           ))}
         </ul>
       </section>
+      <HistorySection summary={history} />
     </div>
   );
 }
 
 /**
- * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(탐색기 또는 프로필)·탭·상태줄을 모두
+ * 전체 화면 IDE 창 틀. 제목 표시줄·활동 막대·패널(프로필·탐색기·검색)·탭·상태줄을 모두
  * `position: fixed`로 그리는 아일랜드 하나다(ADR 0001). 에디터 내용은 아일랜드 밖 정적 HTML이고,
  * 창 틀은 페이지가 열릴 때마다(`astro:page-load`) 에디터 루트의 `data-file-*`를 읽어 탭을 열고
- * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다.
+ * 상태줄에 열기 요약(`❯ open …` → `✓ 열림 · …`)을 약 2초 보인다. 같은 자리에 창 틀 밖에서 띄운 상태줄 알림
+ * (`$statusNotice`)이 오면 그 알림을 먼저 보이고 `aria-live="polite"`로 읽힌다. 열기 요약은 읽히지 않는다.
+ * 글 화면 스크립트가 이어 읽기(`$resume`)를 권하면, 그 글의 열기 요약이 사라지는 순간 상태줄 오른쪽에
+ * `↳ 04 개발자란?에서 이어 읽기 · 42%` 버튼을 그린다. 누르면 그 장 앵커로 가고 버튼을 거둔다.
  *
- * 패널은 탐색기(글 트리, 글이면 그 아래 개요)와 프로필 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
+ * 패널은 프로필·탐색기(글 트리, 글이면 그 아래 개요)·검색 중 한 화면을 보이고, 전환 규칙은 `panel.logic.ts`에 있다.
+ * 검색 화면(`SearchView`)은 처음 보일 때 따로 불러오고, 색인은 `searchIndexUrl`에서 그때 내려받는다. 마지막 화면이
+ * 검색이어도 패널이 닫혀 있으면 받지 않는다.
+ * 마지막 화면은 세션 동안 `sessionStorage`에 남겨(`panel.ts`) 새로고침 뒤 하이드레이션이 끝나면 되살린다.
  * 패널 열림은 `<html data-panel>`로 알려, 2층 ide.css가 에디터 여백(`--editor-left`)을 맞춘다.
+ * 읽기 기록(`readingHistory.ts`)을 구독해 탐색기 파일 줄 끝에 읽음 꼬리표를, 프로필 화면 맨 아래에 읽기 기록 칸을 그린다.
+ *
+ * 단축키는 `document`의 keydown 리스너 하나(`shortcuts.ts`)가 받아 `shortcuts.logic.ts`의 판정대로 실행한다: ⌘P(Ctrl+P) 명령 팔레트,
+ * ⌘B(Ctrl+B) 패널 열고 닫기, ⌘⇧F(Ctrl+Shift+F) 검색 화면을 열고 입력창에 포커스, Esc 맨 위 층(팔레트, 그다음 좁은
+ * 화면의 겹침 패널) 닫기. 명령 팔레트(`Palette.tsx`)는 처음 열 때 불러오는 청크이고, `>` 명령 모드의 명령은 단축키와
+ * 같은 이름의 창 틀 명령(`ShellCommand`)이라 실행 함수 하나(`runCommand`)가 실행한다. 붙은 키는 `SHORTCUT_KEYS` 하나가 정하고, 활동 막대 툴팁(`검색 (⌘⇧F)`)도 그 값을 읽는다.
  */
-export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, current }: ShellProps) {
+export function Shell({
+  brand,
+  author,
+  githubUrl,
+  sourceUrl,
+  tree,
+  profile,
+  searchIndexUrl,
+  current,
+}: ShellProps) {
   const [file, setFile] = useState<EditorFile | null>(null);
   // 하이드레이션 전에는 서버가 넘긴 현재 파일을 보인다.
   const shown: CurrentFile | null = file ?? current ?? null;
   const desktop = useDesktop();
-  // 첫 화면은 서버가 넘긴 현재 파일의 종류로 정한다(홈은 프로필, 글은 탐색기).
-  const [panel, setPanel] = useState<PanelState>(() =>
-    current
-      ? { ...initialPanel, view: viewForFile(initialPanel.view, current.kind) }
-      : initialPanel,
-  );
+  // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 현재 파일의 종류로만 정한다(홈은 프로필, 글은 탐색기).
+  const [panel, setPanel] = useState<PanelState>(() => ({
+    ...initialPanel,
+    view: startView(null, current?.kind),
+  }));
   const openMode = panelOpen(panel, desktop);
   /** 패널 상태를 바꾼다. 화면 폭은 누른 순간의 값을 읽는다. */
   const updatePanel = useCallback(
@@ -298,6 +454,12 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   );
   const [log, setLog] = useState<string | null>(null);
   const reading = useStore($reading, { ssr: emptyReading });
+  // 서버 HTML과 첫 하이드레이션은 저장소를 모르므로 기록 없이 그리고, 그 뒤 실제 기록으로 다시 그린다.
+  const history = useStore($readingHistory, { ssr: emptyHistory });
+  const notice = useStore($statusNotice);
+  const resume = useStore($resume);
+  // 열기 요약이 끝난 파일의 URL. 이어 읽기 버튼은 그 파일의 요약이 사라진 뒤에만 보인다.
+  const [settled, setSettled] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   // 마지막으로 읽은 에디터 루트. 화면을 옮기면 <body>가 바뀌어 새 요소가 된다.
@@ -306,10 +468,25 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
   const visible = panelVisible(panel, desktop);
   const overlay = !desktop && openMode === 'open';
   const explorerShown = visible && panel.view === 'explorer';
+  // 검색 화면이 한 번이라도 보였는가. 그 전에는 마지막 화면이 검색이어도 패널이 닫혀 있으면(좁은 화면) 검색 화면
+  // 청크와 색인을 받지 않는다. 한 번 보인 뒤에는 패널을 닫아도 그려 둔 채 둔다.
+  const [searchShown, setSearchShown] = useState(false);
+  if (visible && panel.view === 'search' && !searchShown) setSearchShown(true);
+
   const pick = useCallback(
-    (view: PanelView) => updatePanel((state, wide) => pickView(state, view, wide)),
+    (view: PanelView) => {
+      updatePanel((state, wide) => pickView(state, view, wide));
+      // 활동 막대로 검색 화면을 열면 바로 입력하게 입력창에 포커스를 준다. 닫는 누름이면 숨은 입력창이라 포커스가 가지 않는다.
+      if (view === 'search') focusSearchSoon();
+    },
     [updatePanel],
   );
+
+  /** 패널을 검색 화면으로 열고(이미 보이면 그대로) 입력창에 포커스를 준다. ⌘⇧F와 팔레트의 `본문에서 찾기`가 쓴다. */
+  const openSearch = useCallback(() => {
+    updatePanel((_, wide) => showView('search', wide));
+    focusSearchSoon();
+  }, [updatePanel]);
 
   /** 패널을 탐색기 화면으로 연다(이미 보이면 그대로). 경로 표시줄의 `개요` 버튼이 쓴다. */
   const openExplorer = useCallback(() => {
@@ -318,6 +495,23 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
       document.getElementById('explorer-outline')?.scrollIntoView({ block: 'nearest' }),
     );
   }, [updatePanel]);
+
+  // 하이드레이션 뒤 저장된 마지막 화면에 파일 종류 규칙을 적용한 화면으로 바꾼다. 아래 저장 효과보다
+  // 먼저 선언해야 저장값을 덮어쓰기 전에 읽는다.
+  // 처음 한 번만 읽는다(ADR 0004). 그 뒤 파일을 열 때의 규칙은 아래 열기 처리가 맡는다.
+  const firstKind = useRef(current?.kind);
+  useEffect(() => {
+    const saved = readPanelView();
+    if (saved) updatePanel((state) => ({ ...state, view: startView(saved, firstKind.current) }));
+  }, [updatePanel]);
+
+  // 읽기 기록에서 발행된 글 목록(트리)에 없는 글을 버린다.
+  useEffect(() => {
+    keepPublishedHistory(tree.flatMap((year) => year.files.map((entry) => entry.url)));
+  }, [tree]);
+
+  // 패널 화면이 바뀔 때마다 세션 동안 남긴다. 열림·닫힘은 저장하지 않는다.
+  useEffect(() => writePanelView(panel.view), [panel.view]);
 
   // 페이지가 열리면 계약을 읽어 탭을 열고 열기 요약을 보인다. 첫 하이드레이션과 첫 page-load가
   // 겹쳐 두 번 불리면 한 번만 처리한다.
@@ -337,13 +531,19 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         return wide ? moved : dismissPanel(moved, wide);
       });
 
+      // 새 파일의 열기 요약이 앞 파일에서 띄운 알림을 바로 바꾼다.
+      clearStatusNotice();
       const { command, result } = openLog(next);
       const reduceMotion = window.matchMedia(REDUCED_MOTION).matches;
       timers.current.forEach(clearTimeout);
       setLog(command);
+      setSettled(null);
       timers.current = [
         window.setTimeout(() => setLog(result), reduceMotion ? 0 : 450),
-        window.setTimeout(() => setLog(null), 2200),
+        window.setTimeout(() => {
+          setLog(null);
+          setSettled(next.url);
+        }, 2200),
       ];
     };
     const pending = timers;
@@ -385,26 +585,113 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
     };
   }, [explorerShown, openExplorer, updatePanel]);
 
-  // 겹침 패널은 Esc로 닫고, 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다.
+  // 겹침 패널이 열리면 패널로 포커스를 옮겼다가 닫히면 연 버튼으로 돌려준다. Esc로 닫기는 단축키 리스너가 맡는다.
   useEffect(() => {
     if (!overlay) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panelRef.current?.focus();
-    const restore = () => {
-      if (opener?.isConnected && panelRef.current?.contains(document.activeElement)) opener.focus();
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') updatePanel(dismissPanel);
-    };
-    document.addEventListener('keydown', onKey);
+    const panelElement = panelRef.current;
+    panelElement?.focus();
     return () => {
-      document.removeEventListener('keydown', onKey);
-      restore();
+      if (opener?.isConnected && panelElement?.contains(document.activeElement)) opener.focus();
     };
-  }, [overlay, updatePanel]);
+  }, [overlay]);
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const platform = usePlatform();
+  const paletteRef = useRef<PaletteHandle>(null);
+  // 팔레트를 열 때 포커스가 있던 자리. 닫으면 여기로 돌려준다.
+  const paletteOpener = useRef<HTMLElement | null>(null);
+
+  const closePalette = useCallback(() => {
+    setPaletteOpen(false);
+    const opener = paletteOpener.current;
+    paletteOpener.current = null;
+    if (opener?.isConnected) opener.focus();
+  }, []);
+  const pickFromPalette = useCallback(
+    (url: string) => {
+      closePalette();
+      navigateLikeLink(url);
+    },
+    [closePalette],
+  );
+  // 다음 파일이 없으면(글이 아니거나 폴더의 가장 새 글) 팔레트가 `다음 파일 열기`를 보이지 않는다.
+  const next = shown ? nextFile(tree, shown.url) : null;
+  /** 창 틀 명령 하나를 실행한다. 단축키(⌘B·⌘⇧F)와 팔레트 명령 목록이 같이 쓴다. */
+  const runCommand = useCallback(
+    (command: ShellCommand) => {
+      switch (command) {
+        case 'open-search':
+          openSearch();
+          break;
+        case 'toggle-panel':
+          updatePanel(togglePanel);
+          break;
+        case 'show-explorer':
+          updatePanel((_, wide) => showView('explorer', wide));
+          break;
+        case 'show-profile':
+          updatePanel((_, wide) => showView('profile', wide));
+          break;
+        case 'toggle-theme':
+          toggleTheme();
+          break;
+        case 'open-next-file':
+          if (next) navigateLikeLink(next.url);
+          break;
+        case 'clear-history':
+          // 프로필 칸의 `기록 지우기`와 같다. 팔레트가 닫히면 보이는 변화가 없을 수 있어 상태줄로 알린다.
+          clearReadingHistory();
+          showStatusNotice('읽기 기록을 지웠습니다');
+          break;
+      }
+    },
+    [next, openSearch, updatePanel],
+  );
+  /** 팔레트에서 명령을 골랐다. 팔레트를 닫고 실행한다. */
+  const runFromPalette = useCallback(
+    (command: ShellCommand) => {
+      closePalette();
+      runCommand(command);
+    },
+    [closePalette, runCommand],
+  );
+
+  // 단축키: 판정은 `shortcuts.logic.ts`, `document` 리스너는 `shortcuts.ts`가 맡고 여기서는 동작만 실행한다.
+  const onShortcut = (action: ShortcutAction) => {
+    switch (action) {
+      case 'open-palette':
+        paletteOpener.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setPaletteOpen(true);
+        break;
+      case 'close-palette':
+        closePalette();
+        break;
+      case 'close-overlay':
+        updatePanel(dismissPanel);
+        break;
+      case 'palette-prev':
+        paletteRef.current?.move(-1);
+        break;
+      case 'palette-next':
+        paletteRef.current?.move(1);
+        break;
+      case 'palette-pick':
+        paletteRef.current?.pick();
+        break;
+      case 'swallow':
+        break;
+      default:
+        runCommand(action);
+    }
+  };
+  useShortcuts({ paletteOpen, overlayOpen: overlay }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];
+  // 이어 읽기는 지금 글의 열기 요약이 사라진 뒤에만 보인다(앞 파일의 요약이 끝난 직후 새 글이 열려도 겹치지 않게).
+  const offer = resume && file?.url === resume.url && settled === resume.url ? resume : null;
 
   return (
     <>
@@ -450,12 +737,17 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         aria-label="활동 막대"
         className="fixed top-(--bar-height) bottom-(--bar-height-xs) left-0 z-40 flex w-(--rail-width) flex-col items-center border-r border-border bg-surface-sunken py-1 max-[759px]:hidden"
       >
-        <RailButton view="profile" current={visible && panel.view === 'profile'} onPick={pick}>
-          <ProfileIcon />
-        </RailButton>
-        <RailButton view="explorer" current={explorerShown} onPick={pick}>
-          <ExplorerIcon />
-        </RailButton>
+        {PANEL_VIEWS.map((view) => (
+          <RailButton
+            key={view}
+            view={view}
+            current={visible && panel.view === view}
+            title={railTitle(view, platform)}
+            onPick={pick}
+          >
+            {VIEWS[view].icon}
+          </RailButton>
+        ))}
         <a href={sourceUrl} aria-label="이 블로그의 소스" className={railItem}>
           <CodeIcon />
         </a>
@@ -465,7 +757,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         id={PANEL_ID}
         ref={panelRef}
         tabIndex={-1}
-        aria-label={VIEW_LABEL[panel.view]}
+        aria-label={VIEWS[panel.view].label}
         className={cn(
           'fixed top-(--bar-height) bottom-(--bar-height-xs) left-(--rail-width) z-35 w-(--panel-width) [scrollbar-width:thin] overflow-y-auto border-r border-border bg-surface-panel pb-7 outline-none',
           'max-[759px]:left-0 max-[759px]:z-46 max-[759px]:w-[min(86vw,320px)]',
@@ -475,7 +767,7 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
         )}
       >
         <p className={cn(panelTitle, 'm-0 flex h-9 items-center px-4.5 max-[759px]:hidden')}>
-          {VIEW_LABEL[panel.view]}
+          {VIEWS[panel.view].label}
         </p>
         {/* 좁은 화면에는 활동 막대가 없으므로, 제목 줄이 화면 전환 버튼이 된다. */}
         <fieldset
@@ -495,12 +787,20 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                   'text-text after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-accent',
               )}
             >
-              {VIEW_LABEL[view]}
+              {VIEWS[view].label}
             </button>
           ))}
         </fieldset>
         {panel.view === 'profile' ? (
-          <ProfileView profile={profile} />
+          <ProfileView profile={profile} history={summarizeHistory(history)} />
+        ) : panel.view === 'search' ? (
+          searchShown && (
+            <Suspense
+              fallback={<p className="m-0 px-4 py-2 font-mono text-[11.5px] text-text-muted">…</p>}
+            >
+              <SearchView indexUrl={searchIndexUrl} />
+            </Suspense>
+          )
         ) : (
           <>
             <section aria-labelledby="explorer-posts" className="pb-2">
@@ -516,7 +816,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                     <ul className="m-0 list-none p-0">
                       {files.map((entry) => {
                         const active = shown?.url === entry.url;
-                        const name = entry.path.split('/').pop();
+                        const name = fileName(entry.path);
+                        const mark = readingMark(history, entry.url);
                         return (
                           <li key={entry.url}>
                             <a
@@ -524,16 +825,15 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                               title={name}
                               aria-current={active ? 'page' : undefined}
                               className={cn(
-                                'relative flex h-7.5 items-center gap-2 truncate pr-3 pl-10 font-mono text-xs leading-7.5 text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                                mark?.kind === 'read' && 'text-text-muted',
                                 active &&
                                   'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
                               )}
                             >
-                              <span
-                                aria-hidden="true"
-                                className="h-[11px] w-[9px] flex-none rounded-[1px_3px_1px_1px] bg-accent"
-                              />
-                              {name}
+                              <FileGlyph />
+                              <span className="min-w-0 truncate">{name}</span>
+                              {mark && <ReadMark mark={mark} selected={active} />}
                             </a>
                           </li>
                         );
@@ -566,7 +866,8 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
                               aria-hidden="true"
                               className={cn(
                                 'min-w-[18px] font-mono text-[11.5px] leading-[1.68] text-text-muted',
-                                inChapter && 'text-accent-text',
+                                // 지금 장의 줄은 선택 바탕이라 강조 글자의 명암비가 모자라 `text-soft`로 그린다.
+                                inChapter && (atChapter ? 'text-text-soft' : 'text-accent-text'),
                               )}
                             >
                               {chapterNo(index)}
@@ -632,25 +933,60 @@ export function Shell({ brand, author, githubUrl, sourceUrl, tree, profile, curr
           <BranchIcon className="size-3.5" />
           main
         </span>
-        {log ? (
+        {/* 상태줄 알림: 늘 있는 live 영역이라 글자가 바뀔 때 읽힌다. 떠 있는 동안 열기 요약 자리를 쓴다. */}
+        <span
+          aria-live="polite"
+          className={notice ? 'min-w-0 flex-1 truncate pr-3 pl-3' : 'sr-only'}
+        >
+          {notice && <span key={notice.id}>{notice.text}</span>}
+        </span>
+        {notice ? null : log ? (
           <span aria-hidden="true" className="min-w-0 flex-1 truncate pr-3 pl-3">
             {log}
           </span>
         ) : (
-          <span className="flex min-w-0 flex-1 items-center gap-4 pr-3 pl-3">
+          <span className="flex min-w-0 flex-1 items-center gap-4 self-stretch pr-3 pl-3">
             {file?.kind === 'post' ? (
-              <span className="min-w-0 truncate font-sans">
+              <span className={cn('min-w-0 truncate font-sans', offer && 'max-[759px]:hidden')}>
                 {readingSymbol(reading) || file.title}
               </span>
             ) : (
               <span className="truncate">{file?.summary ?? file?.path}</span>
             )}
             {reading.line !== null && <span className="max-[759px]:hidden">Ln {reading.line}</span>}
-            <span className="flex-1" />
-            {reading.percent !== null && <span>{reading.percent}%</span>}
+            <span className={cn('flex-1', offer && 'max-[759px]:hidden')} />
+            {/* 이어 읽기: 좁은 화면에서는 글 제목 자리를 대신하고 읽은 비율은 오른쪽 끝에 남는다. */}
+            {offer && (
+              <button
+                type="button"
+                onClick={() => {
+                  dismissResume();
+                  navigateLikeLink(`#${offer.chapter.id}`);
+                }}
+                className="flex min-w-0 cursor-pointer items-center gap-1 self-stretch bg-on-accent/14 px-3 hover:underline focus-visible:-outline-offset-2 max-[759px]:-ml-3 max-[759px]:flex-1"
+              >
+                <span aria-hidden="true">↳</span>
+                <span className="min-w-0 truncate">{resumeLabel(offer)}</span>
+              </button>
+            )}
+            {reading.percent !== null && <span className="flex-none">{reading.percent}%</span>}
           </span>
         )}
       </footer>
+
+      {paletteOpen && platform && (
+        <Suspense fallback={null}>
+          <Palette
+            ref={paletteRef}
+            tree={tree}
+            platform={platform}
+            hasNextFile={next !== null}
+            onPick={pickFromPalette}
+            onCommand={runFromPalette}
+            onDismiss={closePalette}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

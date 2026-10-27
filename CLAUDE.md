@@ -26,6 +26,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - **Framework**: Astro (static site generation)
 - **Language**: TypeScript (strict mode)
 - **Content**: MDX via @astrojs/mdx
+- **MDX 처리**: Astro 7 기본 처리기 Sätteri(`satteri`, `@astrojs/markdown-satteri`)가 그린다. 사용자 hast 단계는 `astro.config.mjs`의 `satteri({ hastPlugins })`에 둔다. rehype 플러그인은 걸리지 않고 무시된다
 - **UI Components**: React + shadcn/ui (Radix + Tailwind)
 - **Design System**: `src/design-system/` (토큰 → CSS → React 컴포넌트 → Storybook). 소비자(`src/layouts`·`src/components`·`src/pages`)는 `src/design-system/index.ts`와 CSS 진입점만 쓴다. 토큰 값은 `tokens/`의 파일이 원본이고 여기에 적지 않는다. 구조는 ADR 0002·0003, 용어는 `GLOSSARY.md`
 - **State**: nanostores(`nanostores`, `@nanostores/react`). 아일랜드 사이 공유 상태(테마·탭·읽기 위치)는 디자인 시스템 `stores/`에 둔다
@@ -44,6 +45,7 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 - 클래스 합치기는 `@/lib/utils`의 `cn`(shadcn `cn` 패키지)을 쓴다
 - 리뷰가 적용하는 판단 규칙은 `CODING_STANDARDS.md`
 - 화면 이동(`ClientRouter`)·아일랜드·페이지 스크립트를 고칠 때는 `docs/agents/astro-client-router.md`를 먼저 읽는다
+- 단축키를 붙이거나 키 처리를 고칠 때는 `docs/agents/shortcuts.md`를 먼저 읽는다
 
 ## Library Selection
 

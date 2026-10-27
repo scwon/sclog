@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs';
 import type { MarkdownHeading } from 'astro';
-import type { EditorFile, OutlineItem } from '@/design-system';
+import { fileName, type EditorFile, type OutlineItem, type TreeFile } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
 
@@ -47,6 +47,32 @@ export function buildTree(posts: BlogPost[]) {
     }));
 }
 
+/** 글 끝 이동 줄 하나. 다음 파일 줄만 메모(글 제목)와 접근 가능한 이름이 있다. */
+export type DocEndLink =
+  | { href: string; label: string; note: string; name: string; next: true }
+  | { href: string; label: string; next?: never };
+
+/**
+ * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → `posts.log` → `맨 위로`. 다음 파일이 없으면 그 줄만 뺀다.
+ */
+export function docEndLinks(next: TreeFile | null): DocEndLink[] {
+  const rest: DocEndLink[] = [
+    { href: '/', label: 'posts.log' },
+    { href: '#editor', label: '맨 위로' },
+  ];
+  if (!next) return rest;
+  return [
+    {
+      href: next.url,
+      label: `${fileName(next.path)} →`,
+      note: next.title,
+      name: `다음 파일: ${next.title}`,
+      next: true,
+    },
+    ...rest,
+  ];
+}
+
 /** 본문 제목에서 개요를 만든다. 가장 얕은 단계가 장이고, 바로 아래 단계가 그 장의 절이다. */
 export function buildOutline(headings: MarkdownHeading[]): IdeOutlineItem[] {
   if (headings.length === 0) return [];
@@ -58,4 +84,14 @@ export function buildOutline(headings: MarkdownHeading[]): IdeOutlineItem[] {
       outline.at(-1)?.children.push({ id: heading.slug, text: heading.text });
   }
   return outline;
+}
+
+/** 장 주소를 복사할 수 있는 제목: 개요에 오른 장과 절의 id → 제목 글자(글 순서). */
+export function chapterLinkTargets(outline: IdeOutlineItem[]): Map<string, string> {
+  return new Map(
+    outline.flatMap((chapter) => [
+      [chapter.id, chapter.text] as const,
+      ...chapter.children.map((section) => [section.id, section.text] as const),
+    ]),
+  );
 }

@@ -65,6 +65,13 @@ describe('semantic tokens', () => {
   );
 });
 
+describe('motion tokens', () => {
+  it('give the cursor blink one 1100ms cycle through --motion-blink', () => {
+    const reference = /^var\((--[\w-]+)\)$/.exec(shared.get('--motion-blink') ?? '')?.[1] ?? '';
+    expect(primitives.get(reference)).toBe('1100ms');
+  });
+});
+
 describe('@theme inline', () => {
   it('only exposes semantic tokens, never primitives', () => {
     const references = [...theme.matchAll(/var\((--[\w-]+)\)/g)].map(([, name]) => name);
@@ -107,6 +114,27 @@ const pairs: [foreground: string, background: string, minimum: number][] = [
   ['--accent-text', '--surface', BODY],
 ];
 
+/** 반투명 `rgb(r g b / a)`를 불투명 바탕(`#rrggbb`) 위에 겹친 색. */
+function over(layer: string, base: string): string {
+  const match = /^rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)$/.exec(layer);
+  if (!match) throw new Error(`translucent rgb() expected: ${layer}`);
+  const alpha = Number(match[4]);
+  const hex = [1, 2, 3].map((i) => {
+    const below = parseInt(base.slice(2 * i - 1, 2 * i + 1), 16);
+    const value = Math.round(Number(match[i]) * alpha + below * (1 - alpha));
+    return value.toString(16).padStart(2, '0');
+  });
+  return `#${hex.join('')}`;
+}
+
+/**
+ * 고른 줄(`--state-selected` 바탕: 탐색기의 지금 파일, 개요의 지금 장, 팔레트의 고른 줄) 위의 글자. 강조 글자
+ * (`--accent-text`)는 밝은 테마에서 이 바탕 위 명암비가 모자라, 고른 줄에서는 이 글자들만 쓴다.
+ */
+const selectedPairs: [foreground: string, background: string][] = ['--text', '--text-soft'].flatMap(
+  (fg) => ['--surface-panel', '--surface-raised'].map((bg): [string, string] => [fg, bg]),
+);
+
 describe('contrast', () => {
   it('matches known WCAG ratios', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
@@ -118,6 +146,11 @@ describe('contrast', () => {
       expect(contrast(resolveColor(tokens, fg), resolveColor(tokens, bg))).toBeGreaterThanOrEqual(
         minimum,
       );
+    });
+
+    it.each(selectedPairs)('%s on --state-selected over %s is at least 4.5:1', (fg, bg) => {
+      const selected = over(resolveColor(tokens, '--state-selected'), resolveColor(tokens, bg));
+      expect(contrast(resolveColor(tokens, fg), selected)).toBeGreaterThanOrEqual(BODY);
     });
   });
 });

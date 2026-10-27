@@ -3,6 +3,7 @@
  * 모든 화면의 레이아웃: 전체 화면 IDE 창.
  * 창 틀(`Shell`)은 화면을 옮겨도 남는 아일랜드 하나이고(ADR 0001), 에디터 내용은 아래 `<main id="editor">` 안의
  * 정적 HTML이다. 에디터 루트의 `data-file-*`와 개요 JSON이 페이지 ↔ 창 틀 계약이다.
+ * `<html>`의 `transition:name="root"`는 테마 퍼짐(motion.css)이 고르는 전환 이름이다. 화면 이동 움직임은 `none`으로 끈다.
  */
 import { ClientRouter } from 'astro:transitions';
 import SEO from '../components/SEO.astro';
@@ -55,7 +56,7 @@ const outlineJson =
 ---
 
 <!doctype html>
-<html lang="ko" transition:animate="none">
+<html lang="ko" transition:animate="none" transition:name="root">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -111,6 +112,7 @@ const outlineJson =
       sourceUrl={SITE.sourceUrl}
       tree={tree}
       profile={PROFILE}
+      searchIndexUrl="/search-index.json"
       current={{ title: file.title, path: file.path, url: file.url, kind: file.kind }}
     />
     <main
@@ -139,11 +141,12 @@ const outlineJson =
     </main>
     {outlineJson && <script type="application/json" id="editor-outline" set:html={outlineJson} />}
     <script>
-      import { resetReading } from '@/design-system';
+      import { REDUCED_MOTION, resetReading, showTab } from '@/design-system';
 
       /**
        * 펼침: 파일을 열 때 첫 1.4화면 안의 줄·블록을 위에서부터 차례로 보인다(2층 motion.css의 `[data-unfold]`).
-       * 움직임 줄이기 설정에서는 아무것도 하지 않는다. 마지막 항목의 애니메이션이 끝나면 표시를 걷어 낸다.
+       * 펼칠지는 탭 스토어의 `showTab`이 정한다(탭이 새로 생겨 처음 보일 때만). 움직임 줄이기 설정에서는
+       * 표시만 남기고 펼치지 않는다. 마지막 항목의 애니메이션이 끝나면 표시를 걷어 낸다.
        */
       const TARGETS = [
         '.flow > .flow-line:not([hidden])',
@@ -155,7 +158,9 @@ const outlineJson =
 
       function unfold() {
         const editor = document.getElementById('editor');
-        if (!editor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const { fileUrl: url, fileTitle: title, filePath: path } = editor?.dataset ?? {};
+        if (!editor || !url || !title || !path || !showTab({ url, title, path })) return;
+        if (window.matchMedia(REDUCED_MOTION).matches) return;
         const items = [...editor.querySelectorAll<HTMLElement>(TARGETS)].filter((item) => {
           const { top, bottom } = item.getBoundingClientRect();
           return bottom > 0 && top < window.innerHeight * 1.4;

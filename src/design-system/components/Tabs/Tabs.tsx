@@ -1,6 +1,8 @@
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { useStore } from '@nanostores/react';
 import { cn } from '@/lib/utils';
+import { REDUCED_MOTION } from '../../media';
+import { fileName } from '../../stores/file.logic';
 import { $activeTab, $openTabs, closeTab, toTabRecord } from '../../stores/tabs';
 import { POSTS_LOG, addOrActivate, initialTabs, type TabFile } from '../../stores/tabs.logic';
 
@@ -13,7 +15,7 @@ function serverState(current?: TabFile) {
 }
 
 /** 글 파일(`.mdx`)은 파일 이름만, 나머지(`posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
-const tabLabel = (path: string) => (path.endsWith('.mdx') ? path.split('/').pop() : path);
+const tabLabel = (path: string) => (path.endsWith('.mdx') ? fileName(path) : path);
 
 /** `Tabs`의 props. */
 export interface TabsProps {
@@ -90,6 +92,34 @@ function useNewTabEntrance(list: RefObject<HTMLUListElement | null>, tabKey: str
 }
 
 /**
+ * 탭을 열거나 닫아 목록·활성 탭이 바뀐 뒤 활성 탭이 탭 줄 밖에 있으면 화면 안으로 들인다.
+ * 움직임 줄이기 설정에서는 부드러운 스크롤 없이 바로 옮긴다.
+ */
+function useActiveTabInView(
+  list: RefObject<HTMLUListElement | null>,
+  active: string,
+  tabKey: string,
+): void {
+  useEffect(() => {
+    const bar = list.current?.parentElement;
+    if (!tabKey.split('\n').includes(active)) return;
+    const tab = [...(list.current?.querySelectorAll<HTMLElement>(TAB_ITEM) ?? [])].find(
+      (item) => item.dataset.url === active,
+    );
+    if (!bar || !tab) return;
+    const view = bar.getBoundingClientRect();
+    const box = tab.getBoundingClientRect();
+    if (box.left >= view.left && box.right <= view.right) return;
+    const reduce = window.matchMedia(REDUCED_MOTION).matches;
+    tab.scrollIntoView({
+      inline: 'nearest',
+      block: 'nearest',
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+  }, [list, active, tabKey]);
+}
+
+/**
  * 에디터 탭 표시줄. 탭 스토어를 구독해 열린 파일을 그린다. 탭은 링크라 JS 없이도 이동하고,
  * `posts.log`는 항상 첫 탭이며 닫기 버튼이 없다. 활성 탭은 코랄 윗선, 새로 열린 탭은 왼쪽에서 드러난다
  * (움직임 줄이기 설정에서는 바로 나타남). 닫으면 키보드 포커스는 닫은 뒤의 활성 탭 링크로 간다.
@@ -108,7 +138,9 @@ export function Tabs({
   );
   const active = useStore($activeTab, { ssr: () => serverState(current).active });
   const listRef = useRef<HTMLUListElement>(null);
-  useNewTabEntrance(listRef, files.map((file) => file.url).join('\n'));
+  const tabKey = files.map((file) => file.url).join('\n');
+  useNewTabEntrance(listRef, tabKey);
+  useActiveTabInView(listRef, active, tabKey);
 
   const handleClose = (url: string) => {
     const wasActive = url === active;

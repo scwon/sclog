@@ -13,6 +13,7 @@ export {
   type TreeFile,
   type TreeYear,
 } from './components/Shell/Shell';
+export { nextFile } from './components/Shell/tree.logic';
 export { Tabs, type TabsProps } from './components/Tabs/Tabs';
 export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip/Tooltip';
@@ -31,8 +32,45 @@ export {
   readingSymbol,
   type ReadingPlace,
 } from './stores/reading.logic';
-export { $activeTab, $openTabs, closeTab, openTab } from './stores/tabs';
-export { POSTS_LOG, type TabFile } from './stores/tabs.logic';
-export type { EditorFile, FileKind, OutlineItem } from './stores/file.logic';
+export {
+  $readingHistory,
+  clearReadingHistory,
+  flushReadingHistory,
+  keepPublishedHistory,
+  recordReading,
+} from './stores/readingHistory';
+export { $resume, dismissResume, followResume, openResume } from './stores/resume';
+export type { Resume } from './stores/resume.logic';
+export {
+  markText,
+  readingMark,
+  summarizeHistory,
+  type ReadingHistory,
+  type ReadingMark,
+  type ReadingPosition,
+} from './stores/readingHistory.logic';
+export {
+  $statusNotice,
+  clearStatusNotice,
+  showStatusNotice,
+  STATUS_NOTICE_MS,
+  type StatusNotice,
+} from './stores/notice';
+export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
+export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
+export {
+  fileName,
+  type EditorFile,
+  type FileKind,
+  type NumberedChapter,
+  type OutlineItem,
+} from './stores/file.logic';
+export { REDUCED_MOTION } from './media';
 export { $theme, setTheme, toggleTheme } from './stores/theme';
 export type { Theme } from './stores/theme.logic';
+export {
+  SEARCH_INDEX_VERSION,
+  type SearchBlock,
+  type SearchIndex,
+  type SearchPost,
+} from './components/Shell/search-index';

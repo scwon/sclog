@@ -405,6 +405,11 @@
     }
   }
 
+  /* 글 로그 줄 머리 끝의 읽음 꼬리표(`✓ 읽음`·`71% 읽는 중`). 파일 이름이 먼저 말줄임된다 */
+  .flow-log-mark {
+    flex: none;
+  }
+
   /* 글 카드: 코랄 매트 썸네일 + 제목·첫 문장·메타 */
   .flow-card {
     position: relative;
@@ -757,7 +762,7 @@
     width: 0.6em;
     height: 1.15em;
     background-color: var(--accent);
-    animation: blink 1.1s steps(1) infinite;
+    animation: blink var(--motion-blink) steps(1) infinite;
 
     @media (prefers-reduced-motion: reduce) {
       animation: none;
@@ -822,6 +827,92 @@
 
       &.is-current::after {
         color: var(--accent-text);
+      }
+
+      /* 장 주소로 들어온(또는 방금 주소를 복사한) 장: 번호는 코랄, 줄 번호 칸에 형광 띠 세로줄. 움직임은 없다 */
+      &.is-linked::after {
+        color: var(--accent-text);
+      }
+
+      &.is-linked > .doc-chapter-gutter::after {
+        content: '';
+        position: absolute;
+        inset-block: 0;
+        right: 9px;
+        width: 3px;
+        background: var(--marker);
+
+        @media (max-width: 759px) {
+          right: 4px;
+        }
+      }
+    }
+
+    /*
+     * 장 주소 복사 버튼: 장·절 제목 줄의 줄 번호 칸 전체가 hover 영역이고, 버튼(누르는 영역 24×24px)은 칸 왼쪽,
+     * 아이콘(12px)은 번호 왼쪽 빈자리에 놓인다. 번호는 pointer-events가 없어 겹친 자리도 버튼이 받는다.
+     * 넓은 화면의 hover, 또는 폭과 상관없이 키보드 포커스일 때만 보이고, 보이지 않을 때는 눌리지 않는다.
+     */
+    & .doc-chapter-gutter {
+      position: absolute;
+      inset-block: 0;
+      left: calc(var(--doc-gutter) * -1);
+      width: var(--doc-gutter);
+    }
+
+    & .doc-chapter-link {
+      position: absolute;
+      top: calc(var(--lh, 28px) / 2 - 12px);
+      left: 0;
+      display: flex;
+      align-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      border-radius: var(--corner-sm);
+      background: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+
+      &[hidden] {
+        display: none;
+      }
+
+      & svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      &:hover {
+        color: var(--text);
+      }
+
+      &:focus-visible,
+      &[data-copied] {
+        opacity: 1;
+      }
+
+      &:focus-visible {
+        pointer-events: auto;
+      }
+
+      &[data-copied] {
+        color: var(--accent-text);
+      }
+
+      &[data-copied] .doc-chapter-link-icon,
+      &:not([data-copied]) .doc-chapter-link-done {
+        display: none;
+      }
+    }
+
+    @media (hover: hover) and (min-width: 760px) {
+      & .doc-chapter-gutter:hover .doc-chapter-link {
+        opacity: 1;
+        pointer-events: auto;
       }
     }
 
@@ -1029,12 +1120,84 @@
     font-weight: 700;
   }
 
+  /* 글 끝 이동 줄: 흐름 로그의 링크 줄 모양. `newer-post.mdx → ---- 글 제목`, `posts.log`, `맨 위로` */
   .doc-end {
-    display: flex;
-    justify-content: space-between;
     margin-top: 28px;
-    font-size: 15px;
-    font-weight: 600;
+  }
+
+  .doc-end-lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .doc-end-line {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    height: 28px;
+  }
+
+  .doc-end-link {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+
+    &:hover .doc-end-label {
+      color: var(--text);
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-underline-offset: 3px;
+    }
+  }
+
+  .doc-end-label {
+    flex: none;
+    color: var(--text-soft);
+    font: 500 12.5px/28px var(--family-mono);
+    white-space: nowrap;
+    transition: color var(--motion-fast) var(--motion-easing);
+  }
+
+  .doc-end-rule {
+    flex: 1 1 0;
+    min-width: 24px;
+    height: 1px;
+    margin: 0 14px;
+    background: repeating-linear-gradient(90deg, var(--border-subtle) 0 4px, transparent 4px 8px);
+  }
+
+  /* 메모(글 제목)는 한 줄에서 말줄임한다. 라벨과 점선은 줄지 않는다 */
+  .doc-end-note {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font: 400 12px/28px var(--family-mono);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .doc-end-mark {
+    flex: none;
+    font: 400 12px/28px var(--family-mono);
+
+    &:not(:empty) {
+      margin-left: 8px;
+    }
+  }
+
+  /* 읽음 꼬리표(페이지 스크립트가 채움): 읽은 글은 흐린 글자, 읽는 중인 글은 강조 글자 */
+  :is(.doc-end-mark, .flow-log-mark) {
+    &[data-mark='read'] {
+      color: var(--text-muted);
+    }
+
+    &[data-mark='reading'] {
+      color: var(--accent-text);
+    }
   }
 
   /* 경로 표시줄 끝: 현재 장·절과 읽은 만큼의 코랄 진행선 */

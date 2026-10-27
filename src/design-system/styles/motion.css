@@ -48,3 +48,36 @@
     }
   }
 }
+
+/*
+ * 테마 퍼짐: 테마를 바꾸면 새 테마가 테마 버튼 가운데에서 원형으로 퍼진다. `stores/theme.ts`의 `toggleTheme`이
+ * 별도 View Transition을 열고, 그동안 `<html>`에 `data-theme-spread`와 원의 시작점·반지름(`--theme-spread-x|y|r`)을 붙인다.
+ * 레이아웃의 `<html transition:name="root">`라서 전환 이름은 `root`다. Astro가 `@layer astro`에 두는 화면 이동 규칙
+ * (옛 화면 숨김·애니메이션 없음)을 이겨야 하므로 이 규칙들은 레이어 밖에 둔다.
+ */
+@keyframes theme-spread {
+  from {
+    clip-path: circle(0 at var(--theme-spread-x) var(--theme-spread-y));
+  }
+  to {
+    clip-path: circle(var(--theme-spread-r) at var(--theme-spread-x) var(--theme-spread-y));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme-spread]::view-transition-group(root) {
+    animation: none;
+  }
+
+  /* 원 밖은 옛 테마 그대로 */
+  :root[data-theme-spread]::view-transition-old(root) {
+    opacity: 1;
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  :root[data-theme-spread]::view-transition-new(root) {
+    animation: theme-spread var(--motion-slow) var(--motion-easing);
+    mix-blend-mode: normal;
+  }
+}

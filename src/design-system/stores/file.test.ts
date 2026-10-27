@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatSize, openLog, parseEditorFile } from './file.logic';
+import { fileName, formatSize, openLog, parseEditorFile } from './file.logic';
 
 const post = {
   fileTitle: '프로 개발자 2023일 후기',
@@ -79,5 +79,17 @@ describe('openLog', () => {
   it('still says it opened when there is nothing to summarise', () => {
     const file = parseEditorFile({ fileTitle: '404', filePath: '404', fileUrl: '/404' }, null);
     expect(file && openLog(file).result).toBe('✓ 열림');
+  });
+});
+
+describe('fileName', () => {
+  it('keeps what follows the last slash', () => {
+    expect(fileName('posts/2023/pro-developer-2023-days.mdx')).toBe('pro-developer-2023-days.mdx');
+    expect(fileName('tags/회고')).toBe('회고');
+  });
+
+  it('keeps a path without a folder as it is', () => {
+    expect(fileName('posts.log')).toBe('posts.log');
+    expect(fileName('404')).toBe('404');
   });
 });
