@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TreeYear } from '@/design-system/components/Shell/Shell';
+import type { TreeRoot } from '@/design-system/components/Shell/Shell';
 import { nextFile } from '@/design-system/components/Shell/tree.logic';
 import { FOLDER_ROUTES, type Folder } from '@/utils/folder';
 import { built, fileUrl, pages } from './dist';
@@ -30,9 +30,9 @@ describe.skipIf(!built)('build output', () => {
 
     // 글 페이지들로 폴더(`posts`·`ai-written`)마다 탐색기 트리를 다시 짓는다: `<폴더>/<연도>/…`의 연도 폴더,
     // 폴더 안은 새 글 먼저.
-    const treeOf = (folder: string): TreeYear[] => {
+    const treeOf = (folder: string): TreeRoot[] => {
       const inFolder = posts.filter(({ path }) => path.split('/')[0] === folder);
-      return [...new Set(inFolder.map(({ path }) => path.split('/')[1]))]
+      const years = [...new Set(inFolder.map(({ path }) => path.split('/')[1]))]
         .toSorted((a, b) => b.localeCompare(a))
         .map((year) => ({
           year,
@@ -41,6 +41,7 @@ describe.skipIf(!built)('build output', () => {
             .toSorted((a, b) => b.published.localeCompare(a.published))
             .map(({ url, title, path }) => ({ url, title, path })),
         }));
+      return [{ name: folder, years }];
     };
 
     it.each(

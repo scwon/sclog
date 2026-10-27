@@ -1,6 +1,13 @@
 import { statSync } from 'node:fs';
 import type { MarkdownHeading } from 'astro';
-import { fileName, type EditorFile, type OutlineItem, type TreeFile } from '@/design-system';
+import {
+  fileName,
+  type EditorFile,
+  type OutlineItem,
+  type TreeFile,
+  type TreeRoot,
+  type TreeYear,
+} from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
 import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, type Folder } from './folder';
@@ -36,8 +43,8 @@ export function postFile(post: BlogPost): IdeFile {
   };
 }
 
-/** 탐색기 트리: 연도 폴더(최신 연도 먼저)와 그 안의 글 파일. */
-export function buildTree(posts: BlogPost[]) {
+/** 한 폴더 글의 연도 폴더(최신 연도 먼저)와 그 안의 글 파일(넘긴 순서 그대로). */
+function yearFolders(posts: BlogPost[]): TreeYear[] {
   const years = new Map<string, BlogPost[]>();
   for (const post of posts) years.set(postYear(post), [...(years.get(postYear(post)) ?? []), post]);
   return [...years.entries()]
@@ -49,6 +56,17 @@ export function buildTree(posts: BlogPost[]) {
         return { url, title, path };
       }),
     }));
+}
+
+/**
+ * 탐색기 트리: 루트 폴더(`posts` 먼저, `ai-written` 다음)와 그 안의 연도 폴더(최신 연도 먼저)·글 파일.
+ * 글이 한 편도 없는 루트는 넣지 않는다. 글은 새 글 먼저(발행 글 조회 순서)로 넘긴다.
+ */
+export function buildTree(posts: BlogPost[]): TreeRoot[] {
+  return FOLDERS.map((name) => ({
+    name,
+    years: yearFolders(posts.filter((post) => postFolder(post) === name)),
+  })).filter((root) => root.years.length > 0);
 }
 
 /** 글 끝 이동 줄 하나. 다음 파일 줄만 메모(글 제목)와 접근 가능한 이름이 있다. */

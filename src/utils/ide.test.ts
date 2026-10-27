@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BlogPost } from './blog';
-import { docEndLinks, fileCrumbs, postFile, postUrl } from './ide';
+import { buildTree, docEndLinks, fileCrumbs, postFile, postUrl } from './ide';
 
 /** 컬렉션 하나의 글. 파일 크기는 보지 않으므로 `filePath`는 없다. */
 function makePost(collection: 'blog' | 'ai-written', id: string, pubDate: string): BlogPost {
@@ -31,6 +31,55 @@ describe('글 주소와 파일 경로', () => {
       url: '/ai-written/retro/',
       kind: 'post',
     });
+  });
+});
+
+describe('buildTree (탐색기 트리)', () => {
+  // 발행 글 조회처럼 두 폴더를 합친 최신순으로 넘긴다.
+  const posts = [
+    makePost('ai-written', 'ai-new', '2026-10-02'),
+    makePost('ai-written', 'ai-old', '2025-03-01'),
+    makePost('blog', 'renewal', '2025-01-10'),
+    makePost('blog', 'retro', '2023-04-30'),
+  ];
+
+  it('puts the posts root first, then ai-written, each with its newest year first', () => {
+    expect(buildTree(posts)).toEqual([
+      {
+        name: 'posts',
+        years: [
+          {
+            year: '2025',
+            files: [{ url: '/blog/renewal/', title: 'renewal', path: 'posts/2025/renewal.mdx' }],
+          },
+          {
+            year: '2023',
+            files: [{ url: '/blog/retro/', title: 'retro', path: 'posts/2023/retro.mdx' }],
+          },
+        ],
+      },
+      {
+        name: 'ai-written',
+        years: [
+          {
+            year: '2026',
+            files: [
+              { url: '/ai-written/ai-new/', title: 'ai-new', path: 'ai-written/2026/ai-new.mdx' },
+            ],
+          },
+          {
+            year: '2025',
+            files: [
+              { url: '/ai-written/ai-old/', title: 'ai-old', path: 'ai-written/2025/ai-old.mdx' },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('leaves out the ai-written root when there is no AI-written post', () => {
+    expect(buildTree(posts.slice(2)).map((root) => root.name)).toEqual(['posts']);
   });
 });
 
