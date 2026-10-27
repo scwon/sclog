@@ -10,7 +10,8 @@
  * 그다음 글 끝까지 읽으면 탐색기에 `✓`가 붙고 새로고침 뒤에도 남는지, 프로필의 `기록 지우기`로 사라지는지 본다.
  * 끝으로 검색 화면에서 결과를 열어도 패널이 검색 화면에 남고 새로고침 뒤에도 남는지 본다. 이어서 글에서 ⌘F로 찾기 줄을 열어
  * 위치 글자·칠하기·Enter·Esc를 보고, 닫힌 채 ⌘G로 마지막 검색어로 열기, 찾기 줄 밖의 ⌘G·⇧⌘G, 고른 글자로 ⌘F, 화면을 옮기면
- * 닫히고 다시 ⌘F에 마지막 검색어가 남는지 본다.
+ * 닫히고 다시 ⌘F에 마지막 검색어가 남는지 본다. 이어서 글 본문을 드래그해 선택 툴바(상자와 복사 버튼)가 뜨고, 복사하면
+ * 체크로 바뀌며, 선택이 접히거나 화면을 옮기면 걷히는지 본다.
  * 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가 맞는지, 콘솔 오류가 없는지 본다.
  * `run.mjs`가 `globalThis.QA = { base }`를 넣고 ego-browser에서 import한다.
  */
@@ -831,6 +832,197 @@ check(
 await page.keyboard.press('Escape');
 await findClosedWait();
 
+// 선택 툴바: 본문 문단을 마우스로 드래그하면 고른 줄들을 감싼 상자와 그 오른쪽(끝 줄 높이)의 복사 버튼이 뜬다.
+// 상자가 생겨도 본문 블록 위치는 그대로이고 포커스는 버튼으로 가지 않는다. 누르면 고른 글자 그대로 복사되고
+// `복사됨`(체크)으로 바뀌며 선택과 툴바가 남는다. 빈 곳을 누르면(선택이 접히면) 걷히고, 위로 드래그하면 버튼이 첫 줄
+// 높이다. 화면을 옮기면 층이 사라지고, 돌아와 다시 골라도 툴바는 하나다(툴바는 처음 고를 때 불러오는 청크다).
+/** 여러 줄인 본문 문단 하나를 화면 가운데로 옮기고, 드래그할 두 점(첫 글자, 끝 줄의 40% 지점)을 잰다. */
+const dragPlan = () =>
+  page.evaluate(() => {
+    const paragraph = [...document.querySelectorAll('#content > p')].find(
+      (p) => p.getClientRects().length > 0 && p.getBoundingClientRect().height > 80,
+    );
+    if (!paragraph) return null;
+    paragraph.scrollIntoView({ block: 'center' });
+    const lead = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT).nextNode();
+    if (!lead) return null;
+    const range = document.createRange();
+    range.setStart(lead, 0);
+    range.setEnd(lead, 1);
+    const glyph = range.getBoundingClientRect();
+    const box = paragraph.getBoundingClientRect();
+    return {
+      top: { x: glyph.left + 1, y: glyph.top + glyph.height / 2 },
+      bottom: { x: box.left + box.width * 0.4, y: box.bottom - 10 },
+      blocks: [...document.querySelectorAll('.doc-prose > *')].map((block) =>
+        Math.round(block.getBoundingClientRect().top + window.scrollY),
+      ),
+    };
+  });
+/** 두 점 사이를 마우스로 드래그한다. */
+const drag = async (start, to, label) => {
+  await page.mouse.move(start.x, start.y, { label: `${label} 시작` });
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { label: `${label} 끝` });
+  await page.mouse.up();
+};
+const toolbarShown = (label) =>
+  until(
+    label,
+    () =>
+      document.querySelector('[data-selection-box]') !== null &&
+      document.querySelector('[data-selection-toolbar] button[data-action="copy"]') !== null,
+  );
+const toolbarState = () =>
+  page.evaluate(() => {
+    const copyButton = '[data-selection-toolbar] button[data-action="copy"]';
+    const [box, prose, button] = ['[data-selection-box]', '.doc-prose', copyButton].map(
+      (selector) => {
+        const r = document.querySelector(selector)?.getBoundingClientRect();
+        return r ? { top: r.top, bottom: r.bottom, left: r.left, right: r.right } : null;
+      },
+    );
+    const selection = getSelection();
+    const lines = selection?.rangeCount
+      ? [...selection.getRangeAt(0).getClientRects()].filter((r) => r.height > 0)
+      : [];
+    return {
+      text: selection?.toString() ?? '',
+      box,
+      prose,
+      button,
+      label: document.querySelector(copyButton)?.getAttribute('aria-label') ?? '',
+      first: lines.length ? Math.min(...lines.map((r) => r.top)) : 0,
+      last: lines.length ? Math.max(...lines.map((r) => r.bottom)) : 0,
+      focusInToolbar: document.activeElement?.closest('[data-selection-toolbar]') != null,
+      layers: document.querySelectorAll('[data-selection-layer]').length,
+      toolbars: document.querySelectorAll('[data-selection-toolbar]').length,
+      blocks: [...document.querySelectorAll('.doc-prose > *')].map((block) =>
+        Math.round(block.getBoundingClientRect().top + window.scrollY),
+      ),
+    };
+  });
+const toolbarGone = (label) =>
+  until(
+    label,
+    () =>
+      document.querySelector('[data-selection-box]') === null &&
+      document.querySelector('[data-selection-toolbar]') === null,
+  );
+
+await goto(QA.base + post.url);
+const plan = await dragPlan();
+check('선택 툴바: 드래그할 여러 줄 문단이 있음', plan !== null);
+if (plan) {
+  await drag(plan.top, plan.bottom, '문단 아래로 드래그');
+  await toolbarShown('선택 툴바: 드래그하면 상자와 복사 버튼');
+  const shown = await toolbarState();
+  check(
+    '선택 툴바: 상자가 고른 줄 전체와 본문 단 폭을 감쌈',
+    shown.box !== null &&
+      shown.prose !== null &&
+      shown.box.top <= shown.first &&
+      shown.box.bottom >= shown.last &&
+      shown.box.left < shown.prose.left &&
+      shown.box.right > shown.prose.right,
+    JSON.stringify({ box: shown.box, first: shown.first, last: shown.last }),
+  );
+  check(
+    '선택 툴바: 복사 버튼은 상자 오른쪽 바깥, 끝 줄 높이',
+    shown.button !== null &&
+      shown.box !== null &&
+      shown.button.left >= shown.box.right &&
+      shown.button.top < shown.last &&
+      shown.button.bottom > shown.last - 20,
+    JSON.stringify({ button: shown.button, last: shown.last }),
+  );
+  check('선택 툴바: 버튼 이름 `복사`', shown.label === '복사', shown.label);
+  check('선택 툴바: 포커스를 가져가지 않음', !shown.focusInToolbar);
+  check(
+    '선택 툴바: 상자 전후로 본문 블록 위치가 같음',
+    JSON.stringify(shown.blocks) === JSON.stringify(plan.blocks),
+  );
+  check('선택 툴바: 층과 툴바가 하나', shown.layers === 1 && shown.toolbars === 1);
+
+  // 클립보드에 넣는 글자를 적어 둔다(그대로 쓰기도 한다).
+  await page.evaluate(() => {
+    const write = navigator.clipboard.writeText.bind(navigator.clipboard);
+    navigator.clipboard.writeText = (text) => {
+      window.qaCopied = text;
+      return write(text);
+    };
+  });
+  await page.click('[data-selection-toolbar] button[data-action="copy"]', {
+    label: '복사 버튼 누르기',
+  });
+  await until(
+    '선택 툴바: 복사하면 `복사됨`',
+    () =>
+      document
+        .querySelector('[data-selection-toolbar] button[data-action="copy"]')
+        ?.getAttribute('aria-label') === '복사됨',
+  );
+  const copied = await toolbarState();
+  const copiedText = await page.evaluate(() => window.qaCopied ?? null);
+  check('선택 툴바: 복사하면 체크·`복사됨`', copied.label === '복사됨', copied.label);
+  check(
+    '선택 툴바: 고른 글자가 출처 없이 그대로 복사됨',
+    copiedText === shown.text && shown.text.length > 0,
+    JSON.stringify({ copiedText: copiedText?.slice(0, 40), text: shown.text.slice(0, 40) }),
+  );
+  check(
+    '선택 툴바: 복사한 뒤에도 선택과 툴바가 남음',
+    copied.text === shown.text && copied.toolbars === 1,
+  );
+
+  // 빈 곳(문단 왼쪽 여백 가운데)을 누르면 선택이 접혀 걷힌다.
+  await page.mouse.click(plan.top.x + 200, plan.bottom.y + 140, { label: '본문 다른 곳 누르기' });
+  check('선택 툴바: 선택이 접히면 걷힘', await toolbarGone('선택 툴바: 선택이 접히면 걷힘'));
+
+  await drag(plan.bottom, plan.top, '문단 위로 드래그');
+  await toolbarShown('선택 툴바: 위로 드래그해도 뜸');
+  const upward = await toolbarState();
+  check(
+    '선택 툴바: 위로 드래그하면 버튼이 첫 줄 높이',
+    upward.button !== null &&
+      upward.button.top < upward.first + 24 &&
+      upward.button.bottom > upward.first,
+    JSON.stringify({ button: upward.button, first: upward.first }),
+  );
+
+  await page.evaluate(() => {
+    window.qaShell = document.getElementById('panel')?.closest('astro-island');
+  });
+  await navigate('선택 툴바를 띄운 채 홈으로', () =>
+    page.click("loc=css:header a[href='/']", { label: '선택 툴바를 띄운 채 홈으로' }),
+  );
+  const away = await page.evaluate(() => ({
+    layers: document.querySelectorAll('[data-selection-layer]').length,
+    toolbars: document.querySelectorAll('[data-selection-toolbar]').length,
+  }));
+  check(
+    '선택 툴바: 화면을 옮기면 상자와 버튼이 사라짐',
+    away.layers === 0 && away.toolbars === 0 && (await shellKept()),
+    JSON.stringify(away),
+  );
+  await navigate('선택 툴바: 뒤로 다시 글', () => page.evaluate(() => history.back()));
+  const again = await dragPlan();
+  if (again) {
+    await drag(again.top, again.bottom, '돌아와 다시 드래그');
+    await toolbarShown('선택 툴바: 돌아와 다시 고르면 뜸');
+    const back = await toolbarState();
+    check(
+      '선택 툴바: 돌아와 다시 골라도 층과 툴바가 하나',
+      back.layers === 1 && back.toolbars === 1,
+      JSON.stringify({ layers: back.layers, toolbars: back.toolbars }),
+    );
+  } else {
+    check('선택 툴바: 돌아온 글에 드래그할 문단이 있음', false);
+  }
+  await page.mouse.click(plan.top.x + 200, plan.bottom.y + 140, { label: '선택 풀기' });
+  await toolbarGone('선택 툴바: 끝내며 걷힘');
+}
+
 const events = await page.events();
 const errors = events
   .filter(
@@ -839,12 +1031,14 @@ const errors = events
       (e.method === 'Runtime.consoleAPICalled' && e.params?.type === 'error') ||
       (e.method === 'Log.entryAdded' && e.params?.entry?.level === 'error'),
   )
-  .map((e) =>
-    (e.params?.entry?.text ?? e.params?.exceptionDetails?.text ?? JSON.stringify(e.params)).slice(
-      0,
-      160,
-    ),
-  );
+  .map((e) => {
+    const exception = e.params?.exceptionDetails;
+    // `Uncaught (in promise)`처럼 text만으로는 무엇인지 모르므로 예외 설명을 붙인다.
+    const detail = exception
+      ? `${exception.text} ${exception.exception?.description ?? ''}`.trim()
+      : (e.params?.entry?.text ?? JSON.stringify(e.params));
+    return detail.slice(0, 240);
+  });
 check('콘솔 오류 없음', errors.length === 0, errors.join(' | '));
 
 await page.evaluate(() => {

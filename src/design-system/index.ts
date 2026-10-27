@@ -14,6 +14,18 @@ export {
   type TreeYear,
 } from './components/Shell/Shell';
 export { nextFile } from './components/Shell/tree.logic';
+// 선택 툴바는 감시(`selection.ts`)만 여기서 싣고, 그리는 쪽(`SelectionToolbar.tsx`)과 `Popover`는 처음 본문을 고를 때
+// 불러오는 청크에 둔다. `Popover`를 여기서 export하면 첫 화면 청크로 끌려 온다(약 19KB).
+export { CheckIcon, CopyIcon } from './components/SelectionToolbar/icons';
+export {
+  closeSelectionToolbar,
+  watchSelectionToolbar,
+  type SelectionToolbarOptions,
+} from './components/SelectionToolbar/selection';
+export type {
+  SelectionAction,
+  SelectionContext,
+} from './components/SelectionToolbar/selection.logic';
 export { Tabs, type TabsProps } from './components/Tabs/Tabs';
 export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export { Tooltip, TooltipContent, TooltipTrigger } from './components/Tooltip/Tooltip';

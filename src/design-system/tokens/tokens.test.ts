@@ -183,6 +183,13 @@ describe('contrast', () => {
       ).toBeGreaterThanOrEqual(BODY);
     });
 
+    // 선택 툴바의 상자(바탕 `--state-current`) 안에서 고른 본문 글자는 그 위에 선택색(`--marker`)이 한 겹 더 깔린다.
+    it('selection toolbar box: --prose on --marker over --state-current over --surface is at least 4.5:1', () => {
+      const box = over(resolveColor(tokens, '--state-current'), resolveColor(tokens, '--surface'));
+      const selected = over(resolveColor(tokens, '--marker'), box);
+      expect(contrast(resolveColor(tokens, '--prose'), selected)).toBeGreaterThanOrEqual(BODY);
+    });
+
     it.each(selectedPairs)('%s on --state-selected over %s is at least 4.5:1', (fg, bg) => {
       const selected = over(resolveColor(tokens, '--state-selected'), resolveColor(tokens, bg));
       expect(contrast(resolveColor(tokens, fg), selected)).toBeGreaterThanOrEqual(BODY);
