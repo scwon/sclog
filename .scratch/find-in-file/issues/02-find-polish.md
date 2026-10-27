@@ -34,3 +34,10 @@
 
 - `nav` 통과(`pro-developer-2023-days`에서 `개발` 77개, 닫힌 채 ⌘G → `1/77`, 에디터에서 ⌘G → `2/77`, ⇧⌘G → `1/77`). `a11y` 85회 위반 0.
 - 찾기 줄 청크 `FindWidget.*.js` 5,600B(압축 전, 01은 5,399B).
+
+### 2026-10-27 리뷰 수정
+
+- Safari 조합 끝 Enter: `KeyShape`에 `keyCode`를 더하고, 229면 `isComposing`처럼 조합 중으로 본다. 찾기 입력창의 Enter·Shift+Enter와 팔레트 Enter를 단위 테스트가 덮는다.
+- QA 대기: `nav.mjs`에 `until`(조건을 3초까지 기다림) 도우미를 두었다. ⌘⇧F 검색 입력창 포커스 단계를 이것으로 바꿨고, 같은 꼴의 고정 대기였던 ⌘P 팔레트 열기 두 곳, 닫힌 채 ⌘G, 옮긴 뒤 ⌘F도 함께 바꿨다. 포트만 4343으로 바꿔(커밋하지 않음) `a11y`·`nav`를 한 번, `nav`를 두 번 더 돌렸고 모두 통과했다(axe 85회 위반 0).
+- `docs/agents/shortcuts.md`: ⌘F·⌘G 칸은 `.scratch/find-in-file/spec.md`를, ⌘⇧F 칸은 `.scratch/blog-details/issues/19-shortcuts-and-palette.md` Comments를 가리키게 줄였다. 끄는 때에 `keyCode` 229를 적었다.
+- `shortcuts.logic.ts`: ⌘·Ctrl·Alt 검사는 `unmodified` 하나로 모았고, 찾기 키 셋은 `findSupported`에 따라 `keys`와 `NO_FIND_KEYS` 가운데 한 번에 고른다.
