@@ -10,10 +10,12 @@
  */
 /* global QA, taskSpace */
 import { readFile } from 'node:fs/promises';
+import { waits } from './wait.mjs';
 
 const axeSource = await readFile(QA.axe, 'utf8');
 const task = await taskSpace('sclog qa a11y');
 const page = task.page('p1');
+const { until, goto, reload } = waits(page);
 const failures = [];
 let runs = 0;
 
@@ -77,9 +79,8 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
       await page.goto(QA.base + path);
       await page.evaluate((value) => localStorage.setItem('theme', value), theme);
       await seedHistory((widthIndex + themeIndex) % 2 === 0 ? 'read' : 'reading');
-      await page.reload();
+      await reload();
       await page.evaluate(() => document.fonts.ready.then(() => true));
-      await page.waitForTimeout(400);
       const violations = await axeViolations();
       runs++;
       if (violations.length)
@@ -104,7 +105,10 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
         if (commandViolations.length)
           failures.push(`${width} ${theme} 명령 목록: ${commandViolations.join('; ')}`);
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(200);
+        await until(
+          '팔레트가 닫힘',
+          () => document.querySelector("[role='dialog'][aria-label='명령 팔레트']") === null,
+        );
       }
       if (postUrls.includes(path) && (widthIndex + themeIndex) % 2 === 1) {
         // 읽는 중인 글: 그 글의 위치를 개요의 장으로 넣고 다시 열면, 열기 요약(약 2.2초) 뒤 상태줄에 이어 읽기 버튼이 뜬다.
@@ -118,7 +122,7 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
           return true;
         }, decodeURI(path));
         if (seeded) {
-          await page.reload();
+          await reload();
           await page.waitForSelector('loc=css:footer button', { state: 'visible', timeout: 5000 });
           const resumeViolations = await axeViolations();
           runs++;
@@ -128,7 +132,14 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
       }
       if (path === '/' && width < 1100) {
         await openPanel(width < 760);
-        await page.waitForTimeout(300);
+        await until('패널이 열림(프로필)', () => {
+          const panel = document.getElementById('panel');
+          return (
+            panel !== null &&
+            getComputedStyle(panel).display !== 'none' &&
+            panel.getAttribute('aria-label') === '프로필'
+          );
+        });
         const profileViolations = await axeViolations();
         runs++;
         if (profileViolations.length)
@@ -139,11 +150,11 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
     // 패널이 숨는 폭에서는 연다.
     await page.goto(`${QA.base}/`);
     await page.evaluate(() => sessionStorage.setItem('panel', '{"v":1,"view":"search"}'));
-    await page.reload();
-    await page.waitForTimeout(600);
+    await reload();
     if (width < 760) await page.click('loc=css:header button[aria-controls="panel"]');
     else if (width < 1100)
       await page.click("loc=css:nav[aria-label='활동 막대'] button[aria-label='검색']");
+    await page.waitForSelector('loc=css:#panel input[type=search]', { state: 'visible' });
     await page.fill('loc=css:#panel input[type=search]', '개발');
     await page.waitForSelector("loc=css:#panel ul[aria-label='검색 결과']", { state: 'visible' });
     const searchViolations = await axeViolations();
@@ -153,8 +164,7 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
     await page.evaluate(() => sessionStorage.clear());
     // 검색어를 넣은 찾기 줄(⌘F). 칠하기는 axe가 보지 않으므로 찾기 줄 자체의 이름·명암비·겹침을 본다.
     if (postUrls[0]) {
-      await page.goto(QA.base + postUrls[0]);
-      await page.waitForTimeout(600);
+      await goto(QA.base + postUrls[0]);
       await page.evaluate(() => {
         document.getElementById('editor')?.focus();
         return true;
@@ -162,7 +172,9 @@ for (const [widthIndex, width] of [1440, 1024, 390].entries()) {
       await page.keyboard.press('ControlOrMeta+F');
       await page.waitForSelector('loc=css:[data-find-input]', { state: 'visible' });
       await page.keyboard.type('개발');
-      await page.waitForTimeout(300);
+      await until('찾기 위치 글자(n/m)', () =>
+        /^\d+\/\d+$/.test(document.querySelector('search [aria-live="polite"]')?.textContent ?? ''),
+      );
       const findViolations = await axeViolations();
       runs++;
       if (findViolations.length)

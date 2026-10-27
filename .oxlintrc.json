@@ -56,6 +56,35 @@
           }
         ]
       }
+    },
+    {
+      "files": ["scripts/qa/**"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "waitForTimeout",
+            "message": "QA 스크립트는 고정 대기를 쓰지 않는다. ego-browser 자동화 탭은 2fps 안팎으로 그려져 시간을 믿을 수 없다. 그 단계가 기다리는 조건을 scripts/qa/wait.mjs의 until·navigate·goto·reload로 기다린다."
+          },
+          {
+            "object": "window",
+            "property": "setTimeout",
+            "message": "QA 스크립트는 setTimeout으로 잠들지 않는다. 조건은 scripts/qa/wait.mjs의 until로 기다린다."
+          },
+          {
+            "object": "globalThis",
+            "property": "setTimeout",
+            "message": "QA 스크립트는 setTimeout으로 잠들지 않는다. 조건은 scripts/qa/wait.mjs의 until로 기다린다."
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "setTimeout",
+            "message": "QA 스크립트는 setTimeout으로 잠들지 않는다. 조건은 scripts/qa/wait.mjs의 until로 기다린다. 시간 자체가 필요한 줄만 `// oxlint-disable-next-line no-restricted-globals -- 이유`로 허용한다."
+          }
+        ]
+      }
     }
   ]
 }

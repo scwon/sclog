@@ -18,6 +18,14 @@ Create a new file under `.scratch/<feature-slug>/` (creating the directory if ne
 
 Read the file at the referenced path. The user will normally pass the path or the issue number directly.
 
+## When a skill says "close the ticket" (implementation tickets)
+
+Commit these edits to the ticket file on the branch that did the work:
+
+- Set `**Status:** done` and tick each finished checkbox (`[x]`). Leave a box `[ ]` only for a step not done (a human-only step), and say why in Comments.
+- Under `## Comments`, add `### <YYYY-MM-DD> 구현 (브랜치 \`<branch>\`)` with a **결정** list: what the spec left open and how it was decided, plus measurements. Example: `.scratch/design-system/issues/01-tokens-and-css-foundation.md`.
+- When every ticket of a spec is done, set the spec's `Status: done`.
+
 ## Wayfinding operations
 
 Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
