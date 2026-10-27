@@ -1,0 +1,14 @@
+---
+/** AI 글 태그별 글 `ai-written/tags/<태그>`: AI 글(`ai-written`) 가운데 그 태그가 붙은 글. */
+import TagPosts from '../../../components/tags/TagPosts.astro';
+import { getAllTags } from '../../../utils/blog';
+
+export async function getStaticPaths() {
+  const tags = await getAllTags('ai-written');
+  return [...tags.keys()].map((tag) => ({ params: { tag } }));
+}
+
+const { tag } = Astro.params;
+---
+
+<TagPosts folder="ai-written" tag={tag} description={`'${tag}' 태그가 포함된 AI 글 목록입니다.`} />

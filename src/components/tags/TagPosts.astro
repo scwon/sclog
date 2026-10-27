@@ -1,0 +1,40 @@
+---
+/**
+ * 한 폴더의 태그별 글 화면(`tags/<태그>`, `ai-written/tags/<태그>`): 그 폴더에서 태그가 붙은 글을 흐름 로그 줄로 보인다.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FlowLog from '../flow/FlowLog.astro';
+import { getPostsByTag } from '../../utils/blog';
+import { listLines, loadFlows } from '../../utils/flow';
+import type { Folder } from '../../utils/folder';
+import { tagPath, tagUrl } from '../../utils/ide';
+
+interface Props {
+  folder: Folder;
+  tag: string;
+  description: string;
+}
+
+const { folder, tag, description } = Astro.props;
+const posts = await getPostsByTag(folder, tag);
+const flows = await loadFlows(posts);
+---
+
+<BaseLayout
+  title={`#${tag} 태그 글`}
+  description={description}
+  file={{
+    title: `#${tag}`,
+    path: tagPath(folder, tag),
+    url: tagUrl(folder, tag),
+    kind: 'page',
+    summary: `글 ${posts.length}편`,
+  }}
+>
+  <FlowLog
+    lines={listLines(flows, {
+      title: `#${tag}`,
+      comment: `#${tag} 태그가 붙은 글 ${posts.length}편`,
+    })}
+  />
+</BaseLayout>

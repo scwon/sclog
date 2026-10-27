@@ -1,9 +1,7 @@
 ---
-/** 태그별 글 `tags/<태그>`: 그 태그가 붙은 글 카드를 흐름 로그 줄로 보인다. */
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import FlowLog from '../../../components/flow/FlowLog.astro';
-import { getAllTags, getPostsByTag } from '../../../utils/blog';
-import { listLines, loadFlows } from '../../../utils/flow';
+/** 태그별 글 `tags/<태그>`: 직접 쓴 글(`posts`) 가운데 그 태그가 붙은 글. */
+import TagPosts from '../../../components/tags/TagPosts.astro';
+import { getAllTags } from '../../../utils/blog';
 
 export async function getStaticPaths() {
   const tags = await getAllTags('posts');
@@ -11,25 +9,6 @@ export async function getStaticPaths() {
 }
 
 const { tag } = Astro.params;
-const posts = await getPostsByTag('posts', tag);
-const flows = await loadFlows(posts);
 ---
 
-<BaseLayout
-  title={`#${tag} 태그 글`}
-  description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`}
-  file={{
-    title: `#${tag}`,
-    path: `tags/${tag}`,
-    url: `/blog/tags/${tag}/`,
-    kind: 'page',
-    summary: `글 ${posts.length}편`,
-  }}
->
-  <FlowLog
-    lines={listLines(flows, {
-      title: `#${tag}`,
-      comment: `#${tag} 태그가 붙은 글 ${posts.length}편`,
-    })}
-  />
-</BaseLayout>
+<TagPosts folder="posts" tag={tag} description={`'${tag}' 태그가 포함된 블로그 글 목록입니다.`} />

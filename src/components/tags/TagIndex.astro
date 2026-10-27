@@ -1,0 +1,47 @@
+---
+/**
+ * 한 폴더의 태그 목록 화면(`tags/`, `ai-written/tags/`): 태그마다 링크 줄 하나(`#태그 ---- 글 수`), 글이 많은 순.
+ * 그 폴더의 글만 센다.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FlowLog from '../flow/FlowLog.astro';
+import { getAllTags } from '../../utils/blog';
+import { linkLines } from '../../utils/flow';
+import { FOLDER_ROUTES, type Folder } from '../../utils/folder';
+import { tagPath, tagUrl } from '../../utils/ide';
+
+interface Props {
+  folder: Folder;
+  title: string;
+  description: string;
+}
+
+const { folder, title, description } = Astro.props;
+const tags = [...(await getAllTags(folder)).entries()].toSorted((a, b) => b[1] - a[1]);
+const path = tagPath(folder);
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  file={{
+    title,
+    path,
+    url: FOLDER_ROUTES[folder].tags,
+    kind: 'page',
+    summary: `태그 ${tags.length}개`,
+  }}
+>
+  <FlowLog
+    lines={linkLines({
+      title: path,
+      comment: `태그 ${tags.length}개, 글이 많은 순`,
+      links: tags.map(([tag, count]) => ({
+        href: tagUrl(folder, tag),
+        label: `#${tag}`,
+        note: `글 ${count}편`,
+      })),
+      end: `태그 ${tags.length}개`,
+    })}
+  />
+</BaseLayout>
