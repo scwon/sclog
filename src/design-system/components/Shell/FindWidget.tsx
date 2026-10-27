@@ -208,7 +208,7 @@ export function FindWidget({ editorId, platform, start = 'next', onClose, ref }:
     <search
       ref={widget}
       aria-label="파일에서 찾기"
-      className="fixed top-[calc(var(--editor-top)+var(--bar-height-sm))] right-4 z-25 flex h-9.5 w-[min(360px,calc(100vw-var(--editor-left)-32px))] items-center gap-1 rounded-b-(--corner-md) border border-t-0 border-border-strong bg-surface-raised pr-1 pl-2 font-mono shadow-[0_10px_28px_-10px_var(--scrim)] max-[759px]:right-2 max-[759px]:w-[calc(100vw-var(--editor-left)-16px)]"
+      className="fixed top-[calc(var(--editor-top)+var(--bar-height-sm))] right-4 z-25 flex h-9.5 w-[min(360px,calc(100%-var(--editor-left)-32px))] items-center gap-1 rounded-b-(--corner-md) border border-t-0 border-border-strong bg-surface-raised pr-1 pl-2 font-mono shadow-[0_10px_28px_-10px_var(--scrim)] max-[759px]:right-2 max-[759px]:w-[calc(100%-var(--editor-left)-16px)]"
     >
       <input
         ref={input}
