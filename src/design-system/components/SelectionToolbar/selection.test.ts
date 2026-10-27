@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  focusDueOnShow,
   headingAbove,
   slugOf,
+  tabStopAfterSelection,
   toolbarAllowed,
   toolbarPlacement,
   visibleActions,
   type ElementStep,
   type SelectionAction,
   type SelectionContext,
+  type TabStop,
 } from './selection.logic';
 
 /** 본문 문단 안의 글자: 문단 → 본문 → 글 → 에디터. */
@@ -325,5 +328,75 @@ describe('selection context', () => {
     expect(headingAbove(children, 1)).toBe('chapter');
     // 오프셋이 마지막 자식 뒤(자식 수)를 가리켜도 마지막 블록에서 찾는다.
     expect(headingAbove(children, children.length)).toBe('section');
+  });
+});
+
+describe('tabStopAfterSelection: 툴바에서 Tab으로 나갈 곳', () => {
+  /** 선택 뒤에 있고 Tab 순서에 들며 보이는 링크. */
+  const link: TabStop = { tabIndex: 0, afterSelection: true, inToolbar: false, usable: true };
+
+  it('picks the first tab stop after the selection end in document order', () => {
+    const stops: TabStop[] = [
+      { ...link, afterSelection: false },
+      { ...link, afterSelection: false },
+      link,
+      link,
+    ];
+    expect(tabStopAfterSelection(stops)).toBe(2);
+  });
+
+  it('skips the toolbar buttons, which are portaled after the selection', () => {
+    expect(tabStopAfterSelection([{ ...link, inToolbar: true }, link])).toBe(1);
+  });
+
+  it('skips elements out of the tab order, hidden or disabled', () => {
+    const stops: TabStop[] = [{ ...link, tabIndex: -1 }, { ...link, usable: false }, link];
+    expect(tabStopAfterSelection(stops)).toBe(2);
+  });
+
+  it('finds nothing when only the toolbar and earlier elements remain', () => {
+    const stops: TabStop[] = [
+      { ...link, afterSelection: false },
+      { ...link, inToolbar: true },
+    ];
+    expect(tabStopAfterSelection(stops)).toBe(-1);
+    expect(tabStopAfterSelection([])).toBe(-1);
+  });
+});
+
+describe('focusDueOnShow: 그리는 중에 누른 Tab', () => {
+  const body = { name: 'body' };
+  const link = { name: 'a' };
+  const text = { name: '#text' };
+  /** 고른 자리: 글자 노드의 0~12. */
+  const ends = { startNode: text, startOffset: 0, endNode: text, endOffset: 12 };
+  const pending = { from: body, selection: ends };
+  const drawn = { open: true, focus: body, selection: { ...ends } };
+
+  it('focuses the first button once the toolbar for the same selection is drawn', () => {
+    expect(focusDueOnShow(pending, drawn)).toBe(true);
+  });
+
+  it('drops the Tab when the selection changed before drawing finished', () => {
+    expect(focusDueOnShow(pending, { ...drawn, selection: { ...ends, endOffset: 20 } })).toBe(
+      false,
+    );
+    const other = { name: '#text' };
+    expect(focusDueOnShow(pending, { ...drawn, selection: { ...ends, endNode: other } })).toBe(
+      false,
+    );
+  });
+
+  it('drops the Tab when the toolbar was dismissed before drawing finished', () => {
+    expect(focusDueOnShow(pending, { ...drawn, open: false })).toBe(false);
+  });
+
+  it('drops the Tab when focus moved elsewhere meanwhile', () => {
+    expect(focusDueOnShow(pending, { ...drawn, focus: link })).toBe(false);
+  });
+
+  it('does nothing when no Tab is waiting or nothing is selected', () => {
+    expect(focusDueOnShow(null, drawn)).toBe(false);
+    expect(focusDueOnShow(pending, { ...drawn, selection: null })).toBe(false);
   });
 });

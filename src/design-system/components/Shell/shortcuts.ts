@@ -1,4 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
+import { hasStopAfterSelection, toolbarButtonAt } from '../SelectionToolbar/selection';
 import {
   platformOf,
   shortcutFor,
@@ -83,10 +85,11 @@ export function usePlatform(): Platform | null {
   return useSyncExternalStore(noSubscribe, browserPlatform, () => null);
 }
 
-/** 판정에 쓰는 창 틀의 지금 맥락. */
+/**
+ * 판정에 쓰는 창 틀의 지금 맥락. 선택 툴바가 떠 있는지는 여기 넣지 않고 키를 받을 때 `$selectionToolbarOpen`에서 바로
+ * 읽는다. 창 틀이 다시 그려질 때까지 기다리면, 고르자마자 누른 Tab이 툴바가 떴다는 것을 모른다.
+ */
 export interface ShortcutState {
-  /** 본문 선택 툴바가 떠 있는가. */
-  toolbarOpen: boolean;
   paletteOpen: boolean;
   /** 좁은 화면에서 패널이 에디터 위에 겹쳐 열려 있는가. */
   overlayOpen: boolean;
@@ -106,6 +109,8 @@ export function useShortcuts(state: ShortcutState, onAction: (action: ShortcutAc
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const { state: current, onAction: run } = latest.current;
+      const toolbarOpen = $selectionToolbarOpen.get();
+      const toolbarButton = toolbarOpen ? toolbarButtonAt(event.target) : null;
       const action = shortcutFor(
         {
           key: event.key,
@@ -117,9 +122,13 @@ export function useShortcuts(state: ShortcutState, onAction: (action: ShortcutAc
           isComposing: event.isComposing,
           keyCode: event.keyCode,
           target: focusTarget(event.target),
-          atSelection: current.toolbarOpen && holdsSelection(event.target),
+          atSelection: toolbarOpen && holdsSelection(event.target),
+          toolbarButton,
+          // 문서를 훑으므로 툴바 마지막 버튼에서 누른 Tab에만 잰다.
+          stopAfterSelection:
+            event.key === 'Tab' && toolbarButton?.last === true && hasStopAfterSelection(),
         },
-        { ...current, findSupported: findSupported(), platform: browserPlatform() },
+        { ...current, toolbarOpen, findSupported: findSupported(), platform: browserPlatform() },
       );
       if (!action) return;
       event.preventDefault();

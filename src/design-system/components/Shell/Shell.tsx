@@ -40,8 +40,12 @@ import { toggleTheme } from '../../stores/theme';
 import { fileName, openLog, parseEditorFile, type EditorFile } from '../../stores/file.logic';
 import { requestSearchFocus } from '../../stores/search';
 import { seedFindQuery } from '../../stores/find';
-import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
-import { dismissSelectionToolbar, focusSelectionToolbar } from '../SelectionToolbar/selection';
+import {
+  dismissSelectionToolbar,
+  focusAfterSelection,
+  focusSelectionToolbar,
+  returnToSelection,
+} from '../SelectionToolbar/selection';
 import {
   BranchIcon,
   ExplorerIcon,
@@ -772,6 +776,12 @@ export function Shell({
       case 'focus-selection-toolbar':
         focusSelectionToolbar();
         break;
+      case 'leave-selection-toolbar':
+        focusAfterSelection();
+        break;
+      case 'return-to-selection':
+        returnToSelection();
+        break;
       case 'open-palette':
         paletteOpener.current =
           document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -807,8 +817,7 @@ export function Shell({
         runCommand(action);
     }
   };
-  const toolbarOpen = useStore($selectionToolbarOpen);
-  useShortcuts({ toolbarOpen, paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
+  useShortcuts({ paletteOpen, overlayOpen: overlay, findOpen }, onShortcut);
 
   const years = tree.map((year) => ({ ...year, count: year.files.length }));
   const outline = file?.kind === 'post' ? file.outline : [];

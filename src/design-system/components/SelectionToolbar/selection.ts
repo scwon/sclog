@@ -1,16 +1,20 @@
 import { COARSE_POINTER } from '../../media';
 import { $selectionToolbarOpen } from '../../stores/selectionToolbar';
 import {
+  focusDueOnShow,
   headingAbove,
   PROSE_CLASS,
   slugOf,
+  tabStopAfterSelection,
   toolbarAllowed,
   toolbarPlacement,
   toolbarSize,
   visibleActions,
   type ElementStep,
+  type PendingFocus,
   type ScreenBounds,
   type SelectionAction,
+  type SelectionEnds,
 } from './selection.logic';
 import type { SelectionToolbarProps } from './SelectionToolbar';
 
@@ -22,7 +26,9 @@ import type { SelectionToolbarProps } from './SelectionToolbar';
  * - 키보드(Shift+화살표)로 고르면 선택이 `KEYBOARD_SETTLE_MS` 동안 멈춘 뒤 그린다. 포커스는 본문에 남는다.
  * - 선택이 접히면(빈 곳 클릭 포함) 걷는다. 떠 있는 동안 선택이 바뀌면 자리를 다시 잰다.
  * - Esc, 찾기 줄·팔레트가 열릴 때는 창 틀이 `dismissSelectionToolbar()`를 부른다(선택은 남는다). 떠 있는지는
- *   `$selectionToolbarOpen`으로 알린다. 고른 자리에서 누른 첫 Tab에는 창 틀이 `focusSelectionToolbar()`를 부른다.
+ *   `$selectionToolbarOpen`으로 알린다.
+ * - 툴바가 고른 자리 바로 뒤에 놓인 것처럼 Tab 순서를 잇는다. 창 틀이 고른 자리의 첫 Tab에 `focusSelectionToolbar()`,
+ *   마지막 버튼의 Tab에 `focusAfterSelection()`, 첫 버튼의 Shift+Tab에 `returnToSelection()`을 부른다.
  * - 화면을 옮기기 전에는 소비자가 `closeSelectionToolbar()`를 부른다.
  */
 
@@ -56,6 +62,8 @@ let dragging = false;
 let request = 0;
 /** 키보드로 고른 선택을 그리려고 기다리는 타이머. */
 let settle = 0;
+/** 툴바를 그리는 중에 고른 자리에서 누른 Tab. 그리기를 마치면 첫 버튼에 포커스를 준다(`focusDueOnShow`). */
+let pendingFocus: PendingFocus<Node | null> | null = null;
 
 /**
  * 키보드로 고른 선택이 이만큼 멈추면 그린다(ms). Shift+화살표를 누르고 있는 동안 툴바가 깜박이지 않을 만큼 길고,
@@ -194,16 +202,43 @@ function refresh(): void {
   const ticket = ++request;
   $selectionToolbarOpen.set(true);
   void load().then(({ showSelectionToolbar }) => {
-    if (ticket === request) showSelectionToolbar(view.host, view.props);
+    if (ticket !== request) return;
+    showSelectionToolbar(view.host, view.props);
+    const due = focusDueOnShow(pendingFocus, {
+      open: shown(),
+      focus: document.activeElement,
+      selection: selectionEnds(),
+    });
+    pendingFocus = null;
+    if (due) firstButton()?.focus();
   });
 }
 
 function hide(): void {
   window.clearTimeout(settle);
+  pendingFocus = null;
   if (!shown()) return;
   $selectionToolbarOpen.set(false);
   request++;
   void chunk?.then(({ hideSelectionToolbar }) => hideSelectionToolbar());
+}
+
+/** 지금 선택의 두 끝. 선택이 없으면 `null`. */
+function selectionEnds(): SelectionEnds<Node | null> | null {
+  const selection = document.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  return {
+    startNode: range.startContainer,
+    startOffset: range.startOffset,
+    endNode: range.endContainer,
+    endOffset: range.endOffset,
+  };
+}
+
+/** 그려진 툴바의 첫 버튼. */
+function firstButton(): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`${TOOLBAR} button`);
 }
 
 function inToolbar(target: EventTarget | null): boolean {
@@ -267,15 +302,99 @@ export function dismissSelectionToolbar(): void {
 
 /**
  * 선택 툴바의 첫 버튼에 포커스를 준다. 툴바는 글 끝에 포털되어 DOM 순서로는 고른 자리에서 멀므로, 창 틀이 고른 자리에서
- * 누른 첫 Tab에 부른다. 툴바가 아직 그려지지 않았으면 아무것도 하지 않는다.
+ * 누른 첫 Tab에 부른다. 툴바를 아직 그리는 중이면(청크를 불러오는 중) 그리기를 마친 뒤 준다. 그 사이에 선택이 바뀌거나
+ * 툴바가 걷히거나 포커스가 옮겨 갔으면 주지 않는다.
  */
 export function focusSelectionToolbar(): void {
-  document.querySelector<HTMLElement>(`${TOOLBAR} button`)?.focus();
+  const button = firstButton();
+  if (button) button.focus();
+  else {
+    const selection = selectionEnds();
+    if (shown() && selection) pendingFocus = { from: document.activeElement, selection };
+  }
+}
+
+/** Tab 대상일 수 있는 요소. 실제로 Tab 순서에 드는지는 `tabIndex`와 보이는지로 다시 본다(`tabStopAfterSelection`). */
+const TAB_CANDIDATES = [
+  'a[href]',
+  'area[href]',
+  'button',
+  'input:not([type="hidden"])',
+  'select',
+  'textarea',
+  'iframe',
+  'summary',
+  'audio[controls]',
+  'video[controls]',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[tabindex]',
+].join(',');
+
+/** 문서 순서로 선택 끝 뒤에 오는 첫 Tab 대상(툴바 밖). 선택이 없거나 그런 대상이 없으면 `null`. */
+function stopAfterSelection(): HTMLElement | null {
+  const selection = document.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const end = selection.getRangeAt(0).cloneRange();
+  end.collapse(false);
+  const candidates = [...document.querySelectorAll<HTMLElement>(TAB_CANDIDATES)];
+  const index = tabStopAfterSelection(
+    candidates.map((element) => ({
+      tabIndex: element.tabIndex,
+      afterSelection: end.comparePoint(element, 0) > 0,
+      inToolbar: inToolbar(element),
+      usable:
+        !element.matches(':disabled') &&
+        element.closest('[inert]') === null &&
+        element.checkVisibility({ visibilityProperty: true }),
+    })),
+  );
+  return candidates[index] ?? null;
+}
+
+/**
+ * 키를 받은 요소가 선택 툴바 버튼이면 첫 버튼인가·마지막 버튼인가(버튼이 하나면 둘 다 참). 툴바 밖이면 `null`.
+ * 창 틀의 단축키 판정이 툴바 끝에서 누른 Tab·Shift+Tab을 받을지 정할 때 쓴다.
+ */
+export function toolbarButtonAt(
+  target: EventTarget | null,
+): { first: boolean; last: boolean } | null {
+  if (!(target instanceof HTMLButtonElement)) return null;
+  const toolbar = target.closest(TOOLBAR);
+  if (!toolbar) return null;
+  const buttons = [...toolbar.querySelectorAll('button')];
+  return { first: buttons[0] === target, last: buttons.at(-1) === target };
+}
+
+/** 문서 순서로 선택 끝 뒤에 툴바 밖 Tab 대상이 있는가. 없으면 마지막 버튼의 Tab은 브라우저가 받는다. */
+export function hasStopAfterSelection(): boolean {
+  return stopAfterSelection() !== null;
+}
+
+/**
+ * 선택 끝 뒤에 오는 첫 Tab 대상에 포커스를 준다. 툴바가 고른 자리 바로 뒤에 놓인 것처럼, 창 틀이 툴바 마지막 버튼에서
+ * 누른 Tab에 부른다. 선택은 그대로 남는다.
+ */
+export function focusAfterSelection(): void {
+  stopAfterSelection()?.focus();
+}
+
+/**
+ * 고른 글자를 품은 요소로 포커스를 돌린다: 선택을 품은 가장 가까운 포커스 받는 요소(에디터 루트), 없으면 `body`.
+ * 창 틀이 툴바 첫 버튼에서 누른 Shift+Tab에 부른다. 선택은 그대로 남고, 다시 Tab을 누르면 툴바로 들어간다.
+ */
+export function returnToSelection(): void {
+  const selection = document.getSelection();
+  const node = selection?.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
+  const element = node instanceof Element ? node : (node?.parentElement ?? null);
+  const holder = element?.closest<HTMLElement>('[tabindex]');
+  if (holder) holder.focus({ preventScroll: true });
+  else if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 }
 
 /** 상자와 버튼을 걷고 층을 없앤다. 화면을 옮기기 전(`astro:before-swap`)에 부른다. */
 export function closeSelectionToolbar(): void {
   window.clearTimeout(settle);
+  pendingFocus = null;
   $selectionToolbarOpen.set(false);
   dragging = false;
   request++;
