@@ -43,11 +43,12 @@ await page.evaluate(() => {
 });
 await unfoldStep('없음(홈으로)', () => clickTab('/'));
 await unfoldStep('없음(열린 글로)', () => clickTab(post.url));
-// 글이 한 편뿐일 수 있어 글에 달린 태그 화면 중 아직 열리지 않은 두 개를 새 파일로 쓴다.
+// 글이 한 편뿐일 수 있어 글에 달린 태그 화면 중 아직 열리지 않은 두 개를 새 파일로 쓴다. 홈의 `.flow-link`는 AI 글
+// 칸에도 있어 연 글이 어느 폴더든 그 폴더의 태그별 글(`/blog/tags/…`·`/ai-written/tags/…`)을 쓴다.
 const tagLinks = await page.evaluate(() =>
-  [...document.querySelectorAll("#editor a[href^='/blog/tags/']")]
+  [...document.querySelectorAll("#editor a[href*='/tags/']")]
     .map((link) => link.getAttribute('href'))
-    .filter((href) => href !== '/blog/tags/'),
+    .filter((href) => /^\/(blog|ai-written)\/tags\/[^/]+\/$/.test(href)),
 );
 const openUrls = await page.evaluate(() =>
   [...document.querySelectorAll("nav[aria-label='열린 파일'] li[data-url]")].map(
@@ -55,7 +56,7 @@ const openUrls = await page.evaluate(() =>
   ),
 );
 const [first, second] = [...new Set(tagLinks)].filter((href) => !openUrls.includes(href));
-check('펼침 확인용 태그 화면 두 개', Boolean(first && second), `${first}, ${second}`);
+check('펼침 확인용 태그 화면 두 개', Boolean(first && second), `${post.url}: ${first}, ${second}`);
 if (first && second) {
   const backToPost = () => navigate('글 탭으로', () => clickTab(post.url));
   const openFromPost = (url) =>

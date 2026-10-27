@@ -3,6 +3,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import FlowLog from '../components/flow/FlowLog.astro';
 import { linkLines } from '../utils/flow';
+import { FOLDER_ROUTES } from '../utils/folder';
+
+const aiLog = FOLDER_ROUTES['ai-written'].log;
 ---
 
 <BaseLayout
@@ -16,6 +19,7 @@ import { linkLines } from '../utils/flow';
       comment: '요청한 파일을 찾을 수 없다. 주소가 바뀌었거나 없는 파일이다.',
       links: [
         { href: '/', label: 'posts.log', note: '홈 흐름 로그' },
+        { href: aiLog.url, label: aiLog.name, note: 'AI 글 흐름 로그' },
         { href: '/blog/', label: 'posts/', note: '모든 글' },
         { href: '/blog/tags/', label: 'tags/', note: '태그 목록' },
       ],

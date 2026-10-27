@@ -1,5 +1,5 @@
 /**
- * 검색 색인 `/search-index.json`. 빌드 때 발행된 글(초안·예약 글 제외)을 최신 글부터 담는다.
+ * 검색 색인 `/search-index.json`. 빌드 때 두 폴더(`posts`·`ai-written`)의 발행된 글(초안·예약 글 제외)을 최신 글부터 담는다.
  * 검색 화면이 처음 열릴 때 내려받는다. 모양은 디자인 시스템의 `SearchIndex`, 블록 규칙은 `utils/search-index`.
  */
 import type { APIRoute } from 'astro';
@@ -8,11 +8,12 @@ import { SEARCH_INDEX_VERSION, type SearchIndex } from '@/design-system';
 import { SITE } from '../site';
 import { getPublishedPosts } from '../utils/blog';
 import { postFile } from '../utils/ide';
+import { postFolder } from '../utils/folder';
 import { searchPost } from '../utils/search-index';
 
 /** 색인 JSON을 만든다. */
 export const GET: APIRoute = async () => {
-  const posts = await getPublishedPosts('posts');
+  const posts = await getPublishedPosts();
   const index: SearchIndex = {
     v: SEARCH_INDEX_VERSION,
     posts: await Promise.all(
@@ -28,6 +29,7 @@ export const GET: APIRoute = async () => {
           tags: post.data.tags,
           heroImage: post.data.heroImage,
           byline: `${SITE.author} · ${isoDate.replaceAll('-', '.')} · 읽는 시간 ${reading}분`,
+          notice: postFolder(post) === 'ai-written' ? SITE.aiWrittenNotice : undefined,
           body: post.body ?? '',
           headings,
         });

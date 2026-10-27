@@ -21,6 +21,8 @@ export interface SearchPostSource {
   heroImage?: string;
   /** 작성 정보 줄의 글자. */
   byline: string;
+  /** 작성 정보 아래 고정 문구 한 줄(AI 글의 `SITE.aiWrittenNotice`). 직접 쓴 글은 없다. */
+  notice?: string;
   /** MDX 원문 본문(frontmatter 제외). */
   body: string;
   /** Astro가 본문에서 뽑은 제목(문서 순서). 장·절의 id·제목은 여기서 온다. */
@@ -97,14 +99,17 @@ const collapse = (text: string) => text.replaceAll(/\s+/g, ' ').trim();
 // ── 색인 ───────────────────────────────────────────────────────────────────
 
 /**
- * 글 한 편의 색인. 줄 번호는 글 화면의 줄 번호 칸과 같고(frontmatter 줄 → 제목 → 작성 정보 → 본문 블록),
+ * 글 한 편의 색인. 줄 번호는 글 화면의 줄 번호 칸과 같고(frontmatter 줄 → 제목 → 작성 정보 → 고정 문구 → 본문 블록),
  * 장·절은 탐색기 개요(`buildOutline`)와 같은 id·번호·제목이다. 본문의 제목은 문서 순서대로 `headings`와 짝짓는다.
  */
 export function searchPost(source: SearchPostSource): SearchPost {
   const outline = buildOutline(source.headings);
-  const head = [...frontmatterLines(source), source.title, source.byline].map(
-    (text): Omit<SearchBlock, 'line'> => ({ chapter: null, section: null, text }),
-  );
+  const head = [
+    ...frontmatterLines(source),
+    source.title,
+    source.byline,
+    ...(source.notice ? [source.notice] : []),
+  ].map((text): Omit<SearchBlock, 'line'> => ({ chapter: null, section: null, text }));
 
   const passed: string[] = [];
   let heading = 0;

@@ -41,8 +41,19 @@ const axeViolations = () =>
     );
   }, axeSource);
 
-/** 발행된 글 URL(태그 화면 제외). */
-const postUrls = QA.pages.filter((path) => /^\/blog\/(?!tags\/)[^/]+\/$/.test(path));
+/** 두 폴더의 발행된 글 URL(태그 화면 제외). AI 글(`/ai-written/…`)이 이름 순으로 먼저 온다. */
+const postUrls = QA.pages.filter((path) => /^\/(blog|ai-written)\/(?!tags\/)[^/]+\/$/.test(path));
+
+// AI 글 쪽 화면 네 곳(로그·글·태그 목록·태그별 글)은 dist를 도는 `pageUrls()`에 저절로 들어온다. 빌드가 그 화면을
+// 빠뜨려 검사 없이 지나가지 않도록 하나라도 없으면 실패로 남긴다.
+const aiWrittenPages = [
+  ['ai-written.log', (path) => path === '/ai-written/'],
+  ['AI 글', (path) => /^\/ai-written\/(?!tags\/)[^/]+\/$/.test(path)],
+  ['AI 글 태그 목록', (path) => path === '/ai-written/tags/'],
+  ['AI 글 태그별 글', (path) => /^\/ai-written\/tags\/[^/]+\/$/.test(path)],
+];
+for (const [label, matches] of aiWrittenPages)
+  if (!QA.pages.some(matches)) failures.push(`페이지 목록에 ${label} 화면이 없음`);
 
 /** 모든 글을 읽은 글(`read`) 또는 42% 읽는 중(`reading`)으로 기록해 둔다. */
 const seedHistory = (kind) =>
