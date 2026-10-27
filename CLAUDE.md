@@ -39,7 +39,6 @@ Personal blog built with Astro, TypeScript, and MDX. 버전은 `package.json`이
 
 ## Coding Conventions
 
-- `any` 타입 사용 금지
 - 모든 export 함수/컴포넌트에 JSDoc 작성
 - Conventional Commits 형식 사용 (`feat:`, `fix:`, `chore:`)
 - 클래스 합치기는 `@/lib/utils`의 `cn`(shadcn `cn` 패키지)을 쓴다
