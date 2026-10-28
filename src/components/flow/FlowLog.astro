@@ -1,10 +1,10 @@
 ---
 /**
  * 흐름 로그. 줄마다 줄 번호와 레일을 두고 글 로그 줄 → 카드 → 장 노드 → 절 노드를 잇는다.
- * 홈 `posts.log`와 글 목록·태그·404가 같은 줄 구조를 쓴다(줄 모델은 `src/utils/flow.ts`).
+ * 폴더의 로그(`posts.log`)와 루트·폴더의 디렉터리 뷰, 태그·404가 같은 줄 구조를 쓴다(줄 모델은 `src/utils/flow.ts`).
  * 스타일은 디자인 시스템 2층(`ide.css`의 `.flow*`)만 쓰고 React는 쓰지 않는다(분류 꼬리표 `Badge`는 정적 HTML).
- * 접기와 현재 줄(상태줄 `Ln N`), 글 로그 줄 머리의 읽음 꼬리표는 아래 스크립트가 맡고, JS가 없으면 모두 펼친 채
- * 꼬리표 없이 보인다.
+ * 접기와 현재 줄(상태줄 `Ln N`), 글 로그 줄 머리와 파일 줄 끝의 읽음 꼬리표는 아래 스크립트가 맡고, JS가 없으면 모두
+ * 펼친 채 꼬리표 없이 보인다.
  */
 import { Badge } from '@/design-system';
 import type { FlowLine } from '../../utils/flow';
@@ -74,6 +74,22 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
           )}
           <span class="flow-dir-rule" aria-hidden="true" />
           {line.note && <span class="flow-dir-count">{line.note}</span>}
+        </li>
+      );
+    if (line.kind === 'file')
+      return (
+        <li class="flow-line flow-file" data-line={line.no} data-post-url={line.href}>
+          <span class="flow-ln" aria-hidden="true" data-ln={line.no} />
+          <a class="flow-file-link" href={line.href}>
+            <time datetime={line.date}>{line.date}</time>
+            <span class="flow-file-name">{line.name}</span>
+            <span class="flow-file-title">{line.title}</span>
+          </a>
+          <span class="flow-file-meta">
+            {line.reading !== undefined && `읽는 시간 ${line.reading}분`}
+          </span>
+          {/* 읽음 꼬리표(`✓ 읽음`·`71% 읽는 중`)를 페이지 스크립트가 채우는 자리 */}
+          <span class="flow-file-mark" data-reading-mark />
         </li>
       );
     if (line.kind === 'dir')
@@ -211,7 +227,7 @@ const stepsId = (postId: string, index: number) => `post-${postId}-step-${index 
     if (line?.dataset.line) setReading({ line: Number(line.dataset.line) });
   }
 
-  /** 글 로그 줄 머리에 읽음 꼬리표를 붙인다. 기록이 바뀌거나(지우기 포함) 화면이 열릴 때마다 다시 그린다. */
+  /** 글 로그 줄 머리와 파일 줄 끝에 읽음 꼬리표를 붙인다. 기록이 바뀌거나(지우기 포함) 화면이 열릴 때마다 다시 그린다. */
   function paintReadingMarks() {
     const history = $readingHistory.get();
     for (const line of document.querySelectorAll<HTMLElement>('.flow [data-post-url]')) {

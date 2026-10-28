@@ -1,7 +1,7 @@
 import type { MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { $openTabs, closeTab, openTab } from '../../stores/tabs';
-import { POSTS_LOG, type TabFile } from '../../stores/tabs.logic';
+import { ROOT_TAB, type TabFile } from '../../stores/tabs.logic';
 import { Tabs } from './Tabs';
 
 const files: TabFile[] = [
@@ -29,7 +29,7 @@ function stayInStory(event: MouseEvent) {
   const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-tab-link]');
   if (!link) return;
   event.preventDefault();
-  activate(link.getAttribute('href') ?? POSTS_LOG.url);
+  activate(link.getAttribute('href') ?? ROOT_TAB.url);
 }
 
 const meta = {
@@ -37,7 +37,7 @@ const meta = {
   component: Tabs,
   args: { onNavigate: activate },
   parameters: { layout: 'fullscreen' },
-  // 미리보기를 처음 열 때 한 번만 posts.log + 글 두 개를 열고 첫 글을 활성 탭으로 둔다(세션에 남은 탭은 지운다).
+  // 미리보기를 처음 열 때 한 번만 루트 탭 + 글 두 개를 열고 첫 글을 활성 탭으로 둔다(세션에 남은 탭은 지운다).
   // 데코레이터나 beforeEach는 툴바 테마를 바꿀 때마다 다시 돌아 닫은 탭이 되살아나므로 한 번만 깐다.
   beforeEach: () => {
     if (seeded) return;

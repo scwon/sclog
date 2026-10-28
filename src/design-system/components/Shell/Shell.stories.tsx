@@ -215,21 +215,18 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 홈 상태: `posts.log`가 활성 탭이고 패널은 프로필을 보인다. 상태줄에 열기 요약이 2초 보인다. */
+/** 홈 상태: 루트 `/`가 활성 탭이고 패널은 프로필을 보인다. 상태줄에 열기 요약이 2초 보인다. */
 export const Home: Story = {
   render: (args) => (
     <>
       <Shell {...args} />
-      <Editor
-        file={{ title: 'posts.log', path: 'posts.log', url: '/', kind: 'log', summary: '글 1편' }}
-      >
+      <Editor file={{ title: '/', path: '/', url: '/', kind: 'root', summary: '폴더 1개' }}>
         <div className="ide-crumbs">
           <ol className="ide-crumbs-path" aria-label="위치">
-            <li>posts</li>
-            <li aria-current="page">posts.log</li>
+            <li aria-current="page">/</li>
           </ol>
         </div>
-        <p className="p-8 text-text-muted">흐름 로그가 여기에 열린다.</p>
+        <p className="p-8 text-text-muted">루트 디렉터리 뷰가 여기에 열린다.</p>
       </Editor>
     </>
   ),
@@ -307,10 +304,8 @@ export const ReadingHistorySection: Story = {
     <>
       <Shell {...args} />
       <SeedHistory history={markedHistory} />
-      <Editor
-        file={{ title: 'posts.log', path: 'posts.log', url: '/', kind: 'log', summary: '글 4편' }}
-      >
-        <p className="p-8 text-text-muted">흐름 로그가 여기에 열린다.</p>
+      <Editor file={{ title: '/', path: '/', url: '/', kind: 'root', summary: '폴더 1개' }}>
+        <p className="p-8 text-text-muted">루트 디렉터리 뷰가 여기에 열린다.</p>
       </Editor>
     </>
   ),

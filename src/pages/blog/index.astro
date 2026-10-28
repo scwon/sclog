@@ -1,28 +1,10 @@
 ---
-/** 글 목록 `posts/`: 직접 쓴 글(`posts`)의 연도별 글 카드를 흐름 로그 줄로 보인다. AI 글은 `ai-written.log`에 있다. */
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import FlowLog from '../../components/flow/FlowLog.astro';
-import { getPublishedPosts } from '../../utils/blog';
-import { listLines, loadFlows } from '../../utils/flow';
-import { FOLDER_ROUTES } from '../../utils/folder';
-
-const { list } = FOLDER_ROUTES.posts;
-const posts = await getPublishedPosts('posts');
-const flows = await loadFlows(posts);
+/** `posts/`(`/blog/`): 직접 쓴 글의 디렉터리 뷰. */
+import FolderDir from '../../components/dir/FolderDir.astro';
 ---
 
-<BaseLayout
-  title="블로그"
+<FolderDir
+  folder="posts"
+  title="posts/"
   description="SCLOG - 개발 블로그의 직접 쓴 글 목록입니다."
-  file={{
-    title: '글 목록',
-    path: list.name,
-    url: list.url,
-    kind: 'page',
-    summary: `글 ${posts.length}편`,
-  }}
->
-  <FlowLog
-    lines={listLines(flows, { title: list.name, comment: `직접 쓴 글 ${posts.length}편, 최신순` })}
-  />
-</BaseLayout>
+/>
