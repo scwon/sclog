@@ -3,10 +3,6 @@ import type { MarkdownHeading } from 'astro';
 import type { BlogPost } from './blog';
 import { chapterNo } from '@/design-system';
 import { buildOutline, postFile, postUrl, postYear } from './ide';
-import { FOLDER_ROUTES } from './folder';
-
-/** 홈 아래 AI 글 칸에 보이는 AI 글 수 상한. */
-export const HOME_AI_WRITTEN_LIMIT = 5;
 
 /** 흐름 로그의 장 노드와 그 아래 절 노드. */
 export interface FlowStep {
@@ -42,13 +38,22 @@ export async function loadFlows(posts: BlogPost[]): Promise<FlowEntry[]> {
 
 /**
  * 흐름 로그의 줄. 접힘 줄(`folded`)만 줄 번호가 없다. 링크 줄(`entry`)에 `heading`이 있으면 연도 줄과 같은
- * 단계의 제목(`h2`)으로 그려 그 아래 글 로그 줄을 한 구역으로 묶는다(홈 AI 글 칸 머리).
+ * 단계의 제목(`h2`)으로 그려 그 아래 글 로그 줄을 한 구역으로 묶는다. 파일 줄(`file`)은 디렉터리 뷰의 글 한 편이다.
  */
 export type FlowLine =
   | { kind: 'banner'; no: number; text: string }
   | { kind: 'comment'; no: number; text: string; link?: { href: string; label: string } }
   | { kind: 'blank'; no: number }
   | { kind: 'entry'; no: number; href: string; label: string; note?: string; heading?: boolean }
+  | {
+      kind: 'file';
+      no: number;
+      href: string;
+      name: string;
+      title: string;
+      date: string;
+      reading?: number;
+    }
   | { kind: 'dir'; no: number; year: string; count: number }
   | { kind: 'log'; no: number; post: FlowPost; foldable: boolean }
   | { kind: 'step'; no: number; post: FlowPost; step: FlowStep; index: number }
@@ -130,17 +135,20 @@ function addPosts(write: ReturnType<typeof lineWriter>, posts: FlowEntry[], step
   }
 }
 
+/** 루트·디렉터리 뷰의 링크 줄 하나(`posts/ ---- 글 N편`, `tags/ ---- 태그 T개`, `posts.log ---- 흐름 로그`). */
+export interface DirEntry {
+  href: string;
+  label: string;
+  note?: string;
+}
+
 /**
- * 홈 `posts.log`: 블로그 이름·주석·빈 줄 → 직접 쓴 글의 연도별 글(장 흐름 포함) → AI 글 칸 → 끝 줄.
- * AI 글 칸은 나가는 줄 `ai-written.log ---- 글 M편`(M은 AI 글 전체 수) 아래 AI 글 로그 줄을
- * 최신순 최대 `HOME_AI_WRITTEN_LIMIT`개 둔다(장 흐름·접힘 없음). 나가는 줄은 연도 줄과 같은 단계의 제목이라
- * 화면 읽기의 제목 이동에서 AI 글이 마지막 연도 아래로 들어가지 않는다. AI 글이 없으면 칸을 생략한다.
- * 끝 줄은 직접 쓴 글만 센다.
+ * 루트 디렉터리 뷰 `/`(홈): 블로그 이름·주석·빈 줄 → 폴더마다 링크 줄(`posts/ ---- 글 N편`) → 끝 줄 `폴더 N개`.
+ * 글이 없는 폴더는 넘기지 않는다(페이지가 거른다).
  */
-export function homeLines(
-  posts: FlowEntry[],
+export function rootLines(
   site: { brand: string; author: string; githubUrl: string },
-  aiWritten: FlowEntry[] = [],
+  folders: DirEntry[],
 ): FlowLine[] {
   const write = lineWriter();
   write.add({ kind: 'banner', text: site.brand });
@@ -150,26 +158,42 @@ export function homeLines(
     link: { href: site.githubUrl, label: site.githubUrl.replace(/^https?:\/\//, '') },
   });
   write.add({ kind: 'blank' });
-  addPosts(write, posts, true);
-  if (aiWritten.length > 0) {
-    const { log } = FOLDER_ROUTES['ai-written'];
+  for (const folder of folders) write.add({ kind: 'entry', ...folder });
+  write.add({ kind: 'end', label: `폴더 ${folders.length}개` });
+  return write.lines;
+}
+
+/**
+ * 폴더의 디렉터리 뷰(`posts/`·`ai-written/`): 이름·주석·빈 줄 → `entries`의 링크 줄(`tags/`, `posts.log`) → 글마다
+ * 파일 줄(넘긴 순서 그대로, 연도로 나누지 않음) → 끝 줄 `글 N편`. 파일 줄은 날짜·파일 이름·제목·읽는 시간이다.
+ */
+export function dirLines(
+  posts: BlogPost[],
+  { title, comment, entries = [] }: { title: string; comment: string; entries?: DirEntry[] },
+): FlowLine[] {
+  const write = lineWriter();
+  write.add({ kind: 'banner', text: title });
+  write.add({ kind: 'comment', text: comment });
+  write.add({ kind: 'blank' });
+  for (const entry of entries) write.add({ kind: 'entry', ...entry });
+  for (const post of posts) {
+    const { url, reading } = postFile(post);
     write.add({
-      kind: 'entry',
-      href: log.url,
-      label: log.name,
-      note: `글 ${aiWritten.length}편`,
-      heading: true,
+      kind: 'file',
+      href: url,
+      name: `${post.id}.mdx`,
+      title: post.data.title,
+      date: post.data.pubDate.toISOString().slice(0, 10),
+      reading,
     });
-    for (const { flow } of aiWritten.slice(0, HOME_AI_WRITTEN_LIMIT))
-      write.add({ kind: 'log', post: flow, foldable: false });
   }
   write.add({ kind: 'end', label: `글 ${posts.length}편` });
   return write.lines;
 }
 
 /**
- * 이름·주석·빈 줄 → 연도별 글 카드 → 끝 줄 `글 N편`. 글 목록·태그별 글은 장 흐름 없이,
- * 폴더의 로그(`ai-written.log`)는 `steps`를 켜 홈처럼 장 흐름까지 그린다.
+ * 이름·주석·빈 줄 → 연도별 글 카드 → 끝 줄 `글 N편`. 태그별 글은 장 흐름 없이,
+ * 폴더의 로그(`posts.log`·`ai-written.log`)는 `steps`를 켜 장 흐름까지 그린다.
  */
 export function listLines(
   posts: FlowEntry[],

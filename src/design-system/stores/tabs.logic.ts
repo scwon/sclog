@@ -19,14 +19,14 @@ export interface TabEntry extends TabFile {
   shown: boolean;
 }
 
-/** 열린 탭 목록(첫 칸은 항상 `posts.log`)과 활성 탭 URL. */
+/** 열린 탭 목록(첫 칸은 항상 루트 `/`)과 활성 탭 URL. */
 export interface TabsState {
   files: TabEntry[];
   active: string;
 }
 
-/** 홈의 흐름 로그 탭. 항상 첫 탭이고 닫히지 않는다. */
-export const POSTS_LOG: TabFile = { url: '/', title: 'posts.log', path: 'posts.log' };
+/** 홈의 루트 디렉터리 뷰 탭 `/`. 항상 첫 탭이고 닫히지 않는다. */
+export const ROOT_TAB: TabFile = { url: '/', title: '/', path: '/' };
 
 const entry = ({ url, title, path }: TabFile, shown: boolean): TabEntry => ({
   url,
@@ -35,9 +35,9 @@ const entry = ({ url, title, path }: TabFile, shown: boolean): TabEntry => ({
   shown,
 });
 
-/** `posts.log`만 열린 처음 상태. `posts.log`는 아직 보이지 않았다. */
+/** 루트 탭만 열린 처음 상태. 루트는 아직 보이지 않았다. */
 export function initialTabs(): TabsState {
-  return { files: [entry(POSTS_LOG, false)], active: POSTS_LOG.url };
+  return { files: [entry(ROOT_TAB, false)], active: ROOT_TAB.url };
 }
 
 /** 파일을 연다. 이미 열려 있으면 자리를 그대로 두고 활성 탭으로만 바꾼다. 새 탭은 아직 보이지 않은 것으로 둔다. */
@@ -62,12 +62,12 @@ export function show(state: TabsState, file: TabFile): { state: TabsState; unfol
 }
 
 /**
- * 탭을 닫는다. 활성 탭을 닫으면 왼쪽 탭이 활성 탭이 되고(맨 왼쪽은 언제나 `posts.log`),
- * `next`로 그 URL을 돌려준다. `posts.log`나 열려 있지 않은 탭은 닫지 않는다.
+ * 탭을 닫는다. 활성 탭을 닫으면 왼쪽 탭이 활성 탭이 되고(맨 왼쪽은 언제나 루트 `/`),
+ * `next`로 그 URL을 돌려준다. 루트 탭이나 열려 있지 않은 탭은 닫지 않는다.
  */
 export function close(state: TabsState, url: string): { state: TabsState; next: string } {
   const index = state.files.findIndex((tab) => tab.url === url);
-  if (url === POSTS_LOG.url || index === -1) return { state, next: state.active };
+  if (url === ROOT_TAB.url || index === -1) return { state, next: state.active };
   const files = state.files.filter((tab) => tab.url !== url);
   const active = state.active === url ? state.files[index - 1].url : state.active;
   return { state: { files, active }, next: active };
@@ -81,18 +81,18 @@ function isTabFile(value: unknown): value is TabFile & { shown?: unknown } {
 
 /**
  * 저장해 둔 값(sessionStorage에서 꺼낸 JSON)에서 상태를 다시 만든다. 모양이 틀린 항목과 중복은 버리고,
- * `posts.log`는 늘 첫 칸에 두며, 활성 탭이 목록에 없으면 `posts.log`를 활성 탭으로 둔다.
- * "처음 보임" 표시가 없는 항목(이전 형식)은 이미 보인 것으로 친다. 저장값에 `posts.log` 항목이 없으면 아직 보이지 않았다.
+ * 루트 탭은 늘 첫 칸에 두며, 활성 탭이 목록에 없으면 루트를 활성 탭으로 둔다.
+ * "처음 보임" 표시가 없는 항목(이전 형식)은 이미 보인 것으로 친다. 저장값에 루트 항목이 없으면 아직 보이지 않았다.
  */
 export function restoreTabs(saved: unknown): TabsState {
   if (typeof saved !== 'object' || saved === null) return initialTabs();
   const { files, active } = saved as Record<string, unknown>;
-  const restored = [entry(POSTS_LOG, false)];
+  const restored = [entry(ROOT_TAB, false)];
   for (const file of (Array.isArray(files) ? files : []).filter(isTabFile)) {
     const shown = file.shown !== false;
-    if (file.url === POSTS_LOG.url) restored[0] = entry(POSTS_LOG, shown);
+    if (file.url === ROOT_TAB.url) restored[0] = entry(ROOT_TAB, shown);
     else if (!restored.some((tab) => tab.url === file.url)) restored.push(entry(file, shown));
   }
   const known = restored.some((tab) => tab.url === active);
-  return { files: restored, active: known ? (active as string) : POSTS_LOG.url };
+  return { files: restored, active: known ? (active as string) : ROOT_TAB.url };
 }

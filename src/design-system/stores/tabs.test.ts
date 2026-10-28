@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  POSTS_LOG,
+  ROOT_TAB,
   addOrActivate,
   close,
   initialTabs,
@@ -15,7 +15,7 @@ const b: TabFile = { url: '/blog/b/', title: 'B', path: 'posts/2024/b.mdx' };
 const urls = (state: { files: TabFile[] }) => state.files.map((file) => file.url);
 
 describe('addOrActivate', () => {
-  it('starts with posts.log open and active', () => {
+  it('starts with the root tab open and active', () => {
     expect(urls(initialTabs())).toEqual(['/']);
     expect(initialTabs().active).toBe('/');
   });
@@ -32,8 +32,8 @@ describe('addOrActivate', () => {
     expect(state.active).toBe('/blog/a/');
   });
 
-  it('activates posts.log instead of adding it', () => {
-    const state = addOrActivate(addOrActivate(initialTabs(), a), POSTS_LOG);
+  it('activates the root tab instead of adding it', () => {
+    const state = addOrActivate(addOrActivate(initialTabs(), a), ROOT_TAB);
     expect(urls(state)).toEqual(['/', '/blog/a/']);
     expect(state.active).toBe('/');
   });
@@ -49,7 +49,7 @@ describe('close', () => {
     expect(state.active).toBe('/blog/a/');
   });
 
-  it('moves to posts.log when the last opened file closes', () => {
+  it('moves to the root tab when the last opened file closes', () => {
     const { state, next } = close(close(open, '/blog/b/').state, '/blog/a/');
     expect(urls(state)).toEqual(['/']);
     expect(next).toBe('/');
@@ -61,7 +61,7 @@ describe('close', () => {
     expect(next).toBe('/blog/b/');
   });
 
-  it('refuses to close posts.log', () => {
+  it('refuses to close the root tab', () => {
     expect(close(open, '/')).toEqual({ state: open, next: '/blog/b/' });
   });
 
@@ -78,7 +78,7 @@ function unfolds(start: TabsState, steps: (TabFile | `close:${string}`)[]): bool
     if (typeof file === 'string') {
       const closed = close(state, file.slice('close:'.length));
       state = closed.state;
-      file = state.files.find((tab) => tab.url === closed.next) ?? POSTS_LOG;
+      file = state.files.find((tab) => tab.url === closed.next) ?? ROOT_TAB;
     }
     const result = show(state, file);
     state = result.state;
@@ -87,15 +87,15 @@ function unfolds(start: TabsState, steps: (TabFile | `close:${string}`)[]): bool
 }
 
 describe('show', () => {
-  const home = show(initialTabs(), POSTS_LOG).state;
+  const home = show(initialTabs(), ROOT_TAB).state;
 
   it('unfolds only when a new tab is first shown', () => {
     // 처음 열기 → 다른 탭 → 돌아오기 → 닫기 → 다시 열기
     expect(unfolds(home, [a, b, a, 'close:/blog/a/', a])).toEqual([true, true, false, false, true]);
   });
 
-  it('unfolds posts.log once', () => {
-    expect(unfolds(initialTabs(), [POSTS_LOG, a, POSTS_LOG, 'close:/blog/a/'])).toEqual([
+  it('unfolds the root tab once', () => {
+    expect(unfolds(initialTabs(), [ROOT_TAB, a, ROOT_TAB, 'close:/blog/a/'])).toEqual([
       true,
       true,
       false,
@@ -115,32 +115,32 @@ describe('show', () => {
 });
 
 describe('restoreTabs', () => {
-  it('rebuilds a saved session behind posts.log', () => {
+  it('rebuilds a saved session behind the root tab', () => {
     const state = restoreTabs({ files: [a, b], active: '/blog/a/' });
     expect(urls(state)).toEqual(['/', '/blog/a/', '/blog/b/']);
     expect(state.active).toBe('/blog/a/');
   });
 
-  it('drops malformed entries, duplicates and posts.log copies', () => {
-    const state = restoreTabs({ files: [a, { url: 3 }, a, POSTS_LOG, null, b], active: '/nope/' });
+  it('drops malformed entries, duplicates and root tab copies', () => {
+    const state = restoreTabs({ files: [a, { url: 3 }, a, ROOT_TAB, null, b], active: '/nope/' });
     expect(urls(state)).toEqual(['/', '/blog/a/', '/blog/b/']);
     expect(state.active).toBe('/');
   });
 
   it('does not unfold restored tabs after a reload', () => {
-    const before = show(show(show(initialTabs(), POSTS_LOG).state, a).state, b).state;
+    const before = show(show(show(initialTabs(), ROOT_TAB).state, a).state, b).state;
     const reloaded = restoreTabs(JSON.parse(JSON.stringify(before)));
-    expect(unfolds(reloaded, [b, a, POSTS_LOG])).toEqual([false, false, false]);
+    expect(unfolds(reloaded, [b, a, ROOT_TAB])).toEqual([false, false, false]);
   });
 
   it('keeps an opened but unshown tab unshown across a reload', () => {
-    const before = addOrActivate(show(initialTabs(), POSTS_LOG).state, a);
+    const before = addOrActivate(show(initialTabs(), ROOT_TAB).state, a);
     expect(unfolds(restoreTabs(JSON.parse(JSON.stringify(before))), [a])).toEqual([true]);
   });
 
   it('treats entries saved without the shown mark as already shown', () => {
-    const legacy = { files: [POSTS_LOG, a], active: '/blog/a/' };
-    expect(unfolds(restoreTabs(legacy), [a, POSTS_LOG, b])).toEqual([false, false, true]);
+    const legacy = { files: [ROOT_TAB, a], active: '/blog/a/' };
+    expect(unfolds(restoreTabs(legacy), [a, ROOT_TAB, b])).toEqual([false, false, true]);
   });
 
   it('starts fresh from anything else', () => {
