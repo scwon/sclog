@@ -3,8 +3,11 @@
  * 상태줄에 잠깐 보일 열기 요약을 정한다. DOM은 모른다(창 틀이 `dataset`과 JSON 문자열을 넘긴다).
  */
 
-/** 파일 종류. `log`는 홈 흐름 로그, `post`는 글, `page`는 태그·404 같은 나머지. */
-export type FileKind = 'log' | 'post' | 'page';
+/**
+ * 파일 종류. `root`는 홈의 루트 디렉터리 뷰(`/`), `dir`은 폴더의 디렉터리 뷰(`posts/`), `log`는 폴더 안의 흐름 로그
+ * (`posts.log`), `post`는 글, `page`는 태그·404 같은 나머지.
+ */
+export type FileKind = 'root' | 'dir' | 'log' | 'post' | 'page';
 
 /** 개요의 장(1단계)과 그 아래 절(2단계). `id`는 본문 제목의 앵커다. */
 export interface OutlineItem {
@@ -23,7 +26,7 @@ export interface NumberedChapter {
 
 /**
  * 경로의 파일 이름(마지막 `/` 뒤). `posts/2023/<slug>.mdx` → `<slug>.mdx`. `/`가 없으면(`posts.log`, `404`) 경로
- * 그대로다.
+ * 그대로다. 끝이 `/`인 경로(루트 `/`, 디렉터리 뷰 `posts/`)에는 쓰지 않는다. 탭은 그 경로를 그대로 보인다.
  */
 export function fileName(path: string): string {
   return path.slice(path.lastIndexOf('/') + 1);
@@ -32,7 +35,7 @@ export function fileName(path: string): string {
 /** 에디터에 열린 파일. */
 export interface EditorFile {
   title: string;
-  /** 탭·창 제목에 보이는 경로(`posts/2023/<slug>.mdx`, `posts.log`, `tags/<태그>`, `404`). */
+  /** 탭·창 제목에 보이는 경로(`/`, `posts/`, `posts/2023/<slug>.mdx`, `posts.log`, `tags/<태그>`, `404`). */
   path: string;
   url: string;
   kind: FileKind;
@@ -45,7 +48,7 @@ export interface EditorFile {
   outline: OutlineItem[];
 }
 
-const KINDS: FileKind[] = ['log', 'post', 'page'];
+const KINDS: FileKind[] = ['root', 'dir', 'log', 'post', 'page'];
 
 function toNumber(value: string | undefined): number | undefined {
   const number = Number(value);

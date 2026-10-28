@@ -118,8 +118,8 @@ export interface TreeRoot {
 }
 
 /**
- * 지금 화면의 파일. 경로는 `posts/<연도>/<slug>.mdx`, `ai-written/<연도>/<slug>.mdx`, `posts.log`, `ai-written.log`,
- * `tags/<태그>`, `ai-written/tags/<태그>`, `404` 등이다.
+ * 지금 화면의 파일. 경로는 `/`(루트), `posts/`·`ai-written/`(디렉터리 뷰), `posts/<연도>/<slug>.mdx`,
+ * `ai-written/<연도>/<slug>.mdx`, `posts.log`, `ai-written.log`, `tags/<태그>`, `ai-written/tags/<태그>`, `404` 등이다.
  */
 export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url' | 'kind'>;
 

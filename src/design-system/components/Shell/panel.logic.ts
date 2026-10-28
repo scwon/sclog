@@ -85,11 +85,11 @@ export function restorePanelView(saved: unknown): PanelView | null {
 
 /**
  * 파일을 열었을 때 패널이 보일 화면. 지금 화면이 검색이면 파일 종류와 상관없이 검색 화면을 둔다(결과를 이어 연다).
- * 그 밖에는 홈 로그는 프로필, 글은 탐색기이고, 나머지 화면은 지금 화면을 둔다.
+ * 그 밖에는 루트(홈)는 프로필, 글은 탐색기이고, 나머지 화면(디렉터리 뷰·로그·태그 등)은 지금 화면을 둔다.
  */
 export function viewForFile(current: PanelView, kind: FileKind): PanelView {
   if (current === 'search') return current;
-  if (kind === 'log') return 'profile';
+  if (kind === 'root') return 'profile';
   if (kind === 'post') return 'explorer';
   return current;
 }

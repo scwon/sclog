@@ -3,7 +3,7 @@ import type { BlogPost } from './blog';
 
 vi.mock('astro:content', () => ({ render: async () => ({ headings: [] }) }));
 
-const { flowPost, homeLines, listLines } = await import('./flow');
+const { dirLines, flowPost, listLines, rootLines } = await import('./flow');
 
 function makePost(collection: 'blog' | 'ai-written', id: string, pubDate: string): BlogPost {
   return {
@@ -42,6 +42,8 @@ function shape(lines: ReturnType<typeof listLines>) {
         return `folded ${line.post.id}`;
       case 'entry':
         return `${line.no} entry ${line.label} -> ${line.href} (${line.note})${line.heading ? ' heading' : ''}`;
+      case 'file':
+        return `${line.no} file ${line.date} ${line.name} ${line.title} -> ${line.href}`;
       case 'end':
         return `${line.no} end ${line.label}`;
       default:
@@ -79,14 +81,14 @@ describe('listLines with steps (ai-written.log)', () => {
     ]);
   });
 
-  it('keeps post cards without chapter flow when steps is off (글 목록·태그별 글)', () => {
+  it('keeps post cards without chapter flow when steps is off (태그별 글)', () => {
     const lines = listLines([entry('blog', 'x', '2023-04-30', 2)], {
-      title: 'posts/',
-      comment: '모든 글 1편, 최신순',
+      title: '#회고',
+      comment: '#회고 태그가 붙은 글 1편',
     });
     expect(shape(lines)).toEqual([
-      '1 banner posts/',
-      '2 comment 모든 글 1편, 최신순',
+      '1 banner #회고',
+      '2 comment #회고 태그가 붙은 글 1편',
       '3 blank',
       '4 dir 2023 (1)',
       '5 log /blog/x/',
@@ -97,45 +99,64 @@ describe('listLines with steps (ai-written.log)', () => {
 
 const site = { brand: 'sclog', author: 'scwon', githubUrl: 'https://github.com/scwon' };
 
-describe('homeLines AI 글 칸', () => {
-  it('stacks own posts, then an exit line to ai-written.log as the section heading and AI log lines, ending with the own post count', () => {
-    const lines = homeLines([entry('blog', 'x', '2023-04-30', 1)], site, [
-      entry('ai-written', 'b', '2026-10-01', 2),
-      entry('ai-written', 'a', '2025-01-01', 0),
+describe('rootLines (루트 디렉터리 뷰)', () => {
+  it('lists the folders given as link lines after the banner and counts them in the end line', () => {
+    const lines = rootLines(site, [
+      { href: '/blog/', label: 'posts/', note: '글 3편' },
+      { href: '/ai-written/', label: 'ai-written/', note: '글 1편' },
     ]);
     expect(shape(lines)).toEqual([
       '1 banner sclog',
       '2 comment scwon ·',
       '3 blank',
-      '4 dir 2023 (1)',
-      '5 log /blog/x/ foldable',
-      '6 step /blog/x/#ch-1',
-      'folded x',
-      '7 entry ai-written.log -> /ai-written/ (글 2편) heading',
-      '8 log /ai-written/b/',
-      '9 log /ai-written/a/',
-      '10 end 글 1편',
+      '4 entry posts/ -> /blog/ (글 3편)',
+      '5 entry ai-written/ -> /ai-written/ (글 1편)',
+      '6 end 폴더 2개',
     ]);
+    expect(lines[1]).toMatchObject({ link: { href: site.githubUrl, label: 'github.com/scwon' } });
   });
 
-  it('shows at most five AI posts while the exit line counts all of them', () => {
-    const ai = ['f', 'e', 'd', 'c', 'b', 'a'].map((id, index) =>
-      entry('ai-written', id, `2026-0${9 - index}-01`, 1),
+  it('ends with 폴더 1개 when only posts/ is given', () => {
+    const lines = rootLines(site, [{ href: '/blog/', label: 'posts/', note: '글 1편' }]);
+    expect(shape(lines).slice(3)).toEqual(['4 entry posts/ -> /blog/ (글 1편)', '5 end 폴더 1개']);
+  });
+});
+
+describe('dirLines (폴더 디렉터리 뷰)', () => {
+  it('puts the link lines first, then one file line per post in the given order, without year lines', () => {
+    const lines = dirLines(
+      [makePost('blog', 'newer', '2025-01-10'), makePost('blog', 'retro', '2023-04-30')],
+      {
+        title: 'posts/',
+        comment: '직접 쓴 글 2편, 최신순',
+        entries: [
+          { href: '/blog/tags/', label: 'tags/', note: '태그 3개' },
+          { href: '/blog/posts.log/', label: 'posts.log', note: '흐름 로그' },
+        ],
+      },
     );
-    const lines = homeLines([entry('blog', 'x', '2023-04-30')], site, ai);
-    expect(shape(lines).slice(5)).toEqual([
-      '6 entry ai-written.log -> /ai-written/ (글 6편) heading',
-      '7 log /ai-written/f/',
-      '8 log /ai-written/e/',
-      '9 log /ai-written/d/',
-      '10 log /ai-written/c/',
-      '11 log /ai-written/b/',
-      '12 end 글 1편',
+    expect(shape(lines)).toEqual([
+      '1 banner posts/',
+      '2 comment 직접 쓴 글 2편, 최신순',
+      '3 blank',
+      '4 entry tags/ -> /blog/tags/ (태그 3개)',
+      '5 entry posts.log -> /blog/posts.log/ (흐름 로그)',
+      '6 file 2025-01-10 newer.mdx newer -> /blog/newer/',
+      '7 file 2023-04-30 retro.mdx retro -> /blog/retro/',
+      '8 end 글 2편',
     ]);
   });
 
-  it('leaves the section out entirely when there are no AI posts', () => {
-    const lines = homeLines([entry('blog', 'x', '2023-04-30')], site, []);
-    expect(shape(lines).slice(3)).toEqual(['4 dir 2023 (1)', '5 log /blog/x/', '6 end 글 1편']);
+  it('links AI post files under /ai-written/ and carries the reading time', () => {
+    const [, , , file] = dirLines([makePost('ai-written', 'note', '2026-10-01')], {
+      title: 'ai-written/',
+      comment: 'AI 글 1편',
+    });
+    expect(file).toMatchObject({
+      kind: 'file',
+      href: '/ai-written/note/',
+      name: 'note.mdx',
+      reading: 1,
+    });
   });
 });

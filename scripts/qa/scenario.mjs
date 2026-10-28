@@ -102,9 +102,23 @@ export async function scenario(name) {
       document.getElementById('editor')?.focus();
       return document.activeElement?.id === 'editor';
     });
-  /** 홈의 첫 글 링크(`.flow-link`)가 가리키는 글 URL. 홈에서 부른다. */
+  /** 루트의 `posts/` 줄을 눌러 그 디렉터리 뷰로 간다(화면 이동). 루트에서 부른다. */
+  const openPostsDir = () =>
+    wait.navigate('posts/ 열기', () =>
+      page.click("loc=css:#editor a.flow-entry-link[href='/blog/']", { label: 'posts/ 열기' }),
+    );
+  /** 디렉터리 뷰의 첫 파일 줄(`.flow-file-link`)이 가리키는 글 URL. 디렉터리 뷰에서 부른다. */
+  const dirPostUrl = () =>
+    page.evaluate(() => document.querySelector('.flow-file-link')?.getAttribute('href') ?? null);
+  /**
+   * 직접 쓴 글의 첫 글 URL(`posts/` 디렉터리 뷰의 첫 파일 줄). 화면을 옮기지 않고 `/blog/` HTML을 내려받아 읽으므로
+   * 어느 화면에서든 부를 수 있다. 글로 바로 `goto`하는 시나리오가 쓴다.
+   */
   const homePostUrl = () =>
-    page.evaluate(() => document.querySelector('.flow-link')?.getAttribute('href') ?? null);
+    page.evaluate(async () => {
+      const html = await (await fetch('/blog/')).text();
+      return /class="flow-file-link" href="([^"]+)"/.exec(html)?.[1] ?? null;
+    });
   /** 활동 막대에서 그 패널 화면 버튼을 누른다. */
   const pickPanel = (label, clickLabel = `${label} 고르기`) =>
     page.click(`loc=css:nav[aria-label='활동 막대'] button[aria-label='${label}']`, {
@@ -196,6 +210,8 @@ export async function scenario(name) {
     panelShown,
     statusLine,
     focusEditor,
+    openPostsDir,
+    dirPostUrl,
     homePostUrl,
     pickPanel,
     panelIs,

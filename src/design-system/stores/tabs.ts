@@ -27,7 +27,7 @@ export function toTabRecord(files: TabEntry[]): Record<string, TabEntry> {
 
 const saved = restoreTabs(storage.read(STORAGE_KEY));
 
-/** 열린 탭. 키는 글 URL이고 첫 키는 언제나 `posts.log`의 `/`다. */
+/** 열린 탭. 키는 글 URL이고 첫 키는 언제나 루트 `/`다. */
 export const $openTabs = map<Record<string, TabEntry>>(toTabRecord(saved.files));
 
 /** 활성 탭의 URL. */

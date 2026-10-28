@@ -64,7 +64,7 @@ describe('openLog', () => {
       {
         fileTitle: 'posts.log',
         filePath: 'posts.log',
-        fileUrl: '/',
+        fileUrl: '/blog/posts.log/',
         fileKind: 'log',
         fileSummary: '글 1편',
       },
@@ -74,6 +74,15 @@ describe('openLog', () => {
       command: '❯ open posts.log',
       result: '✓ 열림 · 글 1편',
     });
+  });
+
+  it('opens the root directory view as `open /`', () => {
+    const file = parseEditorFile(
+      { fileTitle: '/', filePath: '/', fileUrl: '/', fileKind: 'root', fileSummary: '폴더 2개' },
+      null,
+    );
+    expect(file?.kind).toBe('root');
+    expect(file && openLog(file)).toEqual({ command: '❯ open /', result: '✓ 열림 · 폴더 2개' });
   });
 
   it('still says it opened when there is nothing to summarise', () => {

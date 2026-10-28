@@ -42,7 +42,7 @@ const {
 // 탐색기 트리: 두 폴더의 발행 글(`posts` 루트 먼저, AI 글이 없으면 `ai-written` 루트 없음).
 const tree = buildTree(await getPublishedPosts());
 
-// 경로 표시줄: posts › 2023 › <파일>.mdx, ai-written › ai-written.log, tags › <태그>
+// 경로 표시줄: /, posts, posts › 2023 › <파일>.mdx, ai-written › ai-written.log, tags › <태그>
 const crumbs = fileCrumbs(file);
 
 // `</script>`로 JSON이 끊기지 않게 `<`를 이스케이프한다.

@@ -41,14 +41,17 @@ const axeViolations = () =>
     );
   }, axeSource);
 
-/** 두 폴더의 발행된 글 URL(태그 화면 제외). AI 글(`/ai-written/…`)이 이름 순으로 먼저 온다. */
-const postUrls = QA.pages.filter((path) => /^\/(blog|ai-written)\/(?!tags\/)[^/]+\/$/.test(path));
+/** 두 폴더의 발행된 글 URL(태그 화면·로그 제외). AI 글(`/ai-written/…`)이 이름 순으로 먼저 온다. */
+const postUrls = QA.pages.filter((path) =>
+  /^\/(blog|ai-written)\/(?!tags\/)(?!(posts|ai-written)\.log\/)[^/]+\/$/.test(path),
+);
 
-// AI 글 쪽 화면 네 곳(로그·글·태그 목록·태그별 글)은 dist를 도는 `pageUrls()`에 저절로 들어온다. 빌드가 그 화면을
-// 빠뜨려 검사 없이 지나가지 않도록 하나라도 없으면 실패로 남긴다.
+// AI 글 쪽 화면 다섯 곳(디렉터리 뷰·로그·글·태그 목록·태그별 글)은 dist를 도는 `pageUrls()`에 저절로 들어온다. 빌드가
+// 그 화면을 빠뜨려 검사 없이 지나가지 않도록 하나라도 없으면 실패로 남긴다.
 const aiWrittenPages = [
-  ['ai-written.log', (path) => path === '/ai-written/'],
-  ['AI 글', (path) => /^\/ai-written\/(?!tags\/)[^/]+\/$/.test(path)],
+  ['ai-written/ 디렉터리 뷰', (path) => path === '/ai-written/'],
+  ['ai-written.log', (path) => path === '/ai-written/ai-written.log/'],
+  ['AI 글', (path) => /^\/ai-written\/(?!tags\/)(?!ai-written\.log\/)[^/]+\/$/.test(path)],
   ['AI 글 태그 목록', (path) => path === '/ai-written/tags/'],
   ['AI 글 태그별 글', (path) => /^\/ai-written\/tags\/[^/]+\/$/.test(path)],
 ];

@@ -1,6 +1,7 @@
 /**
  * 글의 폴더(직접 쓴 글 `posts` | AI 글 `ai-written`). 파일이 놓인 콘텐츠 컬렉션이 곧 폴더이고(ADR 0005),
- * 주소·파일 경로·로그·태그 주소·고정 문구는 모두 여기 표에서 갈라진다. 폴더를 하나 더 두려면 표에 한 줄을 더한다.
+ * 주소·파일 경로·디렉터리 뷰·로그·태그 주소·고정 문구는 모두 여기 표에서 갈라진다. 폴더를 하나 더 두려면 표에 한 줄을
+ * 더한다. 루트(`/`)는 폴더가 아니라 표 밖의 `ROOT`다.
  */
 import { SITE } from '../site';
 
@@ -15,10 +16,10 @@ export interface FolderRoutes {
   kind: string;
   /** 글 주소 앞부분. 글 주소는 `<postBase><슬러그>/`. */
   postBase: string;
-  /** 그 폴더의 흐름 로그 탭: 이름(`posts.log`)과 주소. */
+  /** 그 폴더의 디렉터리 뷰: 이름(`posts/`)과 주소(`/blog/`). 루트의 폴더 줄과 경로 표시줄의 폴더 조각이 여기로 간다. */
+  dir: { name: string; url: string };
+  /** 그 폴더 안의 흐름 로그 파일: 이름(`posts.log`)과 주소(`/blog/posts.log/`). */
   log: { name: string; url: string };
-  /** 글 목록 화면: 이름(`posts/`)과 주소. 없는 폴더는 로그 탭이 그 역할을 한다(`null`). */
-  list: { name: string; url: string } | null;
   /** 태그 목록 주소. 태그별 글은 `<tags><태그>/`. */
   tags: string;
   /** 태그 화면의 파일 경로 앞부분(`tags/`, `ai-written/tags/`). 태그별 글은 `<tagPath><태그>`. */
@@ -33,8 +34,8 @@ export const FOLDER_ROUTES = {
     collection: 'blog',
     kind: '직접 쓴 글',
     postBase: '/blog/',
-    log: { name: 'posts.log', url: '/' },
-    list: { name: 'posts/', url: '/blog/' },
+    dir: { name: 'posts/', url: '/blog/' },
+    log: { name: 'posts.log', url: '/blog/posts.log/' },
     tags: '/blog/tags/',
     tagPath: 'tags/',
     notice: null,
@@ -43,13 +44,16 @@ export const FOLDER_ROUTES = {
     collection: 'ai-written',
     kind: 'AI 글',
     postBase: '/ai-written/',
-    log: { name: 'ai-written.log', url: '/ai-written/' },
-    list: null,
+    dir: { name: 'ai-written/', url: '/ai-written/' },
+    log: { name: 'ai-written.log', url: '/ai-written/ai-written.log/' },
     tags: '/ai-written/tags/',
     tagPath: 'ai-written/tags/',
     notice: SITE.aiWrittenNotice,
   },
 } as const satisfies Record<Folder, FolderRoutes>;
+
+/** 루트 디렉터리 뷰(홈): 탭·경로 표시줄에 보이는 이름 `/`와 주소. 폴더 줄은 `FOLDERS` 순서다. */
+export const ROOT = { name: '/', url: '/' } as const;
 
 /** 모든 폴더(`posts`, `ai-written` 순). */
 export const FOLDERS = Object.keys(FOLDER_ROUTES) as Folder[];

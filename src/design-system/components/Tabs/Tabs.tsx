@@ -4,17 +4,17 @@ import { cn } from '@/lib/utils';
 import { REDUCED_MOTION } from '../../media';
 import { fileName } from '../../stores/file.logic';
 import { $activeTab, $openTabs, closeTab, toTabRecord } from '../../stores/tabs';
-import { POSTS_LOG, addOrActivate, initialTabs, type TabFile } from '../../stores/tabs.logic';
+import { ROOT_TAB, addOrActivate, initialTabs, type TabFile } from '../../stores/tabs.logic';
 
 const TAB_ITEM = 'li[data-url]';
 const TAB_LINK = 'a[data-tab-link]';
 
-/** 서버 렌더링 스냅샷: `posts.log`와, 지금 화면의 파일이 있으면 그 탭(활성). 세션 탭은 하이드레이션 뒤에 그린다. */
+/** 서버 렌더링 스냅샷: 루트 탭과, 지금 화면의 파일이 있으면 그 탭(활성). 세션 탭은 하이드레이션 뒤에 그린다. */
 function serverState(current?: TabFile) {
   return current ? addOrActivate(initialTabs(), current) : initialTabs();
 }
 
-/** 글 파일(`.mdx`)은 파일 이름만, 나머지(`posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
+/** 글 파일(`.mdx`)은 파일 이름만, 나머지(`/`, `posts/`, `posts.log`, `tags/회고`, `404`)는 경로 그대로 보인다. */
 const tabLabel = (path: string) => (path.endsWith('.mdx') ? fileName(path) : path);
 
 /** `Tabs`의 props. */
@@ -31,7 +31,7 @@ export interface TabsProps {
   className?: string;
 }
 
-/** 탭 앞의 작은 코랄 기호. `posts.log`는 로그 줄, 글 파일은 접힌 모서리 종이(시안 `.log-glyph`·`.file-dot`). */
+/** 탭 앞의 작은 코랄 기호. 고정된 루트 탭은 줄 세 개, 나머지 파일은 접힌 모서리 종이(시안 `.log-glyph`·`.file-dot`). */
 function TabGlyph({ pinned }: { pinned: boolean }) {
   return pinned ? (
     <span
@@ -121,10 +121,10 @@ function useActiveTabInView(
 
 /**
  * 에디터 탭 표시줄. 탭 스토어를 구독해 열린 파일을 그린다. 탭은 링크라 JS 없이도 이동하고,
- * `posts.log`는 항상 첫 탭이며 닫기 버튼이 없다. 활성 탭은 코랄 윗선, 새로 열린 탭은 왼쪽에서 드러난다
+ * 루트 탭 `/`는 항상 첫 탭이며 닫기 버튼이 없다. 활성 탭은 코랄 윗선, 새로 열린 탭은 왼쪽에서 드러난다
  * (움직임 줄이기 설정에서는 바로 나타남). 닫으면 키보드 포커스는 닫은 뒤의 활성 탭 링크로 간다.
  *
- * 서버는 세션에 저장된 탭을 모르므로 서버 스냅샷은 `posts.log`와 지금 화면의 파일(`current`)로 두고,
+ * 서버는 세션에 저장된 탭을 모르므로 서버 스냅샷은 루트 탭과 지금 화면의 파일(`current`)로 두고,
  * 하이드레이션 뒤 저장된 탭을 그린다.
  */
 export function Tabs({
@@ -165,7 +165,7 @@ export function Tabs({
       <ul ref={listRef} className="m-0 flex list-none p-0">
         {files.map((file) => {
           const isActive = file.url === active;
-          const pinned = file.url === POSTS_LOG.url;
+          const pinned = file.url === ROOT_TAB.url;
           return (
             <li
               key={file.url}

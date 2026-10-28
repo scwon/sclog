@@ -1,32 +1,10 @@
 ---
-/** `ai-written.log`: AI 글만 쌓는 흐름 로그. 홈 `posts.log`와 같은 모양(연도별 글과 장 흐름)이다. */
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import FlowLog from '../../components/flow/FlowLog.astro';
-import { getPublishedPosts } from '../../utils/blog';
-import { listLines, loadFlows } from '../../utils/flow';
-import { FOLDER_ROUTES } from '../../utils/folder';
-
-const { log } = FOLDER_ROUTES['ai-written'];
-const posts = await getPublishedPosts('ai-written');
-const flows = await loadFlows(posts);
+/** `ai-written/`(`/ai-written/`): AI 글의 디렉터리 뷰. */
+import FolderDir from '../../components/dir/FolderDir.astro';
 ---
 
-<BaseLayout
-  title="AI 글"
-  description="AI가 처음부터 끝까지 혼자 쓴 글을 따로 모은 흐름 로그입니다."
-  file={{
-    title: log.name,
-    path: log.name,
-    url: log.url,
-    kind: 'log',
-    summary: `글 ${posts.length}편`,
-  }}
->
-  <FlowLog
-    lines={listLines(flows, {
-      title: log.name,
-      comment: 'AI가 처음부터 끝까지 혼자 쓴 글, 최신순',
-      steps: true,
-    })}
-  />
-</BaseLayout>
+<FolderDir
+  folder="ai-written"
+  title="ai-written/"
+  description="AI가 처음부터 끝까지 혼자 쓴 글의 목록입니다."
+/>

@@ -1,16 +1,17 @@
 /**
- * 이어 읽기(1440px). 글 가운데 장에서 홈으로 떠났다가 돌아오면 열기 요약 뒤 상태줄에 이어 읽기 버튼이 뜨고,
+ * 이어 읽기(1440px). 글 가운데 장에서 홈으로 떠났다가 탭으로 돌아오면 열기 요약 뒤 상태줄에 이어 읽기 버튼이 뜨고,
  * 누르면 그 장으로 가며 사라지는지 본다. 비운 읽기 기록에서 시작한다(`../scenario.mjs`).
  */
 /* global QA */
 import { scenario } from '../scenario.mjs';
 
-const { page, check, until, navigate, homePostUrl, shellKept, statusLine, done } =
+const { page, check, until, navigate, openPostsDir, dirPostUrl, shellKept, statusLine, done } =
   await scenario('resume');
 
-const postUrl = await homePostUrl();
+await openPostsDir();
+const postUrl = await dirPostUrl();
 await navigate('글 열기', () =>
-  page.click(`loc=css:.flow-link[href="${postUrl}"]`, { label: '글 열기' }),
+  page.click(`loc=css:.flow-file-link[href="${postUrl}"]`, { label: '글 열기' }),
 );
 const middleChapter = await page.evaluate(() => {
   const outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');
@@ -50,7 +51,9 @@ if (middleChapter) {
     return true;
   });
   await navigate('이어 읽기: 글 다시 열기', () =>
-    page.click(`loc=css:.flow-link[href="${postUrl}"]`, { label: '글 다시 열기' }),
+    page.click(`loc=css:nav[aria-label='열린 파일'] a[href="${postUrl}"]`, {
+      label: '글 탭으로 다시 열기',
+    }),
   );
   // 글이 막 열린 때는 열기 요약 동안이다(약 2.2초). 버튼이 뜬 시각은 아래에서 페이지 시계로 따로 본다.
   check(

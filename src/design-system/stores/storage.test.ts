@@ -88,7 +88,7 @@ describe('storage bindings when the storage is blocked', () => {
     expect($readingHistory.get().positions).toHaveLength(1);
   });
 
-  it('start the tabs with posts.log only', async () => {
+  it('start the tabs with the root tab only', async () => {
     blockStorage();
     const { $activeTab, $openTabs, openTab } = await import('./tabs');
     expect(Object.keys($openTabs.get())).toEqual(['/']);

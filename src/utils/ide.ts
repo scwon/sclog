@@ -10,7 +10,15 @@ import {
 } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
-import { FOLDER_ROUTES, FOLDERS, isFolder, postFolder, tagPathFolder, type Folder } from './folder';
+import {
+  FOLDER_ROUTES,
+  FOLDERS,
+  ROOT,
+  isFolder,
+  postFolder,
+  tagPathFolder,
+  type Folder,
+} from './folder';
 
 /** 창 틀에 넘기는 열린 파일 정보(에디터 루트 `data-file-*`의 원본). 개요는 따로 넘긴다. */
 export type IdeFile = Omit<EditorFile, 'outline'>;
@@ -88,12 +96,13 @@ export type DocEndLink =
   | { href: string; label: string; next?: never };
 
 /**
- * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더의 로그(`posts.log`·`ai-written.log`) → `맨 위로`.
- * 다음 파일이 없으면 그 줄만 뺀다.
+ * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더의 디렉터리 뷰(`posts/`·`ai-written/`) → 그 폴더의 로그
+ * (`posts.log`·`ai-written.log`) → `맨 위로`. 다음 파일이 없으면 그 줄만 뺀다.
  */
 export function docEndLinks(folder: Folder, next: TreeFile | null): DocEndLink[] {
-  const { log } = FOLDER_ROUTES[folder];
+  const { dir, log } = FOLDER_ROUTES[folder];
   const rest: DocEndLink[] = [
+    { href: dir.url, label: dir.name },
     { href: log.url, label: log.name },
     { href: '#editor', label: '맨 위로' },
   ];
@@ -118,21 +127,23 @@ export interface Crumb {
 }
 
 /**
- * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 로그, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
+ * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 디렉터리 뷰, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
  * 그 폴더의 태그 목록(`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
  */
 function sectionHref(label: string, upTo: string[]): string | undefined {
-  if (isFolder(label)) return FOLDER_ROUTES[label].log.url;
+  if (isFolder(label)) return FOLDER_ROUTES[label].dir.url;
   const folder = tagPathFolder(`${upTo.join('/')}/`);
   return folder && FOLDER_ROUTES[folder].tags;
 }
 
 /**
- * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `tags › 회고`,
- * `ai-written › tags › 회고`).
- * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 폴더 조각은 그 폴더의 로그, `tags` 조각은 그 폴더의 태그 목록으로 간다.
+ * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `posts`, `tags › 회고`,
+ * `ai-written › tags › 회고`). 루트는 `/` 한 조각이다.
+ * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 폴더 조각은 그 폴더의 디렉터리 뷰, `tags` 조각은 그 폴더의 태그
+ * 목록으로 간다.
  */
 export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
+  if (file.kind === 'root') return [{ label: ROOT.name, href: undefined, current: true }];
   const logFolder = FOLDERS.find((folder) => FOLDER_ROUTES[folder].log.name === file.path);
   const segments =
     file.kind === 'log' && logFolder

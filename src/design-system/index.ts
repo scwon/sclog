@@ -80,7 +80,7 @@ export {
 export { browserPlatform } from './components/Shell/shortcuts';
 export { keyLabel, type Platform } from './components/Shell/shortcuts.logic';
 export { $activeTab, $openTabs, closeTab, openTab, showTab } from './stores/tabs';
-export { POSTS_LOG, type TabEntry, type TabFile } from './stores/tabs.logic';
+export { ROOT_TAB, type TabEntry, type TabFile } from './stores/tabs.logic';
 export {
   fileName,
   type EditorFile,

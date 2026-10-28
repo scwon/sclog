@@ -1,6 +1,6 @@
 /**
- * AI 글 쪽 이동(1440px). 홈 아래 AI 글 칸의 나가는 줄 → `ai-written.log` → AI 글(고정 문구, 경로 표시줄
- * `ai-written`) → 다음 파일(있으면 AI 글) → 글 끝 `ai-written.log` 줄로 돌아오기를 화면 이동(`ClientRouter`)으로
+ * AI 글 쪽 이동(1440px). 루트의 `ai-written/` 줄 → 디렉터리 뷰 → `ai-written.log` 줄 → 로그 → AI 글(고정 문구,
+ * 경로 표시줄 `ai-written`) → 다음 파일(있으면 AI 글) → 글 끝 `ai-written.log` 줄로 돌아오기를 화면 이동(`ClientRouter`)으로
  * 거치며 내내 창 틀이 같은 요소로 남는지 본다. 이어서 AI 글을 끝까지 읽은 기록이 새로고침 뒤에도 남고(발행 글
  * 정리 `keepPublishedHistory`가 지우지 않고) 프로필의 `N편 읽음`에 세어지는지 본다. 시작 상태는 `../scenario.mjs`.
  */
@@ -21,7 +21,8 @@ const {
   done,
 } = await scenario('ai-written');
 
-const AI_POST = /^\/ai-written\/(?!tags\/)[^/]+\/$/;
+const AI_POST = /^\/ai-written\/(?!tags\/)(?!ai-written\.log\/)[^/]+\/$/;
+const AI_LOG = '/ai-written/ai-written.log/';
 const NOTICE = 'AI가 작성한 글입니다.';
 
 /** 에디터 안의 그 선택자 링크들의 `href`. */
@@ -56,12 +57,18 @@ const checkAiPost = async (label) => {
   return file.url;
 };
 
-// 1. 홈 아래 AI 글 칸의 나가는 줄.
-const exit = "#editor a.flow-entry-link[href='/ai-written/']";
-check('홈에 ai-written.log 나가는 줄', (await hrefs(exit)).length === 1);
-await navigate('홈 → ai-written.log', () => clickLink(exit, '나가는 줄'));
-check('ai-written.log 열림', (await editor()).url === '/ai-written/');
-check('창 틀 유지(홈 → ai-written.log)', await shellKept());
+// 1. 루트의 `ai-written/` 줄 → 디렉터리 뷰 → 그 안의 `ai-written.log` 줄.
+const folderLine = "#editor a.flow-entry-link[href='/ai-written/']";
+check('루트에 ai-written/ 줄', (await hrefs(folderLine)).length === 1);
+await navigate('루트 → ai-written/', () => clickLink(folderLine, 'ai-written/ 줄'));
+const dir = await editor();
+check('ai-written/ 디렉터리 뷰 열림', dir.url === '/ai-written/' && dir.kind === 'dir', dir.url);
+check('창 틀 유지(루트 → ai-written/)', await shellKept());
+const logLine = `#editor a.flow-entry-link[href='${AI_LOG}']`;
+check('ai-written/ 안에 ai-written.log 줄', (await hrefs(logLine)).length === 1);
+await navigate('ai-written/ → ai-written.log', () => clickLink(logLine, 'ai-written.log 줄'));
+check('ai-written.log 열림', (await editor()).url === AI_LOG);
+check('창 틀 유지(ai-written/ → ai-written.log)', await shellKept());
 
 // 2. ai-written.log에서 AI 글 열기.
 const firstPost = (await hrefs('#editor a.flow-link')).find((href) => AI_POST.test(href ?? ''));
@@ -88,16 +95,18 @@ if (next[0]) {
 }
 
 // 4. 글 끝 이동 줄의 로그는 `ai-written.log`다.
-const backLink = "#editor nav[aria-label='글 끝 이동'] a.doc-end-link[href='/ai-written/']";
+const backLink = `#editor nav[aria-label='글 끝 이동'] a.doc-end-link[href='${AI_LOG}']`;
 const backLabel = await page.evaluate(
   (css) => document.querySelector(css)?.textContent?.trim() ?? '',
   backLink,
 );
 check('글 끝에 ai-written.log 줄', backLabel === 'ai-written.log', backLabel);
-const postsLog = await hrefs("#editor nav[aria-label='글 끝 이동'] a.doc-end-link[href='/']");
+const postsLog = await hrefs(
+  "#editor nav[aria-label='글 끝 이동'] a.doc-end-link[href='/blog/posts.log/']",
+);
 check('글 끝에 posts.log 줄 없음', postsLog.length === 0);
 await navigate('AI 글 끝 → ai-written.log', () => clickLink(backLink, '글 끝 ai-written.log'));
-check('ai-written.log로 돌아옴', (await editor()).url === '/ai-written/');
+check('ai-written.log로 돌아옴', (await editor()).url === AI_LOG);
 check('창 틀 유지(글 끝 → ai-written.log)', await shellKept());
 
 // 5. 읽기 기록: AI 글을 끝까지 읽은 기록이 새로고침 뒤에도 남고 프로필에서 세어진다.

@@ -85,14 +85,16 @@ describe('화면 폭 경계', () => {
 });
 
 describe('viewForFile (파일을 열었을 때의 패널 화면)', () => {
-  it('shows the profile on the home log and the explorer on a post', () => {
-    expect(viewForFile('explorer', 'log')).toBe('profile');
+  it('shows the profile on the root and the explorer on a post', () => {
+    expect(viewForFile('explorer', 'root')).toBe('profile');
     expect(viewForFile('profile', 'post')).toBe('explorer');
   });
 
-  it('keeps the current view on other pages', () => {
+  it('keeps the current view on other pages (directory views, logs, tags)', () => {
     expect(viewForFile('profile', 'page')).toBe('profile');
     expect(viewForFile('explorer', 'page')).toBe('explorer');
+    expect(viewForFile('explorer', 'dir')).toBe('explorer');
+    expect(viewForFile('explorer', 'log')).toBe('explorer');
   });
 
   it('keeps the search view whatever file opens', () => {
@@ -134,18 +136,18 @@ describe('startView (새로고침 뒤 처음 패널 화면)', () => {
   });
 
   it('applies the file rule over the restored view', () => {
-    expect(startView('explorer', 'log')).toBe('profile');
+    expect(startView('explorer', 'root')).toBe('profile');
     expect(startView('profile', 'post')).toBe('explorer');
   });
 
   it('keeps a restored search view on any file', () => {
     expect(startView('search', 'post')).toBe('search');
-    expect(startView('search', 'log')).toBe('search');
+    expect(startView('search', 'root')).toBe('search');
   });
 
   it('starts from the explorer when nothing is saved', () => {
     expect(startView(null, 'page')).toBe('explorer');
-    expect(startView(null, 'log')).toBe('profile');
+    expect(startView(null, 'root')).toBe('profile');
     expect(startView(null)).toBe('explorer');
   });
 });

@@ -47,10 +47,10 @@ describe.skipIf(!built)('build output', () => {
     it.each(
       posts.map(({ url, html, path }) => ({ url, html, folder: path.split('/')[0] as Folder })),
     )(
-      'ends $url with the next file line (only when the folder has a newer post), the $folder log, 맨 위로',
+      'ends $url with the next file line (only when the folder has a newer post), the $folder directory view, its log, 맨 위로',
       ({ url, html, folder }) => {
         const next = nextFile(treeOf(folder), url);
-        const { log } = FOLDER_ROUTES[folder];
+        const { dir, log } = FOLDER_ROUTES[folder];
         const nextLine = next
           ? [
               {
@@ -63,6 +63,7 @@ describe.skipIf(!built)('build output', () => {
           : [];
         expect(docEndLines(html)).toEqual([
           ...nextLine,
+          { href: dir.url, label: dir.name, name: undefined, mark: false },
           { href: log.url, label: log.name, name: undefined, mark: false },
           { href: '#editor', label: '맨 위로', name: undefined, mark: false },
         ]);
