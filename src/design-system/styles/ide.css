@@ -322,95 +322,6 @@
     font: 400 12px/28px var(--family-mono);
   }
 
-  /* 파일 줄(디렉터리 뷰): 레일의 작은 점 + 날짜 파일명 제목 ---- 읽는 시간 · 읽음 꼬리표 */
-  .flow-file {
-    grid-template-columns: var(--flow-gutter) var(--flow-track) minmax(0, 1fr) auto auto;
-    column-gap: 14px;
-    align-items: center;
-    height: 32px;
-
-    &::before {
-      content: '';
-      position: absolute;
-      z-index: 1;
-      top: 13px;
-      left: calc(var(--flow-rail-x) - 3px);
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: var(--border-strong);
-      box-shadow: 0 0 0 3px var(--surface);
-    }
-
-    &:is(:focus-within, :hover)::before {
-      background-color: var(--accent);
-    }
-  }
-
-  .flow-file-link {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    min-width: 0;
-    color: var(--text-soft);
-    font: 400 12.5px/32px var(--family-mono);
-    text-decoration: none;
-    white-space: nowrap;
-
-    & time {
-      flex: none;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    &:focus-visible {
-      outline-offset: -2px;
-    }
-  }
-
-  .flow-file-name {
-    flex: none;
-    color: var(--text);
-    transition:
-      color var(--motion-fast) var(--motion-easing),
-      text-decoration-color var(--motion-fast) var(--motion-easing);
-
-    .flow-file-link:hover & {
-      text-decoration: underline;
-      text-decoration-color: var(--accent);
-      text-underline-offset: 3px;
-    }
-
-    @media (max-width: 759px) {
-      display: none;
-    }
-  }
-
-  .flow-file-title {
-    overflow: hidden;
-    font-family: var(--family-sans);
-    text-overflow: ellipsis;
-  }
-
-  .flow-file-meta,
-  .flow-file-mark {
-    color: var(--text-muted);
-    font: 400 12px/32px var(--family-mono);
-    white-space: nowrap;
-  }
-
-  .flow-file-meta {
-    grid-column: 4;
-
-    @media (max-width: 759px) {
-      display: none;
-    }
-  }
-
-  .flow-file-mark {
-    grid-column: 5;
-  }
-
   /* 글 로그 줄: 코랄 노드 + 날짜 [분류] 파일명 + 카드 */
   .flow-log {
     padding-top: 10px;
@@ -1289,7 +1200,7 @@
   }
 
   /* 읽음 꼬리표(페이지 스크립트가 채움): 읽은 글은 흐린 글자, 읽는 중인 글은 강조 글자 */
-  :is(.doc-end-mark, .flow-log-mark, .flow-file-mark) {
+  :is(.doc-end-mark, .flow-log-mark) {
     &[data-mark='read'] {
       color: var(--text-muted);
     }
@@ -1328,7 +1239,7 @@
   }
 }
 
-/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수`, 루트·디렉터리 뷰의 `posts/ ---- 글 수`·`posts.log ---- 흐름 로그` */
+/* 링크 줄: 태그 목록·404의 `#태그 ---- 글 수`, 루트의 `posts/ ---- 글 수` */
 @layer components {
   .flow-entry-link {
     transition: color var(--motion-fast) var(--motion-easing);

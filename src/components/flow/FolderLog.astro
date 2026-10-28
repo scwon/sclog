@@ -1,7 +1,7 @@
 ---
 /**
- * 한 폴더의 흐름 로그 파일(`posts/posts.log`·`ai-written/ai-written.log`): 그 폴더의 글을 연도별로 쌓고 글마다 장 흐름을
- * 잇는다. 이름·주소는 폴더 표(`FOLDER_ROUTES`)에서 읽는다.
+ * 폴더 화면(`posts/`·`ai-written/`): 그 폴더의 흐름 로그. 글을 연도별로 쌓고 글마다 장 흐름을 잇는다.
+ * 이름·주소는 폴더 표(`FOLDER_ROUTES`)에서 읽는다. 파일 종류는 `dir`이라 열어도 패널은 그대로다.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FlowLog from './FlowLog.astro';
@@ -13,12 +13,10 @@ interface Props {
   folder: Folder;
   title: string;
   description: string;
-  /** 2번 줄 주석. */
-  comment: string;
 }
 
-const { folder, title, description, comment } = Astro.props;
-const { log } = FOLDER_ROUTES[folder];
+const { folder, title, description } = Astro.props;
+const { dir, kind } = FOLDER_ROUTES[folder];
 const posts = await getPublishedPosts(folder);
 const flows = await loadFlows(posts);
 ---
@@ -27,12 +25,18 @@ const flows = await loadFlows(posts);
   title={title}
   description={description}
   file={{
-    title: log.name,
-    path: log.name,
-    url: log.url,
-    kind: 'log',
+    title: dir.name,
+    path: dir.name,
+    url: dir.url,
+    kind: 'dir',
     summary: `글 ${posts.length}편`,
   }}
 >
-  <FlowLog lines={listLines(flows, { title: log.name, comment, steps: true })} />
+  <FlowLog
+    lines={listLines(flows, {
+      title: dir.name,
+      comment: `${kind} ${posts.length}편, 최신순`,
+      steps: true,
+    })}
+  />
 </BaseLayout>

@@ -94,11 +94,10 @@ describe('viewForFile (파일을 열었을 때의 패널 화면)', () => {
     expect(viewForFile('profile', 'page')).toBe('profile');
     expect(viewForFile('explorer', 'page')).toBe('explorer');
     expect(viewForFile('explorer', 'dir')).toBe('explorer');
-    expect(viewForFile('explorer', 'log')).toBe('explorer');
   });
 
   it('keeps the search view whatever file opens', () => {
-    expect(viewForFile('search', 'log')).toBe('search');
+    expect(viewForFile('search', 'dir')).toBe('search');
     expect(viewForFile('search', 'post')).toBe('search');
     expect(viewForFile('search', 'page')).toBe('search');
   });

@@ -2,38 +2,24 @@ import { describe, expect, it } from 'vitest';
 import type { TreeRoot } from './Shell';
 import { nextFile, treeUrls } from './tree.logic';
 
-/**
- * 탐색기 트리 고정값: 루트 폴더(`posts` 먼저, `ai-written` 다음), 그 안의 연도 폴더는 최신 연도 먼저,
- * 폴더 안의 글도 새 글 먼저.
- */
+/** 탐색기 트리 고정값: 루트 폴더(`posts` 먼저, `ai-written` 다음), 폴더 안의 글은 새 글 먼저(연도로 나누지 않음). */
 const tree: TreeRoot[] = [
   {
     name: 'posts',
-    years: [
-      {
-        year: '2025',
-        files: [
-          { url: '/blog/c/', title: '셋째 글', path: 'posts/2025/c.mdx' },
-          { url: '/blog/b/', title: '둘째 글', path: 'posts/2025/b.mdx' },
-          { url: '/blog/a/', title: '첫 글', path: 'posts/2025/a.mdx' },
-        ],
-      },
-      {
-        year: '2024',
-        files: [{ url: '/blog/old/', title: '지난해 글', path: 'posts/2024/old.mdx' }],
-      },
+    url: '/blog/',
+    files: [
+      { url: '/blog/c/', title: '셋째 글', path: 'posts/2025/c.mdx' },
+      { url: '/blog/b/', title: '둘째 글', path: 'posts/2025/b.mdx' },
+      { url: '/blog/a/', title: '첫 글', path: 'posts/2025/a.mdx' },
+      { url: '/blog/old/', title: '지난해 글', path: 'posts/2024/old.mdx' },
     ],
   },
   {
     name: 'ai-written',
-    years: [
-      {
-        year: '2025',
-        files: [
-          { url: '/ai-written/y/', title: 'AI 둘째 글', path: 'ai-written/2025/y.mdx' },
-          { url: '/ai-written/x/', title: 'AI 첫 글', path: 'ai-written/2025/x.mdx' },
-        ],
-      },
+    url: '/ai-written/',
+    files: [
+      { url: '/ai-written/y/', title: 'AI 둘째 글', path: 'ai-written/2025/y.mdx' },
+      { url: '/ai-written/x/', title: 'AI 첫 글', path: 'ai-written/2025/x.mdx' },
     ],
   },
 ];
@@ -52,15 +38,15 @@ describe('nextFile (다음 파일)', () => {
     expect(nextFile(tree, '/blog/c/')).toBeNull();
   });
 
-  it('does not cross into the next folder', () => {
-    expect(nextFile(tree, '/blog/old/')).toBeNull();
+  it('crosses years inside a folder: the newest post of last year continues with the oldest of this year', () => {
+    expect(nextFile(tree, '/blog/old/')?.url).toBe('/blog/a/');
   });
 
   it('continues an AI-written post with an AI-written post', () => {
     expect(nextFile(tree, '/ai-written/x/')?.url).toBe('/ai-written/y/');
   });
 
-  it('does not cross into the next root folder, even with the same year', () => {
+  it('does not cross into the next root folder', () => {
     expect(nextFile(tree, '/ai-written/y/')).toBeNull();
     expect(nextFile(tree, '/blog/c/')).toBeNull();
   });
@@ -69,12 +55,8 @@ describe('nextFile (다음 파일)', () => {
     const single: TreeRoot[] = [
       {
         name: 'posts',
-        years: [
-          {
-            year: '2023',
-            files: [{ url: '/blog/only/', title: '한 편', path: 'posts/2023/only.mdx' }],
-          },
-        ],
+        url: '/blog/',
+        files: [{ url: '/blog/only/', title: '한 편', path: 'posts/2023/only.mdx' }],
       },
     ];
     expect(nextFile(single, '/blog/only/')).toBeNull();

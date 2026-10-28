@@ -28,29 +28,25 @@ describe.skipIf(!built)('build output', () => {
       }))
       .filter(({ kind }) => kind === 'post');
 
-    // 글 페이지들로 폴더(`posts`·`ai-written`)마다 탐색기 트리를 다시 짓는다: `<폴더>/<연도>/…`의 연도 폴더,
-    // 폴더 안은 새 글 먼저.
-    const treeOf = (folder: string): TreeRoot[] => {
-      const inFolder = posts.filter(({ path }) => path.split('/')[0] === folder);
-      const years = [...new Set(inFolder.map(({ path }) => path.split('/')[1]))]
-        .toSorted((a, b) => b.localeCompare(a))
-        .map((year) => ({
-          year,
-          files: inFolder
-            .filter(({ path }) => path.split('/')[1] === year)
-            .toSorted((a, b) => b.published.localeCompare(a.published))
-            .map(({ url, title, path }) => ({ url, title, path })),
-        }));
-      return [{ name: folder, years }];
-    };
+    // 글 페이지들로 폴더(`posts`·`ai-written`)마다 탐색기 트리를 다시 짓는다: 폴더 안은 새 글 먼저, 연도 없음.
+    const treeOf = (folder: string): TreeRoot[] => [
+      {
+        name: folder,
+        url: FOLDER_ROUTES[folder as Folder].dir.url,
+        files: posts
+          .filter(({ path }) => path.split('/')[0] === folder)
+          .toSorted((a, b) => b.published.localeCompare(a.published))
+          .map(({ url, title, path }) => ({ url, title, path })),
+      },
+    ];
 
     it.each(
       posts.map(({ url, html, path }) => ({ url, html, folder: path.split('/')[0] as Folder })),
     )(
-      'ends $url with the next file line (only when the folder has a newer post), the $folder directory view, its log, 맨 위로',
+      'ends $url with the next file line (only when the folder has a newer post), the $folder folder screen, 맨 위로',
       ({ url, html, folder }) => {
         const next = nextFile(treeOf(folder), url);
-        const { dir, log } = FOLDER_ROUTES[folder];
+        const { dir } = FOLDER_ROUTES[folder];
         const nextLine = next
           ? [
               {
@@ -64,7 +60,6 @@ describe.skipIf(!built)('build output', () => {
         expect(docEndLines(html)).toEqual([
           ...nextLine,
           { href: dir.url, label: dir.name, name: undefined, mark: false },
-          { href: log.url, label: log.name, name: undefined, mark: false },
           { href: '#editor', label: '맨 위로', name: undefined, mark: false },
         ]);
       },

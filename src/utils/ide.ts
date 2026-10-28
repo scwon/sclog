@@ -6,7 +6,6 @@ import {
   type OutlineItem,
   type TreeFile,
   type TreeRoot,
-  type TreeYear,
 } from '@/design-system';
 import type { BlogPost } from './blog';
 import { getReadingTime } from './blog';
@@ -64,30 +63,21 @@ export function postFile(post: BlogPost): IdeFile {
   };
 }
 
-/** 한 폴더 글의 연도 폴더(최신 연도 먼저)와 그 안의 글 파일(넘긴 순서 그대로). */
-function yearFolders(posts: BlogPost[]): TreeYear[] {
-  const years = new Map<string, BlogPost[]>();
-  for (const post of posts) years.set(postYear(post), [...(years.get(postYear(post)) ?? []), post]);
-  return [...years.entries()]
-    .toSorted(([a], [b]) => b.localeCompare(a))
-    .map(([year, list]) => ({
-      year,
-      files: list.map((post) => {
-        const { url, title, path } = postFile(post);
-        return { url, title, path };
-      }),
-    }));
-}
-
 /**
- * 탐색기 트리: 루트 폴더(`posts` 먼저, `ai-written` 다음)와 그 안의 연도 폴더(최신 연도 먼저)·글 파일.
- * 글이 한 편도 없는 루트는 넣지 않는다. 글은 새 글 먼저(발행 글 조회 순서)로 넘긴다.
+ * 탐색기 트리: 루트 폴더(`posts` 먼저, `ai-written` 다음)마다 그 폴더 화면의 주소와 글 파일(새 글 먼저, 발행 글 조회
+ * 순서). 연도로 나누지 않는다. 글이 한 편도 없는 루트는 넣지 않는다.
  */
 export function buildTree(posts: BlogPost[]): TreeRoot[] {
   return FOLDERS.map((name) => ({
     name,
-    years: yearFolders(posts.filter((post) => postFolder(post) === name)),
-  })).filter((root) => root.years.length > 0);
+    url: FOLDER_ROUTES[name].dir.url,
+    files: posts
+      .filter((post) => postFolder(post) === name)
+      .map((post) => {
+        const { url, title, path } = postFile(post);
+        return { url, title, path };
+      }),
+  })).filter((root) => root.files.length > 0);
 }
 
 /** 글 끝 이동 줄 하나. 다음 파일 줄만 메모(글 제목)와 접근 가능한 이름이 있다. */
@@ -96,14 +86,13 @@ export type DocEndLink =
   | { href: string; label: string; next?: never };
 
 /**
- * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더의 디렉터리 뷰(`posts/`·`ai-written/`) → 그 폴더의 로그
- * (`posts.log`·`ai-written.log`) → `맨 위로`. 다음 파일이 없으면 그 줄만 뺀다.
+ * 글 끝 이동 줄: 다음 파일(`{slug}.mdx →` + 글 제목) → 그 폴더 화면(`posts/`·`ai-written/`) → `맨 위로`.
+ * 다음 파일이 없으면 그 줄만 뺀다.
  */
 export function docEndLinks(folder: Folder, next: TreeFile | null): DocEndLink[] {
-  const { dir, log } = FOLDER_ROUTES[folder];
+  const { dir } = FOLDER_ROUTES[folder];
   const rest: DocEndLink[] = [
     { href: dir.url, label: dir.name },
-    { href: log.url, label: log.name },
     { href: '#editor', label: '맨 위로' },
   ];
   if (!next) return rest;
@@ -127,7 +116,7 @@ export interface Crumb {
 }
 
 /**
- * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더의 디렉터리 뷰, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
+ * 경로 표시줄 중간 조각의 링크: 폴더면 그 폴더 화면, 그 조각까지의 경로가 어느 폴더의 태그 경로 앞부분이면
  * 그 폴더의 태그 목록(`tags/…`는 `posts`, `ai-written/tags/…`는 `ai-written`), 나머지는 없음.
  */
 function sectionHref(label: string, upTo: string[]): string | undefined {
@@ -138,17 +127,11 @@ function sectionHref(label: string, upTo: string[]): string | undefined {
 
 /**
  * 경로 표시줄: 파일 경로를 `/`로 나눈 조각(`posts › 2023 › x.mdx`, `ai-written › 2026 › x.mdx`, `posts`, `tags › 회고`,
- * `ai-written › tags › 회고`). 루트는 `/` 한 조각이다.
- * 로그 탭은 그 폴더 아래에 둔다(`posts › posts.log`). 폴더 조각은 그 폴더의 디렉터리 뷰, `tags` 조각은 그 폴더의 태그
- * 목록으로 간다.
+ * `ai-written › tags › 회고`). 루트는 `/` 한 조각이다. 폴더 조각은 그 폴더 화면, `tags` 조각은 그 폴더의 태그 목록으로 간다.
  */
 export function fileCrumbs(file: Pick<IdeFile, 'path' | 'kind'>): Crumb[] {
   if (file.kind === 'root') return [{ label: ROOT.name, href: undefined, current: true }];
-  const logFolder = FOLDERS.find((folder) => FOLDER_ROUTES[folder].log.name === file.path);
-  const segments =
-    file.kind === 'log' && logFolder
-      ? [logFolder, file.path]
-      : file.path.split('/').filter(Boolean);
+  const segments = file.path.split('/').filter(Boolean);
   return segments.map((label, index) => {
     const current = index === segments.length - 1;
     return {

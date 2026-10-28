@@ -7,45 +7,26 @@ import {
 } from './palette.logic';
 import { SHORTCUT_KEYS } from './shortcuts.logic';
 
-/** 탐색기 트리 props: 루트 폴더(`posts` 먼저), 그 안은 최신 먼저. 시험용 글이다. */
+/** 탐색기 트리 props: 루트 폴더(`posts` 먼저), 그 안은 최신 먼저(연도로 나누지 않음). 시험용 글이다. */
 const tree = [
   {
     name: 'posts',
-    years: [
+    url: '/blog/',
+    files: [
+      { url: '/blog/react-hooks/', title: '훅을 다시 읽다', path: 'posts/2024/react-hooks.mdx' },
+      { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
       {
-        year: '2024',
-        files: [
-          {
-            url: '/blog/react-hooks/',
-            title: '훅을 다시 읽다',
-            path: 'posts/2024/react-hooks.mdx',
-          },
-          { url: '/blog/hello/', title: '개발자의 React 회고', path: 'posts/2024/hello.mdx' },
-        ],
+        url: '/blog/pro-developer-2023-days/',
+        title: '프로 개발자 2023일 후기',
+        path: 'posts/2023/pro-developer-2023-days.mdx',
       },
-      {
-        year: '2023',
-        files: [
-          {
-            url: '/blog/pro-developer-2023-days/',
-            title: '프로 개발자 2023일 후기',
-            path: 'posts/2023/pro-developer-2023-days.mdx',
-          },
-          { url: '/blog/my-react/', title: '나의 첫 글', path: 'posts/2023/my-react.mdx' },
-        ],
-      },
+      { url: '/blog/my-react/', title: '나의 첫 글', path: 'posts/2023/my-react.mdx' },
     ],
   },
   {
     name: 'ai-written',
-    years: [
-      {
-        year: '2026',
-        files: [
-          { url: '/ai-written/agent/', title: 'AI가 쓴 글', path: 'ai-written/2026/agent.mdx' },
-        ],
-      },
-    ],
+    url: '/ai-written/',
+    files: [{ url: '/ai-written/agent/', title: 'AI가 쓴 글', path: 'ai-written/2026/agent.mdx' }],
   },
 ];
 

@@ -62,16 +62,16 @@ describe('openLog', () => {
   it('uses the page summary when there is no size or reading time', () => {
     const file = parseEditorFile(
       {
-        fileTitle: 'posts.log',
-        filePath: 'posts.log',
-        fileUrl: '/blog/posts.log/',
-        fileKind: 'log',
+        fileTitle: 'posts/',
+        filePath: 'posts/',
+        fileUrl: '/blog/',
+        fileKind: 'dir',
         fileSummary: '글 1편',
       },
       null,
     );
     expect(file && openLog(file)).toEqual({
-      command: '❯ open posts.log',
+      command: '❯ open posts/',
       result: '✓ 열림 · 글 1편',
     });
   });
@@ -98,7 +98,7 @@ describe('fileName', () => {
   });
 
   it('keeps a path without a folder as it is', () => {
-    expect(fileName('posts.log')).toBe('posts.log');
+    expect(fileName('404.log')).toBe('404.log');
     expect(fileName('404')).toBe('404');
   });
 });

@@ -43,36 +43,22 @@ describe('buildTree (탐색기 트리)', () => {
     makePost('blog', 'retro', '2023-04-30'),
   ];
 
-  it('puts the posts root first, then ai-written, each with its newest year first', () => {
+  it('puts the posts root first, then ai-written, each flat with the newest post first', () => {
     expect(buildTree(posts)).toEqual([
       {
         name: 'posts',
-        years: [
-          {
-            year: '2025',
-            files: [{ url: '/blog/renewal/', title: 'renewal', path: 'posts/2025/renewal.mdx' }],
-          },
-          {
-            year: '2023',
-            files: [{ url: '/blog/retro/', title: 'retro', path: 'posts/2023/retro.mdx' }],
-          },
+        url: '/blog/',
+        files: [
+          { url: '/blog/renewal/', title: 'renewal', path: 'posts/2025/renewal.mdx' },
+          { url: '/blog/retro/', title: 'retro', path: 'posts/2023/retro.mdx' },
         ],
       },
       {
         name: 'ai-written',
-        years: [
-          {
-            year: '2026',
-            files: [
-              { url: '/ai-written/ai-new/', title: 'ai-new', path: 'ai-written/2026/ai-new.mdx' },
-            ],
-          },
-          {
-            year: '2025',
-            files: [
-              { url: '/ai-written/ai-old/', title: 'ai-old', path: 'ai-written/2025/ai-old.mdx' },
-            ],
-          },
+        url: '/ai-written/',
+        files: [
+          { url: '/ai-written/ai-new/', title: 'ai-new', path: 'ai-written/2026/ai-new.mdx' },
+          { url: '/ai-written/ai-old/', title: 'ai-old', path: 'ai-written/2025/ai-old.mdx' },
         ],
       },
     ]);
@@ -84,7 +70,7 @@ describe('buildTree (탐색기 트리)', () => {
 });
 
 describe('docEndLinks (글 끝 이동 줄)', () => {
-  it('puts the next file first, then posts/, posts.log and 맨 위로', () => {
+  it('puts the next file first, then posts/ and 맨 위로', () => {
     const links = docEndLinks('posts', {
       url: '/blog/newer-post/',
       title: '다음 글 제목',
@@ -99,7 +85,6 @@ describe('docEndLinks (글 끝 이동 줄)', () => {
         next: true,
       },
       { href: '/blog/', label: 'posts/' },
-      { href: '/blog/posts.log/', label: 'posts.log' },
       { href: '#editor', label: '맨 위로' },
     ]);
   });
@@ -107,15 +92,13 @@ describe('docEndLinks (글 끝 이동 줄)', () => {
   it('drops only the next file line when there is no next file', () => {
     expect(docEndLinks('posts', null)).toEqual([
       { href: '/blog/', label: 'posts/' },
-      { href: '/blog/posts.log/', label: 'posts.log' },
       { href: '#editor', label: '맨 위로' },
     ]);
   });
 
-  it('returns to ai-written/ and ai-written.log inside it from an AI post', () => {
+  it('returns to ai-written/ from an AI post', () => {
     expect(docEndLinks('ai-written', null)).toEqual([
       { href: '/ai-written/', label: 'ai-written/' },
-      { href: '/ai-written/ai-written.log/', label: 'ai-written.log' },
       { href: '#editor', label: '맨 위로' },
     ]);
   });
@@ -128,7 +111,7 @@ describe('fileCrumbs (경로 표시줄)', () => {
     ]);
   });
 
-  it('shows a directory view as its folder segment', () => {
+  it('shows a folder screen as its folder segment', () => {
     expect(fileCrumbs({ path: 'posts/', kind: 'dir' })).toEqual([
       { label: 'posts', href: undefined, current: true },
     ]);
@@ -137,7 +120,7 @@ describe('fileCrumbs (경로 표시줄)', () => {
     ]);
   });
 
-  it('links the posts segment of a post path to the posts/ directory view', () => {
+  it('links the posts segment of a post path to the posts/ folder screen', () => {
     expect(fileCrumbs({ path: 'posts/2023/retro.mdx', kind: 'post' })).toEqual([
       { label: 'posts', href: '/blog/', current: false },
       { label: '2023', href: undefined, current: false },
@@ -145,22 +128,11 @@ describe('fileCrumbs (경로 표시줄)', () => {
     ]);
   });
 
-  it('links the ai-written segment of an AI post path to the ai-written/ directory view', () => {
+  it('links the ai-written segment of an AI post path to the ai-written/ folder screen', () => {
     expect(fileCrumbs({ path: 'ai-written/2026/retro.mdx', kind: 'post' })).toEqual([
       { label: 'ai-written', href: '/ai-written/', current: false },
       { label: '2026', href: undefined, current: false },
       { label: 'retro.mdx', href: undefined, current: true },
-    ]);
-  });
-
-  it('puts a log tab under its folder: posts › posts.log, ai-written › ai-written.log', () => {
-    expect(fileCrumbs({ path: 'posts.log', kind: 'log' })).toEqual([
-      { label: 'posts', href: '/blog/', current: false },
-      { label: 'posts.log', href: undefined, current: true },
-    ]);
-    expect(fileCrumbs({ path: 'ai-written.log', kind: 'log' })).toEqual([
-      { label: 'ai-written', href: '/ai-written/', current: false },
-      { label: 'ai-written.log', href: undefined, current: true },
     ]);
   });
 

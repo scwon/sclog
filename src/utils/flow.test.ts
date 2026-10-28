@@ -3,7 +3,7 @@ import type { BlogPost } from './blog';
 
 vi.mock('astro:content', () => ({ render: async () => ({ headings: [] }) }));
 
-const { dirLines, flowPost, listLines, rootLines } = await import('./flow');
+const { flowPost, listLines, rootLines } = await import('./flow');
 
 function makePost(collection: 'blog' | 'ai-written', id: string, pubDate: string): BlogPost {
   return {
@@ -42,8 +42,6 @@ function shape(lines: ReturnType<typeof listLines>) {
         return `folded ${line.post.id}`;
       case 'entry':
         return `${line.no} entry ${line.label} -> ${line.href} (${line.note})${line.heading ? ' heading' : ''}`;
-      case 'file':
-        return `${line.no} file ${line.date} ${line.name} ${line.title} -> ${line.href}`;
       case 'end':
         return `${line.no} end ${line.label}`;
       default:
@@ -60,14 +58,14 @@ describe('flowPost', () => {
   });
 });
 
-describe('listLines with steps (ai-written.log)', () => {
+describe('listLines with steps (폴더 화면 ai-written/)', () => {
   it('stacks AI posts by year with their chapter flow and counts them in the end line', () => {
     const lines = listLines(
       [entry('ai-written', 'b', '2026-10-01', 2), entry('ai-written', 'a', '2025-01-01', 0)],
-      { title: 'ai-written.log', comment: 'AI가 처음부터 끝까지 쓴 글', steps: true },
+      { title: 'ai-written/', comment: 'AI가 처음부터 끝까지 쓴 글', steps: true },
     );
     expect(shape(lines)).toEqual([
-      '1 banner ai-written.log',
+      '1 banner ai-written/',
       '2 comment AI가 처음부터 끝까지 쓴 글',
       '3 blank',
       '4 dir 2026 (1)',
@@ -119,44 +117,5 @@ describe('rootLines (루트 디렉터리 뷰)', () => {
   it('ends with 폴더 1개 when only posts/ is given', () => {
     const lines = rootLines(site, [{ href: '/blog/', label: 'posts/', note: '글 1편' }]);
     expect(shape(lines).slice(3)).toEqual(['4 entry posts/ -> /blog/ (글 1편)', '5 end 폴더 1개']);
-  });
-});
-
-describe('dirLines (폴더 디렉터리 뷰)', () => {
-  it('puts the link lines first, then one file line per post in the given order, without year lines', () => {
-    const lines = dirLines(
-      [makePost('blog', 'newer', '2025-01-10'), makePost('blog', 'retro', '2023-04-30')],
-      {
-        title: 'posts/',
-        comment: '직접 쓴 글 2편, 최신순',
-        entries: [
-          { href: '/blog/tags/', label: 'tags/', note: '태그 3개' },
-          { href: '/blog/posts.log/', label: 'posts.log', note: '흐름 로그' },
-        ],
-      },
-    );
-    expect(shape(lines)).toEqual([
-      '1 banner posts/',
-      '2 comment 직접 쓴 글 2편, 최신순',
-      '3 blank',
-      '4 entry tags/ -> /blog/tags/ (태그 3개)',
-      '5 entry posts.log -> /blog/posts.log/ (흐름 로그)',
-      '6 file 2025-01-10 newer.mdx newer -> /blog/newer/',
-      '7 file 2023-04-30 retro.mdx retro -> /blog/retro/',
-      '8 end 글 2편',
-    ]);
-  });
-
-  it('links AI post files under /ai-written/ and carries the reading time', () => {
-    const [, , , file] = dirLines([makePost('ai-written', 'note', '2026-10-01')], {
-      title: 'ai-written/',
-      comment: 'AI 글 1편',
-    });
-    expect(file).toMatchObject({
-      kind: 'file',
-      href: '/ai-written/note/',
-      name: 'note.mdx',
-      reading: 1,
-    });
   });
 });

@@ -11,7 +11,7 @@ const { page, check, until, navigate, openPostsDir, dirPostUrl, shellKept, statu
 await openPostsDir();
 const postUrl = await dirPostUrl();
 await navigate('글 열기', () =>
-  page.click(`loc=css:.flow-file-link[href="${postUrl}"]`, { label: '글 열기' }),
+  page.click(`loc=css:.flow-link[href="${postUrl}"]`, { label: '글 열기' }),
 );
 const middleChapter = await page.evaluate(() => {
   const outline = JSON.parse(document.getElementById('editor-outline')?.textContent ?? '[]');

@@ -1,6 +1,6 @@
 /**
  * 글의 폴더(직접 쓴 글 `posts` | AI 글 `ai-written`). 파일이 놓인 콘텐츠 컬렉션이 곧 폴더이고(ADR 0005),
- * 주소·파일 경로·디렉터리 뷰·로그·태그 주소·고정 문구는 모두 여기 표에서 갈라진다. 폴더를 하나 더 두려면 표에 한 줄을
+ * 주소·파일 경로·폴더 화면·태그 주소·고정 문구는 모두 여기 표에서 갈라진다. 폴더를 하나 더 두려면 표에 한 줄을
  * 더한다. 루트(`/`)는 폴더가 아니라 표 밖의 `ROOT`다.
  */
 import { SITE } from '../site';
@@ -16,10 +16,11 @@ export interface FolderRoutes {
   kind: string;
   /** 글 주소 앞부분. 글 주소는 `<postBase><슬러그>/`. */
   postBase: string;
-  /** 그 폴더의 디렉터리 뷰: 이름(`posts/`)과 주소(`/blog/`). 루트의 폴더 줄과 경로 표시줄의 폴더 조각이 여기로 간다. */
+  /**
+   * 그 폴더의 화면: 이름(`posts/`)과 주소(`/blog/`). 폴더를 열면 그 폴더의 흐름 로그가 보인다. 루트의 폴더 줄,
+   * 탐색기의 루트 폴더 머리, 경로 표시줄의 폴더 조각, 글 끝 이동 줄이 여기로 간다.
+   */
   dir: { name: string; url: string };
-  /** 그 폴더 안의 흐름 로그 파일: 이름(`posts.log`)과 주소(`/blog/posts.log/`). */
-  log: { name: string; url: string };
   /** 태그 목록 주소. 태그별 글은 `<tags><태그>/`. */
   tags: string;
   /** 태그 화면의 파일 경로 앞부분(`tags/`, `ai-written/tags/`). 태그별 글은 `<tagPath><태그>`. */
@@ -35,7 +36,6 @@ export const FOLDER_ROUTES = {
     kind: '직접 쓴 글',
     postBase: '/blog/',
     dir: { name: 'posts/', url: '/blog/' },
-    log: { name: 'posts.log', url: '/blog/posts.log/' },
     tags: '/blog/tags/',
     tagPath: 'tags/',
     notice: null,
@@ -45,7 +45,6 @@ export const FOLDER_ROUTES = {
     kind: 'AI 글',
     postBase: '/ai-written/',
     dir: { name: 'ai-written/', url: '/ai-written/' },
-    log: { name: 'ai-written.log', url: '/ai-written/ai-written.log/' },
     tags: '/ai-written/tags/',
     tagPath: 'ai-written/tags/',
     notice: SITE.aiWrittenNotice,

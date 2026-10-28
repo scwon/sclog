@@ -8,11 +8,9 @@ describe.skipIf(!built)('build output', () => {
   it.each([
     'blog/pro-developer-2023-days/index.html',
     'blog/index.html',
-    'blog/posts.log/index.html',
     'blog/tags/index.html',
     'blog/tags/회고/index.html',
     'ai-written/index.html',
-    'ai-written/ai-written.log/index.html',
     'ai-written/why-ai-written-folder/index.html',
     '404.html',
   ])('has %s', (file) => {
@@ -46,45 +44,25 @@ describe.skipIf(!built)('build output', () => {
       { href: '/ai-written/', label: 'ai-written/' },
     ]);
     expect(main.includes('flow-link')).toBe(false);
-    expect(main.includes('flow-file')).toBe(false);
   });
 
   it.each([
-    ['blog/index.html', '/blog/', '/blog/tags/', '/blog/posts.log/', 'posts.log'],
-    [
-      'ai-written/index.html',
-      '/ai-written/',
-      '/ai-written/tags/',
-      '/ai-written/ai-written.log/',
-      'ai-written.log',
-    ],
-  ])(
-    'makes %s a directory view with tags/, the log and one file line per post of that folder',
-    (file, base, tags, logUrl, logName) => {
-      const html = readFileSync(resolve(dist, file), 'utf8');
-      const main = html.slice(html.indexOf('<main'));
-      expect(/data-file-kind="dir"/.test(main)).toBe(true);
-      const entries = anchors(main)
-        .filter(({ attributes }) => attributes.includes('flow-entry-link'))
-        .map(({ href, inner }) => ({ href, label: inner.replace(/<[^>]*>/g, '').trim() }));
-      expect(entries).toEqual([
-        { href: tags, label: 'tags/' },
-        { href: logUrl, label: logName },
-      ]);
-      const files = anchors(main)
-        .filter(({ attributes }) => attributes.includes('flow-file-link'))
-        .map(({ href }) => href);
-      const posts = pages
-        .map(({ path }) => urlOf(path))
-        .filter((url) => url.startsWith(base) && !url.startsWith(tags) && url !== base)
-        .filter((url) => url !== logUrl);
-      expect(files.toSorted()).toEqual(posts.toSorted());
-      // 연도 줄(`2023/` 제목)은 없다.
-      expect(main.includes('년 글')).toBe(false);
-    },
-  );
+    ['blog/index.html', 'posts/', '/blog/'],
+    ['ai-written/index.html', 'ai-written/', '/ai-written/'],
+  ])('makes %s the folder screen %s: a flow log of that folder only', (file, name, base) => {
+    const html = readFileSync(resolve(dist, file), 'utf8');
+    const main = html.slice(html.indexOf('<main'));
+    expect(/data-file-kind="dir"/.test(main)).toBe(true);
+    expect(/data-file-path="([^"]*)"/.exec(main)?.[1]).toBe(name);
+    const cards = anchors(main)
+      .filter(({ attributes }) => attributes.includes('flow-link'))
+      .map(({ href }) => href);
+    expect(cards.length).toBeGreaterThan(0);
+    expect(cards.every((href) => href.startsWith(base))).toBe(true);
+    expect(main.includes('flow-entry-link')).toBe(false);
+  });
 
-  it('offers the root, then each folder directory view, log and tag list as places to go from 404', () => {
+  it('offers the root, then each folder screen and tag list as places to go from 404', () => {
     const html = existsSync(resolve(dist, '404.html'))
       ? readFileSync(resolve(dist, '404.html'), 'utf8')
       : '';
@@ -95,10 +73,8 @@ describe.skipIf(!built)('build output', () => {
     expect(links).toEqual([
       { href: '/', label: '/' },
       { href: '/blog/', label: 'posts/' },
-      { href: '/blog/posts.log/', label: 'posts.log' },
       { href: '/blog/tags/', label: 'tags/' },
       { href: '/ai-written/', label: 'ai-written/' },
-      { href: '/ai-written/ai-written.log/', label: 'ai-written.log' },
       { href: '/ai-written/tags/', label: 'ai-written/tags/' },
     ]);
   });

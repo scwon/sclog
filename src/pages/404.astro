@@ -1,6 +1,6 @@
 ---
 /**
- * 404: 열 수 없는 파일. 갈 곳을 링크 줄로 보인다. 루트 → 폴더마다 디렉터리 뷰·로그·태그 목록이고,
+ * 404: 열 수 없는 파일. 갈 곳을 링크 줄로 보인다. 루트 → 폴더마다 폴더 화면·태그 목록이고,
  * 이름·주소는 폴더 표(`FOLDER_ROUTES`)에서 읽는다.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -11,10 +11,9 @@ import { FOLDER_ROUTES, FOLDERS, ROOT } from '../utils/folder';
 const links = [
   { href: ROOT.url, label: ROOT.name, note: '루트' },
   ...FOLDERS.flatMap((folder) => {
-    const { dir, log, tags, tagPath, kind } = FOLDER_ROUTES[folder];
+    const { dir, tags, tagPath, kind } = FOLDER_ROUTES[folder];
     return [
-      { href: dir.url, label: dir.name, note: `${kind} 목록` },
-      { href: log.url, label: log.name, note: `${kind} 흐름 로그` },
+      { href: dir.url, label: dir.name, note: `${kind} 흐름 로그` },
       { href: tags, label: tagPath, note: `${kind} 태그 목록` },
     ];
   }),
