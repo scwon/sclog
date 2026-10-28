@@ -24,7 +24,7 @@ const clickTab = (url) =>
 
 // 준비: 루트 → `posts/` → 첫 글을 열어 글 탭을 만든다(이 펼침들은 관찰 전이라 세지 않는다).
 await openPostsDir();
-await navigate('첫 글 열기', () => page.click('loc=css:.flow-file-link', { label: '첫 글 열기' }));
+await navigate('첫 글 열기', () => page.click('loc=css:.flow-link', { label: '첫 글 열기' }));
 const post = await editor();
 
 await page.evaluate(() => {

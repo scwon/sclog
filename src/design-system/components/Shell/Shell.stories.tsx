@@ -7,20 +7,15 @@ import type { OutlineItem } from '../../stores/file.logic';
 import { setSearchQuery } from '../../stores/search';
 import type { SearchBlock, SearchIndex } from './search-index';
 import { writePanelView } from './panel';
-import { Shell, type ShellProps, type TreeYear } from './Shell';
+import { Shell, type ShellProps, type TreeFile } from './Shell';
 
-const posts2023: TreeYear = {
-  year: '2023',
-  files: [
-    {
-      url: '/blog/pro-developer-2023-days/',
-      title: '프로 개발자 2023일 후기',
-      path: 'posts/2023/pro-developer-2023-days.mdx',
-    },
-  ],
+const post2023: TreeFile = {
+  url: '/blog/pro-developer-2023-days/',
+  title: '프로 개발자 2023일 후기',
+  path: 'posts/2023/pro-developer-2023-days.mdx',
 };
 
-const tree: ShellProps['tree'] = [{ name: 'posts', years: [posts2023] }];
+const tree: ShellProps['tree'] = [{ name: 'posts', url: '/blog/', files: [post2023] }];
 
 const profile: ShellProps['profile'] = {
   name: '원성철',
@@ -130,28 +125,24 @@ function ReadTo34() {
 const markedTree: ShellProps['tree'] = [
   {
     name: 'posts',
-    years: [
+    url: '/blog/',
+    files: [
       {
-        year: '2024',
-        files: [
-          {
-            url: '/blog/korean-search/',
-            title: '한국어 검색을 직접 만들기',
-            path: 'posts/2024/korean-search.mdx',
-          },
-          {
-            url: '/blog/astro-island-notes-with-a-very-long-file-name/',
-            title: 'Astro 아일랜드 노트',
-            path: 'posts/2024/astro-island-notes-with-a-very-long-file-name.mdx',
-          },
-          {
-            url: '/blog/frontend-team/',
-            title: '프론트엔드 팀 이야기',
-            path: 'posts/2024/frontend-team.mdx',
-          },
-        ],
+        url: '/blog/korean-search/',
+        title: '한국어 검색을 직접 만들기',
+        path: 'posts/2024/korean-search.mdx',
       },
-      posts2023,
+      {
+        url: '/blog/astro-island-notes-with-a-very-long-file-name/',
+        title: 'Astro 아일랜드 노트',
+        path: 'posts/2024/astro-island-notes-with-a-very-long-file-name.mdx',
+      },
+      {
+        url: '/blog/frontend-team/',
+        title: '프론트엔드 팀 이야기',
+        path: 'posts/2024/frontend-team.mdx',
+      },
+      post2023,
     ],
   },
 ];
@@ -335,23 +326,19 @@ const twoRootTree: ShellProps['tree'] = [
   ...tree,
   {
     name: 'ai-written',
-    years: [
+    url: '/ai-written/',
+    files: [
       {
-        year: '2026',
-        files: [
-          {
-            url: '/ai-written/why-ai-written-folder/',
-            title: 'AI 글을 따로 모으는 이유',
-            path: 'ai-written/2026/why-ai-written-folder.mdx',
-          },
-        ],
+        url: '/ai-written/why-ai-written-folder/',
+        title: 'AI 글을 따로 모으는 이유',
+        path: 'ai-written/2026/why-ai-written-folder.mdx',
       },
     ],
   },
 ];
 
 /**
- * 두 루트 폴더의 탐색기: `posts`와 `ai-written`이 각각 이름 있는 구역이고, 구역 안은 연도 폴더와 파일 줄이다.
+ * 두 루트 폴더의 탐색기: `posts`와 `ai-written`이 각각 이름 있는 구역(머리는 폴더 화면 링크)이고, 구역 안은 파일 줄이다.
  * AI 글을 연 상태라 `ai-written` 구역의 파일이 강조된다.
  */
 export const TwoRootFolders: Story = {

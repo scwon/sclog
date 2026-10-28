@@ -1,6 +1,6 @@
 /**
  * 탭과 테마(1440px). 루트 → `posts/` → 글 → 개요의 마지막 장 → 뒤로 세 번 → 글 탭 닫기 → 테마 전환 → 다시 글 → 프로필.
- * 패널은 루트에서 프로필, 디렉터리 뷰에서는 그대로, 글에서 탐색기를 보이고, 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가
+ * 패널은 루트에서 프로필, 폴더 화면에서는 그대로, 글에서 탐색기를 보이고, 매 단계 창 틀 아일랜드가 같은 요소로 남는지, 탭·상태줄·테마가
  * 맞는지 본다. 시작 상태는 `../scenario.mjs`.
  */
 import { scenario } from '../scenario.mjs';
@@ -28,11 +28,11 @@ check('홈은 패널이 프로필', (await panelView()) === '프로필');
 await openPostsDir();
 await tabCount(2);
 const dir = await editor();
-check('posts/ 디렉터리 뷰로 이동', dir.kind === 'dir' && dir.url === '/blog/', dir.url);
+check('posts/ 폴더 화면으로 이동', dir.kind === 'dir' && dir.url === '/blog/', dir.url);
 check('창 틀 유지(루트 → posts/)', await shellKept());
-check('디렉터리 뷰는 패널을 그대로(프로필)', (await panelView()) === '프로필');
+check('폴더 화면은 패널을 그대로(프로필)', (await panelView()) === '프로필');
 
-await navigate('첫 글 열기', () => page.click('loc=css:.flow-file-link', { label: '첫 글 열기' }));
+await navigate('첫 글 열기', () => page.click('loc=css:.flow-link', { label: '첫 글 열기' }));
 await panelIs('탐색기');
 await tabCount(3);
 const post = await editor();
@@ -93,9 +93,7 @@ check('테마가 바뀜', themeBefore !== themeAfter, `${themeBefore} → ${them
 await navigate('posts/ 탭으로', () =>
   page.click("loc=css:nav[aria-label='열린 파일'] a[href='/blog/']", { label: 'posts/ 탭' }),
 );
-await navigate('글 다시 열기', () =>
-  page.click('loc=css:.flow-file-link', { label: '글 다시 열기' }),
-);
+await navigate('글 다시 열기', () => page.click('loc=css:.flow-link', { label: '글 다시 열기' }));
 check('다시 글', (await editor()).url === post.url);
 check('창 틀 유지(다시 글)', await shellKept());
 

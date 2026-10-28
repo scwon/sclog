@@ -12,7 +12,6 @@ export {
   type ShellProps,
   type TreeFile,
   type TreeRoot,
-  type TreeYear,
 } from './components/Shell/Shell';
 export { nextFile } from './components/Shell/tree.logic';
 // 선택 툴바는 감시(`selection.ts`)만 여기서 싣고, 그리는 쪽(`SelectionToolbar.tsx`)과 `Popover`는 처음 본문을 고를 때

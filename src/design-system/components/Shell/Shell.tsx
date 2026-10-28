@@ -103,23 +103,19 @@ export interface TreeFile {
   path: string;
 }
 
-/** 탐색기 트리의 연도 폴더. */
-export interface TreeYear {
-  year: string;
-  files: TreeFile[];
-}
-
 /** 탐색기 트리의 루트 폴더. 탐색기는 루트마다 이름 있는 구역을 그린다. */
 export interface TreeRoot {
   /** 루트 폴더 이름이자 구역 머리. 예: `posts`, `ai-written` */
   name: string;
-  /** 연도 폴더(최신 연도 먼저). */
-  years: TreeYear[];
+  /** 그 폴더 화면(흐름 로그)의 주소. 머리를 누르면 간다. */
+  url: string;
+  /** 글 파일(새 글 먼저). 연도로 나누지 않는다. */
+  files: TreeFile[];
 }
 
 /**
- * 지금 화면의 파일. 경로는 `/`(루트), `posts/`·`ai-written/`(디렉터리 뷰), `posts/<연도>/<slug>.mdx`,
- * `ai-written/<연도>/<slug>.mdx`, `posts.log`, `ai-written.log`, `tags/<태그>`, `ai-written/tags/<태그>`, `404` 등이다.
+ * 지금 화면의 파일. 경로는 `/`(루트), `posts/`·`ai-written/`(폴더 화면), `posts/<연도>/<slug>.mdx`,
+ * `ai-written/<연도>/<slug>.mdx`, `tags/<태그>`, `ai-written/tags/<태그>`, `404` 등이다.
  */
 export type CurrentFile = Pick<EditorFile, 'title' | 'path' | 'url' | 'kind'>;
 
@@ -954,51 +950,53 @@ export function Shell({
           )
         ) : (
           <>
-            {tree.map(({ name: root, years }, index) => (
+            {tree.map(({ name: root, url: rootUrl, files }, index) => (
               <section
                 key={root}
                 aria-labelledby={`explorer-${root}`}
                 className={cn('pb-2', index > 0 && 'border-t border-border')}
               >
-                <SectionHead id={`explorer-${root}`}>{root}</SectionHead>
+                {/* 루트 폴더 머리는 그 폴더 화면(흐름 로그)으로 가는 링크다. 글 수는 머리 오른쪽에. */}
+                <SectionHead id={`explorer-${root}`}>
+                  <a
+                    href={rootUrl}
+                    aria-current={shown?.url === rootUrl ? 'page' : undefined}
+                    className={cn(
+                      'flex min-w-0 flex-1 items-center gap-1.5 text-text transition-colors duration-(--motion-fast) ease-standard hover:text-accent-text focus-visible:-outline-offset-2',
+                      shown?.url === rootUrl && 'text-accent-text',
+                    )}
+                  >
+                    <span className="truncate">{root}</span>
+                    <span className="ml-auto font-mono text-[11.5px] font-normal text-text-muted">
+                      {files.length}
+                    </span>
+                  </a>
+                </SectionHead>
                 <ul className="m-0 list-none p-0">
-                  {years.map(({ year, files }) => (
-                    <li key={year}>
-                      <p className="m-0 flex h-7 items-center gap-1.5 pr-3 pl-6.5 font-mono text-[12.5px] leading-none font-medium text-text-soft">
-                        <Twisty />
-                        {year}
-                        <span className="ml-auto text-[11.5px] text-text-muted">
-                          {files.length}
-                        </span>
-                      </p>
-                      <ul className="m-0 list-none p-0">
-                        {files.map((entry) => {
-                          const active = shown?.url === entry.url;
-                          const name = fileName(entry.path);
-                          const mark = readingMark(history, entry.url);
-                          return (
-                            <li key={entry.url}>
-                              <a
-                                href={entry.url}
-                                title={name}
-                                aria-current={active ? 'page' : undefined}
-                                className={cn(
-                                  'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-10 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
-                                  mark?.kind === 'read' && 'text-text-muted',
-                                  active &&
-                                    'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
-                                )}
-                              >
-                                <FileGlyph />
-                                <span className="min-w-0 truncate">{name}</span>
-                                {mark && <ReadMark mark={mark} selected={active} />}
-                              </a>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  ))}
+                  {files.map((entry) => {
+                    const active = shown?.url === entry.url;
+                    const name = fileName(entry.path);
+                    const mark = readingMark(history, entry.url);
+                    return (
+                      <li key={entry.url}>
+                        <a
+                          href={entry.url}
+                          title={name}
+                          aria-current={active ? 'page' : undefined}
+                          className={cn(
+                            'relative flex h-7.5 items-center gap-2 overflow-hidden pr-3 pl-6.5 font-mono text-xs leading-7.5 whitespace-nowrap text-text-soft transition-colors duration-(--motion-fast) ease-standard hover:bg-state-hover hover:text-text focus-visible:-outline-offset-2',
+                            mark?.kind === 'read' && 'text-text-muted',
+                            active &&
+                              'bg-state-selected text-text before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent',
+                          )}
+                        >
+                          <FileGlyph />
+                          <span className="min-w-0 truncate">{name}</span>
+                          {mark && <ReadMark mark={mark} selected={active} />}
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             ))}
